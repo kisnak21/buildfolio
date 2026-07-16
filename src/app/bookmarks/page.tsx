@@ -1,0 +1,11 @@
+import type { Metadata } from 'next'
+import BookmarksClient from './BookmarksClient'
+
+export const metadata: Metadata = {
+  title: 'Bookmarks',
+  description: 'Your saved projects on Buildfolio.',
+}
+
+export default function BookmarksPage() {
+  return <BookmarksClient />
+}
