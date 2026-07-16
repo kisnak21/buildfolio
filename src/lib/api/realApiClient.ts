@@ -7,4 +7,16 @@ const realApiClient = axios.create({
   },
 })
 
+// Attach JWT token to every request if available
+realApiClient.interceptors.request.use((config) => {
+  const stored = localStorage.getItem('buildfolio_user')
+  if (stored) {
+    const user = JSON.parse(stored)
+    if (user?.token) {
+      config.headers.Authorization = `Bearer ${user.token}`
+    }
+  }
+  return config
+})
+
 export default realApiClient

@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { removeBookmark } from '@/lib/services/bookmarkService'
 import { authenticate } from '@/lib/middleware/authMiddleware'

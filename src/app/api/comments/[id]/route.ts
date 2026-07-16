@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteComment } from '@/lib/services/commentService'
 import { authenticate } from '@/lib/middleware/authMiddleware'

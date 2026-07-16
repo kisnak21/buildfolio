@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProjects, createProject } from '@/lib/services/projectService'
 import { authenticate } from '@/lib/middleware/authMiddleware'

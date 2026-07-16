@@ -48,6 +48,7 @@ const LoginClient = () => {
           name: result.user.name,
           email: result.user.email,
           bio: result.user.bio,
+          token: result.token,
         }),
       )
       router.push('/')

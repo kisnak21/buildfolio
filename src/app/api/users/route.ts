@@ -1,3 +1,5 @@
+export const runtime = 'nodejs'
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, createUser } from '@/lib/services/userService'
 
@@ -33,6 +35,7 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (err: any) {
+    console.error('REGISTER ERROR:', err)
     if (err.code === '23505') {
       return NextResponse.json(
         { success: false, message: 'Email already exists' },
@@ -40,7 +43,7 @@ export async function POST(req: NextRequest) {
       )
     }
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: err.message, stack: err.stack },
       { status: 500 },
     )
   }
