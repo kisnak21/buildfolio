@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useDispatch } from 'react-redux'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { loginUser } from '@/store/redux/authSlice'
 import { loginUserApi } from '@/lib/api/authApi'
@@ -18,6 +18,7 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const LoginClient = () => {
   const dispatch = useDispatch()
   const router = useRouter()
+  const searchParams = useSearchParams()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -51,7 +52,10 @@ const LoginClient = () => {
           token: result.token,
         }),
       )
-      router.push('/')
+      document.cookie =
+        'buildfolio_user=1; path=/; max-age=604800; SameSite=Lax'
+      const redirectTo = searchParams.get('redirect') || '/'
+      router.push(redirectTo)
     } catch (err: any) {
       if (err.response?.status === 401) {
         setErrors({ password: 'Invalid email or password.' })

@@ -11,7 +11,9 @@ export function middleware(req: NextRequest) {
   if (isProtected) {
     const user = req.cookies.get('buildfolio_user')
     if (!user) {
-      return NextResponse.redirect(new URL('/login', req.url))
+      const loginUrl = new URL('/login', req.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
     }
   }
 

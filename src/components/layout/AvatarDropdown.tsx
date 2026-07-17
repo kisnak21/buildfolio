@@ -32,6 +32,7 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
 
   const handleLogout = () => {
     dispatch(logoutUser())
+    document.cookie = 'buildfolio_user=; path=/; max-age=0; SameSite=Lax'
     setOpen(false)
     router.push('/')
   }
