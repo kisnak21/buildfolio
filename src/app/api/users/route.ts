@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, createUser } from '@/lib/services/userService'
+import { dbErrorMessage } from '@/lib/apiErrors'
 
 export async function GET() {
   try {
@@ -9,7 +10,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: users })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: dbErrorMessage(err) },
       { status: 500 },
     )
   }
@@ -36,6 +37,12 @@ export async function POST(req: NextRequest) {
     )
   } catch (err: any) {
     console.error('REGISTER ERROR:', err)
+    if (err.statusCode === 400) {
+      return NextResponse.json(
+        { success: false, message: err.message },
+        { status: 400 },
+      )
+    }
     if (err.code === '23505') {
       return NextResponse.json(
         { success: false, message: 'Email already exists' },
@@ -43,7 +50,7 @@ export async function POST(req: NextRequest) {
       )
     }
     return NextResponse.json(
-      { success: false, message: err.message, stack: err.stack },
+      { success: false, message: dbErrorMessage(err) },
       { status: 500 },
     )
   }
