@@ -79,7 +79,7 @@ const HomeClient = () => {
   }))
 
   const handleLike = (id: string, currentLikes: number) => {
-    dispatch(likeProject({ id, currentLikes }) as any)
+    dispatch(likeProject(id) as any)
   }
 
   return (

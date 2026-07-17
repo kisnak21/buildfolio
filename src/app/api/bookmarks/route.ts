@@ -29,17 +29,18 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = authenticate(req)
+  const { user, error } = authenticate(req)
   if (error) return error
 
   try {
-    const { user_id, project_id } = await req.json()
-    if (!user_id || !project_id) {
+    const { project_id } = await req.json()
+    if (!project_id) {
       return NextResponse.json(
-        { success: false, message: 'user_id and project_id are required' },
+        { success: false, message: 'project_id is required' },
         { status: 400 },
       )
     }
+    const user_id = user!.id
     const existing = await getBookmark({ user_id, project_id })
     if (existing) {
       return NextResponse.json(

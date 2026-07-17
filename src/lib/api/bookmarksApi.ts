@@ -6,14 +6,11 @@ export const getUserBookmarks = async (userId: string) => {
 }
 
 export const addBookmark = async ({
-  user_id,
   project_id,
 }: {
-  user_id: string
   project_id: string
 }) => {
   const response = await realApiClient.post('/bookmarks', {
-    user_id,
     project_id,
   })
   return response.data.data

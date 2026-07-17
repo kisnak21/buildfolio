@@ -4,6 +4,8 @@ import {
   createProject,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
+  likeProject as likeProjectApi,
+  type NormalizedProject,
 } from '../../lib/api/projectsApi'
 
 interface Project {
@@ -80,17 +82,17 @@ export const deleteProject = createAsyncThunk<string | number, string | number, 
   },
 )
 
-export const likeProject = createAsyncThunk<{ id: string | number; likes: number }, { id: string | number; currentLikes: number }, { rejectValue: string }>(
-  'projects/like',
-  async ({ id, currentLikes }, { rejectWithValue }) => {
-    try {
-      await updateProjectApi(id, { likes: currentLikes + 1 })
-      return { id, likes: currentLikes + 1 }
-    } catch (err) {
-      return rejectWithValue('Failed to like project.')
-    }
-  },
-)
+export const likeProject = createAsyncThunk<
+  NormalizedProject,
+  string | number,
+  { rejectValue: string }
+>('projects/like', async (id, { rejectWithValue }) => {
+  try {
+    return await likeProjectApi(id)
+  } catch (err) {
+    return rejectWithValue('Failed to like project.')
+  }
+})
 
 interface ProjectsState {
   items: Project[]

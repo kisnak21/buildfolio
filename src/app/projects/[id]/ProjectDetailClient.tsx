@@ -41,7 +41,7 @@ const ProjectDetailClient = () => {
   }, [id, dispatch])
 
   const handleLike = () => {
-    dispatch(likeProject({ id, currentLikes: project.likes }) as any)
+    dispatch(likeProject(id) as any)
   }
 
   const handleBookmark = () => {
@@ -49,7 +49,7 @@ const ProjectDetailClient = () => {
     if (isBookmarked) {
       dispatch(removeBookmark({ bookmarkId: existingBookmark.id }) as any)
     } else {
-      dispatch(addBookmark({ user_id: currentUser.id, project_id: id }) as any)
+      dispatch(addBookmark({ project_id: id }) as any)
     }
   }
 

@@ -23,13 +23,12 @@ export const fetchBookmarks = createAsyncThunk<Bookmark[], number, { rejectValue
   },
 )
 
-export const addBookmark = createAsyncThunk<Bookmark, { user_id: number; project_id: number }, { rejectValue: string }>(
+export const addBookmark = createAsyncThunk<Bookmark, { project_id: string | number }, { rejectValue: string }>(
   'bookmarks/add',
-  async ({ user_id, project_id }, { rejectWithValue }) => {
+  async ({ project_id }, { rejectWithValue }) => {
     try {
       return await addBookmarkApi({
-        user_id: user_id.toString(),
-        project_id: project_id.toString(),
+        project_id: String(project_id),
       })
     } catch (err) {
       return rejectWithValue('Failed to add bookmark.')
