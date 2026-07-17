@@ -39,6 +39,10 @@ const authSlice = createSlice({
     logoutUser: (state) => {
       state.currentUser = null
       localStorage.removeItem('buildfolio_user')
+      // Clear session cookie client-side
+      document.cookie = 'buildfolio_session=; path=/; max-age=0'
+      // Fire-and-forget: clear httpOnly cookie via server endpoint
+      fetch('/api/users/logout', { method: 'POST' }).catch(() => {})
     },
     updateProfile: (state, action: PayloadAction<{ name: string; bio: string }>) => {
       const { name, bio } = action.payload

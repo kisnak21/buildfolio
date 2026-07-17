@@ -52,8 +52,6 @@ const LoginClient = () => {
           token: result.token,
         }),
       )
-      document.cookie =
-        'buildfolio_user=1; path=/; max-age=604800; SameSite=Lax'
       const redirectTo = searchParams.get('redirect') || '/'
       router.push(redirectTo)
     } catch (err: any) {
