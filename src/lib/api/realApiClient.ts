@@ -5,15 +5,22 @@ const realApiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // Send httpOnly cookie with every request
 })
 
-// Attach JWT token to every request if available
+// Keep Authorization header fallback for backward compatibility
 realApiClient.interceptors.request.use((config) => {
-  const stored = localStorage.getItem('buildfolio_user')
-  if (stored) {
-    const user = JSON.parse(stored)
-    if (user?.token) {
-      config.headers.Authorization = `Bearer ${user.token}`
+  if (typeof window !== 'undefined') {
+    const stored = localStorage.getItem('buildfolio_user')
+    if (stored) {
+      try {
+        const user = JSON.parse(stored)
+        if (user?.token) {
+          config.headers.Authorization = `Bearer ${user.token}`
+        }
+      } catch {
+        // ignore parse errors
+      }
     }
   }
   return config
