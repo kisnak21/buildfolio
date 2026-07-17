@@ -6,13 +6,14 @@ import { authenticate } from '@/lib/middleware/authMiddleware'
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = authenticate(req)
   if (error) return error
 
+  const { id } = await params
   try {
-    const comment = await deleteComment(params.id)
+    const comment = await deleteComment(id)
     if (!comment) {
       return NextResponse.json(
         { success: false, message: 'Comment not found' },

@@ -10,10 +10,11 @@ import { authenticate } from '@/lib/middleware/authMiddleware'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
+  const { id } = await params
   try {
-    const project = await getProjectById(params.id)
+    const project = await getProjectById(id)
     if (!project) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
@@ -31,14 +32,15 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = authenticate(req)
   if (error) return error
 
+  const { id } = await params
   try {
     const body = await req.json()
-    const project = await updateProject(params.id, body)
+    const project = await updateProject(id, body)
     if (!project) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
@@ -62,13 +64,14 @@ export async function PATCH(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { error } = authenticate(req)
   if (error) return error
 
+  const { id } = await params
   try {
-    const project = await deleteProject(params.id)
+    const project = await deleteProject(id)
     if (!project) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
