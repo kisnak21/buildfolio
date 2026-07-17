@@ -15,6 +15,15 @@ import Divider from '@/components/ui/Divider'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const isPasswordStrong = (pw: string): boolean => {
+  return (
+    pw.length >= 8 &&
+    /[A-Z]/.test(pw) &&
+    /[a-z]/.test(pw) &&
+    /[0-9]/.test(pw)
+  )
+}
+
 const RegisterClient = () => {
   const dispatch = useDispatch()
   const router = useRouter()
@@ -34,8 +43,14 @@ const RegisterClient = () => {
     if (!name.trim()) newErrors.name = 'Name is required.'
     if (!emailRegex.test(email.trim()))
       newErrors.email = 'Enter a valid email address.'
-    if (password.length < 8)
-      newErrors.password = 'Password must be at least 8 characters.'
+    if (!isPasswordStrong(password)) {
+      const pwErrors: string[] = []
+      if (password.length < 8) pwErrors.push('at least 8 characters')
+      if (!/[A-Z]/.test(password)) pwErrors.push('one uppercase letter')
+      if (!/[a-z]/.test(password)) pwErrors.push('one lowercase letter')
+      if (!/[0-9]/.test(password)) pwErrors.push('one number')
+      newErrors.password = `Password requires: ${pwErrors.join(', ')}.`
+    }
     if (confirmPassword !== password)
       newErrors.confirmPassword = 'Passwords do not match.'
     if (!agreed) newErrors.agreed = 'You must agree to the privacy policy.'

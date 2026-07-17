@@ -36,6 +36,20 @@ export const createUser = async ({
   image?: string
   bio?: string
 }) => {
+  // Password strength validation
+  if (password.length < 8) {
+    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
+  }
+  if (!/[A-Z]/.test(password)) {
+    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
+  }
+  if (!/[a-z]/.test(password)) {
+    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
+  }
+  if (!/[0-9]/.test(password)) {
+    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
+  }
+
   const id = uuidv4()
   const username = name.toLowerCase().replace(/\s+/g, '')
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
