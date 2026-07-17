@@ -30,20 +30,29 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = authenticate(req)
+  const { user, error } = authenticate(req)
   if (error) return error
 
   const { id } = await params
+
+  // Ownership check
+  if (user!.id !== id) {
+    return NextResponse.json(
+      { success: false, message: 'Forbidden: you can only edit your own profile' },
+      { status: 403 },
+    )
+  }
+
   try {
     const body = await req.json()
-    const user = await updateUser(id, body)
-    if (!user) {
+    const updatedUser = await updateUser(id, body)
+    if (!updatedUser) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
         { status: 404 },
       )
     }
-    return NextResponse.json({ success: true, data: user })
+    return NextResponse.json({ success: true, data: updatedUser })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: err.message },
@@ -56,13 +65,22 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { error } = authenticate(req)
+  const { user, error } = authenticate(req)
   if (error) return error
 
   const { id } = await params
+
+  // Ownership check
+  if (user!.id !== id) {
+    return NextResponse.json(
+      { success: false, message: 'Forbidden: you can only delete your own account' },
+      { status: 403 },
+    )
+  }
+
   try {
-    const user = await deleteUser(id)
-    if (!user) {
+    const deletedUser = await deleteUser(id)
+    if (!deletedUser) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
         { status: 404 },

@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProjects, createProject } from '@/lib/services/projectService'
 import { authenticate } from '@/lib/middleware/authMiddleware'
+import { dbErrorMessage } from '@/lib/apiErrors'
 
 export async function GET(req: NextRequest) {
   try {
@@ -14,14 +15,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: projects })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: dbErrorMessage(err) },
       { status: 500 },
     )
   }
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = authenticate(req)
+  const { user, error } = authenticate(req)
   if (error) return error
 
   try {
@@ -33,20 +34,20 @@ export async function POST(req: NextRequest) {
       thumbnail,
       github_url,
       live_url,
-      user_id,
       category_id,
     } = body
 
-    if (!title || !slug || !description || !user_id) {
+    if (!title || !slug || !description) {
       return NextResponse.json(
         {
           success: false,
-          message: 'title, slug, description, and user_id are required',
+          message: 'title, slug, and description are required',
         },
         { status: 400 },
       )
     }
 
+    // Use user_id from JWT token, not from request body
     const project = await createProject({
       title,
       slug,
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
       thumbnail,
       github_url,
       live_url,
-      user_id,
+      user_id: user!.id,
       category_id,
     })
     return NextResponse.json({ success: true, data: project }, { status: 201 })
@@ -67,12 +68,12 @@ export async function POST(req: NextRequest) {
     }
     if (err.code === '23503') {
       return NextResponse.json(
-        { success: false, message: 'user_id does not exist' },
+        { success: false, message: 'Invalid category_id' },
         { status: 400 },
       )
     }
     return NextResponse.json(
-      { success: false, message: err.message },
+      { success: false, message: dbErrorMessage(err) },
       { status: 500 },
     )
   }
