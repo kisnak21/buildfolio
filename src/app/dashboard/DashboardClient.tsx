@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSelector, useDispatch } from 'react-redux'
-import { deleteProject } from '@/store/redux/projectsSlice'
+import { fetchProjects, deleteProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -23,6 +23,12 @@ const DashboardClient = () => {
 
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [deleteError, setDeleteError] = useState('')
+
+  useEffect(() => {
+    if (projects.length === 0) {
+      dispatch(fetchProjects() as any)
+    }
+  }, [dispatch, projects.length])
 
   const userProjects = projects.filter(
     (p: any) => p.user_id === currentUser?.id,

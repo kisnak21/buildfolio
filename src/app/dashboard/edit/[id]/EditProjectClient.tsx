@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateProject } from '@/store/redux/projectsSlice'
+import { fetchProjects, updateProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectForm from '@/components/dashboard/ProjectForm'
@@ -18,6 +18,11 @@ const EditProjectClient = () => {
   const project = useSelector((state: any) =>
     state.projects.items.find((p: any) => p.id === id),
   )
+
+  useEffect(() => {
+    if (project) return
+    dispatch(fetchProjects() as any)
+  }, [dispatch, project])
 
   const isOwner = project?.user_id === currentUser?.id
 

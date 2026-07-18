@@ -1,9 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { useSelector, useDispatch } from 'react-redux'
-import { likeProject } from '@/store/redux/projectsSlice'
+import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
@@ -16,6 +17,13 @@ const UserProfileClient = () => {
   const { currentUser } = useSelector((state: any) => state.auth)
 
   const decodedAuthor = decodeURIComponent(author)
+
+  useEffect(() => {
+    if (allProjects.length === 0) {
+      dispatch(fetchProjects() as any)
+    }
+  }, [dispatch, allProjects.length])
+
   const userProjects = allProjects.filter(
     (p: any) => p.author === decodedAuthor,
   )
