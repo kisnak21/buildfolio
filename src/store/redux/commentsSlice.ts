@@ -27,9 +27,9 @@ export const addComment = createAsyncThunk<
   }
 })
 
-export const deleteComment = createAsyncThunk<number, number>(
+export const deleteComment = createAsyncThunk<string, string>(
   'comments/delete',
-  async (id: number, { rejectWithValue }) => {
+  async (id: string, { rejectWithValue }) => {
     try {
       await deleteCommentApi(id.toString())
       return id
@@ -83,7 +83,7 @@ const commentsSlice = createSlice({
         state.items.unshift(action.payload)
       })
       .addCase(deleteComment.fulfilled, (state, action) => {
-        state.items = state.items.filter((c) => c.id !== action.payload)
+        state.items = state.items.filter((c) => String(c.id) !== action.payload)
       })
   },
 })

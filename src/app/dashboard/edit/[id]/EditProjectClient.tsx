@@ -29,8 +29,8 @@ const EditProjectClient = () => {
         updatedFields: {
           title: projectData.title,
           description: projectData.description,
-          github_url: projectData.github,
-          live_url: projectData.live,
+          github: projectData.github,
+          live: projectData.live,
         },
       }) as any,
     )

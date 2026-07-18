@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
-import { technologies } from '@/lib/data/projects'
+import { technologies } from '@/lib/data/project'
 
 const categoryList = [
   'SaaS',
