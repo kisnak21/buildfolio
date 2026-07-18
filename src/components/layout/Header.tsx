@@ -18,7 +18,6 @@ const Header = () => {
   return (
     <header className='border-b border-gray-200 sticky top-0 z-50 bg-white/80 backdrop-blur-sm'>
       <div className='max-w-6xl mx-auto px-4 py-3 flex items-center justify-between'>
-        {/* Logo */}
         <Link href='/' className='flex items-center gap-2'>
           <div className='w-7 h-7 bg-primary rounded-md flex items-center justify-center'>
             <svg width='14' height='14' viewBox='0 0 14 14' fill='none'>
@@ -31,7 +30,6 @@ const Header = () => {
           <span className='text-sm font-medium text-gray-900'>Buildfolio</span>
         </Link>
 
-        {/* Desktop Nav */}
         <nav className='hidden md:flex items-center gap-6'>
           {navLinks.map((link) => (
             <a
@@ -44,7 +42,6 @@ const Header = () => {
           ))}
         </nav>
 
-        {/* Desktop Auth */}
         <div className='hidden md:flex items-center gap-3'>
           {currentUser ? (
             <AvatarDropdown user={currentUser} />
@@ -63,7 +60,6 @@ const Header = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className='md:hidden flex flex-col gap-1.5 p-1'
@@ -84,7 +80,6 @@ const Header = () => {
         </button>
       </div>
 
-      {/* Mobile Menu */}
       {menuOpen && (
         <div className='md:hidden border-t border-gray-200 bg-white'>
           <nav className='max-w-6xl mx-auto px-4 py-4 flex flex-col gap-4'>

@@ -10,6 +10,17 @@ export const loginUserApi = async ({ email, password }: { email: string; passwor
   return response.data.data
 }
 
+export const changePasswordApi = async (
+  id: string | number,
+  { currentPassword, newPassword }: { currentPassword: string; newPassword: string },
+) => {
+  const response = await realApiClient.patch(`/users/${id}/password`, {
+    currentPassword,
+    newPassword,
+  })
+  return response.data
+}
+
 export const updateUserApi = async (id: string | number, { name, bio }: { name: string; bio: string }) => {
   const response = await realApiClient.patch(`/users/${id}`, { name, bio })
   return response.data.data

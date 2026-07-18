@@ -152,6 +152,40 @@ export const updateUser = async (
   return result.rows[0] || null
 }
 
+export const changePassword = async (
+  id: string,
+  currentPassword: string,
+  newPassword: string,
+) => {
+  // Password strength validation
+  if (newPassword.length < 8) {
+    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
+  }
+  if (!/[A-Z]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
+  }
+  if (!/[a-z]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
+  }
+  if (!/[0-9]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
+  }
+
+  const result = await pool.query('SELECT * FROM users WHERE id = $1', [id])
+  const user = result.rows[0]
+  if (!user) return null
+
+  const passwordMatch = await bcrypt.compare(currentPassword, user.password)
+  if (!passwordMatch) {
+    throw Object.assign(new Error('Current password is incorrect'), { statusCode: 401 })
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id])
+
+  return { success: true }
+}
+
 export const deleteUser = async (id: string) => {
   const result = await pool.query(
     'DELETE FROM users WHERE id = $1 RETURNING id',

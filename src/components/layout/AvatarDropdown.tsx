@@ -16,9 +16,14 @@ interface AvatarDropdownProps {
 
 const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
   const [open, setOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const dispatch = useDispatch()
   const router = useRouter()
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -35,6 +40,12 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
     document.cookie = 'buildfolio_user=; path=/; max-age=0; SameSite=Lax'
     setOpen(false)
     router.push('/')
+  }
+
+  if (!mounted) {
+    return (
+      <div className='w-8 h-8 rounded-full border border-gray-200 bg-gray-100' />
+    )
   }
 
   return (
