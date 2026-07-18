@@ -12,6 +12,7 @@ import Checkbox from '@/components/ui/Checkbox'
 import Button from '@/components/ui/Button'
 import GoogleButton from '@/components/ui/GoogleButton'
 import Divider from '@/components/ui/Divider'
+import { signIn } from 'next-auth/react'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -25,6 +26,12 @@ const LoginClient = () => {
   const [remember, setRemember] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
+
+  const handleGoogle = async () => {
+    setGoogleSubmitting(true)
+    await signIn('google', { callbackUrl: '/auth/google-callback' })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -111,7 +118,9 @@ const LoginClient = () => {
               {submitting ? 'Logging in...' : 'Log in'}
             </Button>
           </div>
-          <GoogleButton>Continue with Google</GoogleButton>
+          <GoogleButton onClick={handleGoogle} disabled={googleSubmitting}>
+            {googleSubmitting ? 'Connecting...' : 'Continue with Google'}
+          </GoogleButton>
         </form>
 
         <Divider />
