@@ -83,9 +83,21 @@ const normalizeProject = (p: RawProject): NormalizedProject => ({
   createdAt: p.created_at || p.createdAt || null,
 })
 
-export const getProjects = async (): Promise<NormalizedProject[]> => {
-  const response = await realApiClient.get('/projects')
-  return response.data.data.map(normalizeProject)
+export const getProjects = async (
+  params: { page?: number; limit?: number; search?: string; category?: string; sort?: string } = {},
+): Promise<{ items: NormalizedProject[]; pagination: any }> => {
+  const queryParams = new URLSearchParams()
+  if (params.page) queryParams.set('page', String(params.page))
+  if (params.limit) queryParams.set('limit', String(params.limit))
+  if (params.search) queryParams.set('search', params.search)
+  if (params.category) queryParams.set('category', params.category)
+  if (params.sort) queryParams.set('sort', params.sort)
+
+  const response = await realApiClient.get(`/projects?${queryParams.toString()}`)
+  return {
+    items: response.data.data.map(normalizeProject),
+    pagination: response.data.pagination,
+  }
 }
 
 export const createProject = async (project: CreateProjectInput): Promise<NormalizedProject> => {

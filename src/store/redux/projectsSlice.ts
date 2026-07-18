@@ -36,17 +36,31 @@ interface NewProjectInput {
   category_id?: string | number | null
 }
 
+interface ProjectsState {
+  items: Project[]
+  loading: boolean
+  error: string | null
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
+}
+
 // Async thunks
-export const fetchProjects = createAsyncThunk<Project[], void, { rejectValue: string }>(
-  'projects/fetchAll',
-  async (_, { rejectWithValue }) => {
-    try {
-      return await getProjects()
-    } catch (err) {
-      return rejectWithValue('Failed to load projects. Please try again.')
-    }
-  },
-)
+export const fetchProjects = createAsyncThunk<
+  { items: Project[]; pagination: ProjectsState['pagination'] },
+  { page?: number; limit?: number; search?: string; category?: string; sort?: string } | void,
+  { rejectValue: string }
+>('projects/fetchAll', async (params, { rejectWithValue }) => {
+  try {
+    const result = await getProjects(params || {})
+    return { items: result.items, pagination: result.pagination }
+  } catch (err) {
+    return rejectWithValue('Failed to load projects. Please try again.')
+  }
+})
 
 export const addProject = createAsyncThunk<Project, NewProjectInput, { rejectValue: string }>(
   'projects/add',
@@ -94,16 +108,11 @@ export const likeProject = createAsyncThunk<
   }
 })
 
-interface ProjectsState {
-  items: Project[]
-  loading: boolean
-  error: string | null
-}
-
 const initialState: ProjectsState = {
   items: [],
   loading: false,
   error: null,
+  pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
 }
 
 // Slice
@@ -120,7 +129,8 @@ const projectsSlice = createSlice({
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.loading = false
-        state.items = action.payload
+        state.items = action.payload.items
+        state.pagination = action.payload.pagination
       })
       .addCase(fetchProjects.rejected, (state, action) => {
         state.loading = false

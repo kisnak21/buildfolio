@@ -5,10 +5,14 @@ export const getAllProjects = async ({
   search,
   category,
   sort,
+  page = 1,
+  limit = 20,
 }: {
   search?: string
   category?: string
   sort?: string
+  page?: number
+  limit?: number
 } = {}) => {
   const conditions: string[] = []
   const values: string[] = []
@@ -40,6 +44,18 @@ export const getAllProjects = async ({
           ? 'ORDER BY p.title ASC'
           : 'ORDER BY p.created_at DESC'
 
+  const offset = (page - 1) * limit
+
+  // Count total
+  const countResult = await pool.query(
+    `SELECT COUNT(*) FROM projects p
+     LEFT JOIN categories c ON p.category_id = c.id
+     ${whereClause}`,
+    values,
+  )
+  const total = parseInt(countResult.rows[0].count, 10)
+
+  // Fetch page
   const result = await pool.query(
     `SELECT
       p.*,
@@ -56,10 +72,20 @@ export const getAllProjects = async ({
      LEFT JOIN technologies t ON pt.technology_id = t.id
      ${whereClause}
      GROUP BY p.id, u.name, c.name
-     ${orderClause}`,
-    values,
+     ${orderClause}
+     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+    [...values, limit, offset],
   )
-  return result.rows
+
+  return {
+    data: result.rows,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  }
 }
 
 export const getProjectById = async (id: string) => {
