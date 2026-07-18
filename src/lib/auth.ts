@@ -23,19 +23,32 @@ async function syncGoogleUser(profile: {
   const image = profile.image || null
 
   const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email])
-  if (existing.rows.length > 0) return existing.rows[0].id
+  if (existing.rows.length > 0) {
+    const id = existing.rows[0].id
+    await pool.query(
+      `UPDATE users
+       SET name = COALESCE($1, name), image = COALESCE($2, image), is_verified = true
+       WHERE id = $3`,
+      [name, image, id],
+    )
+    return id
+  }
 
   const id = crypto.randomUUID()
-  const username = name.toLowerCase().replace(/\s+/g, '')
+  const baseUsername = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 40) || 'user'
+  const username = `${baseUsername}_${crypto.randomUUID().slice(0, 8)}`
 
-  await pool.query(
+  const inserted = await pool.query(
     `INSERT INTO users (id, name, username, email, image, is_verified)
      VALUES ($1, $2, $3, $4, $5, true)
-     ON CONFLICT (email) DO NOTHING`,
+     ON CONFLICT (email) DO NOTHING
+     RETURNING id`,
     [id, name, username, email, image],
   )
 
-  return id
+  return inserted.rows[0]?.id || (
+    await pool.query('SELECT id FROM users WHERE email = $1', [email])
+  ).rows[0].id
 }
 
 export const authOptions: NextAuthOptions = {

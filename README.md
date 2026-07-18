@@ -68,10 +68,11 @@ Buildfolio lets developers:
 
 - Register with name, email, password
 - Email verification via Nodemailer + Mailtrap
-- Login with bcrypt password comparison and JWT token
-- Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS
-- Logout clears session cookie server-side
-
+|- Login with bcrypt password comparison and JWT token
+|- Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS
+|- Logout clears session cookie server-side
+|- **Google OAuth sign-in** — login with Google account (NextAuth v4), auto-syncs to local user database
+|
 ### Protected (requires login)
 
 - **Dashboard** — stats (total projects, likes received, bookmarks), project table with Edit/Delete
@@ -207,20 +208,21 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/comments`                  | ✅   | Add comment                           |
 | DELETE | `/api/comments/:id`              | ✅   | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
+| POST   | `/api/auth/exchange`             | ✅   | Exchange NextAuth session for app JWT cookie |
 
 ---
 
 ## Known Limitations
 
 - **Comments and bookmarks reference MockAPI project IDs** in the Vite version — fully migrated to real PostgreSQL UUIDs in this Next.js version.
-- **OAuth (Google login)** not yet implemented — planned via Auth.js v5.
+|- **OAuth (Google login)** — implemented with NextAuth v4 + JWT token exchange and auto-sync to local `users` table.
 - **Prisma ORM** not yet integrated — currently uses raw `pg` queries.
 
 ---
 
 ## Planned Improvements
 
-- [ ] Auth.js v5 integration for OAuth (Google login)
+|- [x] Auth.js v5 integration for OAuth (Google login)
 - [ ] Prisma ORM migration from raw pg queries
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
