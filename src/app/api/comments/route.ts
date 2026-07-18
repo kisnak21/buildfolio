@@ -25,21 +25,21 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = authenticate(req)
+  const { user, error } = authenticate(req)
   if (error) return error
 
   try {
-    const { content, user_id, project_id } = await req.json()
-    if (!content || !user_id || !project_id) {
+    const { content, project_id } = await req.json()
+    if (!content || !project_id) {
       return NextResponse.json(
         {
           success: false,
-          message: 'content, user_id, and project_id are required',
+          message: 'content and project_id are required',
         },
         { status: 400 },
       )
     }
-    const comment = await addComment({ content, user_id, project_id })
+    const comment = await addComment({ content, user_id: user!.id, project_id })
     return NextResponse.json({ success: true, data: comment }, { status: 201 })
   } catch (err: any) {
     return NextResponse.json(

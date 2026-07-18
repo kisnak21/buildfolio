@@ -7,16 +7,13 @@ export const getProjectComments = async (projectId: string) => {
 
 export const addComment = async ({
   content,
-  user_id,
   project_id,
 }: {
   content: string
-  user_id: string
   project_id: string
 }) => {
   const response = await realApiClient.post('/comments', {
     content,
-    user_id,
     project_id,
   })
   return response.data.data

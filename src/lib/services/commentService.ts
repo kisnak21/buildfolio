@@ -34,7 +34,7 @@ export const addComment = async ({
 
 export const deleteComment = async (id: string) => {
   const result = await pool.query(
-    'DELETE FROM comments WHERE id = $1 RETURNING id',
+    'DELETE FROM comments WHERE id = $1 RETURNING id, user_id',
     [id],
   )
   return result.rows[0] || null

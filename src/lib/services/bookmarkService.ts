@@ -34,7 +34,7 @@ export const addBookmark = async ({
 
 export const removeBookmark = async (id: string) => {
   const result = await pool.query(
-    'DELETE FROM bookmarks WHERE id = $1 RETURNING id',
+    'DELETE FROM bookmarks WHERE id = $1 RETURNING id, user_id',
     [id],
   )
   return result.rows[0] || null

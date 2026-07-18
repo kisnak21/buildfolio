@@ -18,24 +18,14 @@ export const fetchComments = createAsyncThunk<Comment[], string, { rejectValue: 
 
 export const addComment = createAsyncThunk<
   Comment,
-  { content: string; user_id: string; project_id: string }
->(
-  'comments/add',
-  async (
-    {
-      content,
-      user_id,
-      project_id,
-    }: { content: string; user_id: string; project_id: string },
-    { rejectWithValue },
-  ) => {
-    try {
-      return await addCommentApi({ content, user_id, project_id })
-    } catch (err) {
-      return rejectWithValue('Failed to post comment.')
-    }
-  },
-)
+  { content: string; project_id: string }
+>('comments/add', async ({ content, project_id }, { rejectWithValue }) => {
+  try {
+    return await addCommentApi({ content, project_id })
+  } catch (err) {
+    return rejectWithValue('Failed to post comment.')
+  }
+})
 
 export const deleteComment = createAsyncThunk<number, number>(
   'comments/delete',

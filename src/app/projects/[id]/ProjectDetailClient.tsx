@@ -60,7 +60,6 @@ const ProjectDetailClient = () => {
     await dispatch(
       addComment({
         content: comment.trim(),
-        user_id: currentUser.id,
         project_id: id,
       }) as any,
     )
