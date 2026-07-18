@@ -12,6 +12,8 @@ import Checkbox from '@/components/ui/Checkbox'
 import Button from '@/components/ui/Button'
 import GoogleButton from '@/components/ui/GoogleButton'
 import Divider from '@/components/ui/Divider'
+import { signIn } from 'next-auth/react'
+
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -111,7 +113,18 @@ const LoginClient = () => {
               {submitting ? 'Logging in...' : 'Log in'}
             </Button>
           </div>
-          <GoogleButton>Continue with Google</GoogleButton>
+          <div
+            role='button'
+            tabIndex={0}
+            onClick={() => signIn('google', { callbackUrl: '/auth/google-callback' })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                signIn('google', { callbackUrl: '/auth/google-callback' })
+              }
+            }}
+          >
+            <GoogleButton>Continue with Google</GoogleButton>
+          </div>
         </form>
 
         <Divider />

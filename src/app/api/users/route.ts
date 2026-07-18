@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllUsers, createUser } from '@/lib/services/userService'
 import { dbErrorMessage } from '@/lib/apiErrors'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET() {
   try {
@@ -18,6 +19,20 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit: 5 registrations per hour per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+    const { success, resetInMs } = rateLimit(`register:${ip}`, { max: 5, windowMs: 60 * 60 * 1000 })
+    
+    if (!success) {
+      return NextResponse.json(
+        { success: false, message: 'Too many registration attempts. Try again later.' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) },
+        },
+      )
+    }
+
     const { name, email, password, image, bio } = await req.json()
     if (!name || !email || !password) {
       return NextResponse.json(

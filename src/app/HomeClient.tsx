@@ -37,8 +37,8 @@ const HomeClient = () => {
   const [selectedTech, setSelectedTech] = useState('')
 
   useEffect(() => {
-    dispatch(fetchProjects() as any)
-  }, [dispatch])
+    dispatch(fetchProjects({ search, category: selectedCategory, sort: 'newest', limit: 6 }) as any)
+  }, [dispatch, search, selectedCategory])
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
