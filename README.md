@@ -45,7 +45,7 @@ Buildfolio lets developers:
 | State Management | Redux Toolkit + React Redux                                 |
 | Database         | PostgreSQL (Neon)                                           |
 | ORM / Query      | node-postgres (pg)                                          |
-| Authentication   | bcrypt + JWT (httpOnly cookie)                              |
+| Authentication   | bcrypt + JWT (httpOnly cookie) + NextAuth v4 (Google OAuth) |
 | Email            | Nodemailer + Mailtrap                                       |
 | File Upload      | Uploadthing                                                 |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
@@ -71,6 +71,7 @@ Buildfolio lets developers:
 - Login with bcrypt password comparison and JWT token
 - Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS
 - Logout clears session cookie server-side
+- **OAuth (Google login)** via NextAuth v4 — one-click sign-in, auto-creates local user record, syncs to `buildfolio_token` httpOnly cookie
 - **Rate limiting** on authentication endpoints (Login: 10 attempts/15m; Register: 5 registrations/hour per IP) to prevent brute-force attacks
 
 ### Protected (requires login)
@@ -168,7 +169,13 @@ UPLOADTHING_SECRET=your_uploadthing_secret
 UPLOADTHING_APP_ID=your_uploadthing_app_id
 NEXT_PUBLIC_REAL_API_BASE_URL=/api
 NEXT_PUBLIC_APP_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
+NEXTAUTH_SECRET=your_nextauth_secret
+NEXTAUTH_URL=http://localhost:3000
 ```
+
+> 💡 Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
 
 See `.env.example` for reference.
 
@@ -209,6 +216,8 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/comments`                  | ✅   | Add comment                           |
 | DELETE | `/api/comments/:id`              | ✅   | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
+| GET    | `/api/auth/[...nextauth]`        | —    | NextAuth Google OAuth handler         |
+| POST   | `/api/auth/exchange`             | —    | Exchange NextAuth session → app JWT cookie |
 
 ---
 
@@ -221,7 +230,6 @@ Open `http://localhost:3000` in your browser.
 
 ## Planned Improvements
 
-- [ ] Auth.js v5 integration for OAuth (Google login)
 - [ ] Prisma ORM migration from raw pg queries
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
