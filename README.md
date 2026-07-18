@@ -60,7 +60,7 @@ Buildfolio lets developers:
 - Search projects by title or description
 - Filter by category and technology
 - Sort by newest, most liked, or alphabetical
-- View all projects on a dedicated page
+- View all projects on a dedicated page with pagination (3 projects per page)
 - Like projects (persisted to database)
 - View public user profiles with stats
 
@@ -71,6 +71,7 @@ Buildfolio lets developers:
 - Login with bcrypt password comparison and JWT token
 - Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS
 - Logout clears session cookie server-side
+- **Rate limiting** on authentication endpoints (Login: 10 attempts/15m; Register: 5 registrations/hour per IP) to prevent brute-force attacks
 
 ### Protected (requires login)
 
@@ -96,7 +97,7 @@ src/
 ├── app/
 │   ├── api/                  # Next.js API route handlers
 │   │   ├── users/            # Register, login, verify-email, CRUD
-│   │   ├── projects/         # GET (filter/sort/search), POST, PATCH, DELETE
+│   │   ├── projects/         # GET (filter/sort/search/pagination), POST, PATCH, DELETE
 │   │   ├── bookmarks/        # GET by user, POST, DELETE
 │   │   ├── comments/         # GET by project, POST, DELETE
 │   │   ├── contact/          # POST send email
@@ -128,6 +129,7 @@ src/
 │   ├── db.ts                 # PostgreSQL pool (Neon)
 │   ├── auth.ts               # JWT sign/verify helpers
 │   ├── email.ts              # Nodemailer transporter
+│   ├── rateLimit.ts          # In-memory rate limiting middleware
 │   └── uploadthing.ts        # Uploadthing config
 └── store/
     └── redux/                # Redux store, slices (projects, auth, bookmarks, comments)
@@ -158,7 +160,7 @@ npm install
 Create a `.env.local` file in the project root:
 
 ```
-DATABASE_URL=postgresql://username:password@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL=postgresql://username:***@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
 JWT_SECRET=your_jwt_secret_key
 MAILTRAP_USER=your_mailtrap_username
 MAILTRAP_PASS=your_mailtrap_password
@@ -213,7 +215,6 @@ Open `http://localhost:3000` in your browser.
 ## Known Limitations
 
 - **Comments and bookmarks reference MockAPI project IDs** in the Vite version — fully migrated to real PostgreSQL UUIDs in this Next.js version.
-- **OAuth (Google login)** not yet implemented — planned via Auth.js v5.
 - **Prisma ORM** not yet integrated — currently uses raw `pg` queries.
 
 ---
