@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useSelector, useDispatch } from 'react-redux'
-import { likeProject } from '@/store/redux/projectsSlice'
+import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
 import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
 import {
   fetchComments,
@@ -12,6 +12,7 @@ import {
   deleteComment,
   clearComments,
 } from '@/store/redux/commentsSlice'
+import { getProjectById } from '@/lib/api/projectsApi'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 
@@ -20,9 +21,9 @@ const ProjectDetailClient = () => {
   const dispatch = useDispatch()
   const router = useRouter()
 
-  const project = useSelector((state: any) =>
-    state.projects.items.find((p: any) => p.id === id),
-  )
+  const [project, setProject] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
   const { currentUser } = useSelector((state: any) => state.auth)
   const { items: bookmarks } = useSelector((state: any) => state.bookmarks)
   const { items: comments, loading: commentsLoading } = useSelector(
@@ -34,14 +35,25 @@ const ProjectDetailClient = () => {
   const [comment, setComment] = useState('')
 
   useEffect(() => {
-    dispatch(fetchComments(id) as any)
+    let mounted = true
+    setLoading(true)
+
+    Promise.all([getProjectById(id), dispatch(fetchComments(id) as any)])
+      .then(([projectData]) => {
+        if (mounted) setProject(projectData)
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
     return () => {
+      mounted = false
       dispatch(clearComments())
     }
   }, [id, dispatch])
 
   const handleLike = () => {
-    dispatch(likeProject(id) as any)
+    dispatch(likeProjectThunk(id) as any)
   }
 
   const handleBookmark = () => {
@@ -70,6 +82,18 @@ const ProjectDetailClient = () => {
     dispatch(deleteComment(commentId) as any)
   }
 
+  if (loading) {
+    return (
+      <div className='bg-gray-50 min-h-screen flex flex-col'>
+        <Header />
+        <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
+          <p className='text-sm text-gray-500'>Loading project...</p>
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
   if (!project) {
     return (
       <div className='bg-gray-50 min-h-screen flex flex-col'>
@@ -87,7 +111,7 @@ const ProjectDetailClient = () => {
       <Header />
       <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
         <Link
-          href='/'
+          href='/projects'
           className='text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 inline-block'
         >
           ← Back to projects

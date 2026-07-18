@@ -133,6 +133,16 @@ export const deleteProject = async (id: string | number): Promise<string | numbe
   return id
 }
 
+export const getProjectById = async (id: string | number): Promise<NormalizedProject | null> => {
+  try {
+    const response = await realApiClient.get(`/projects/${id}`)
+    return normalizeProject(response.data.data)
+  } catch (err: any) {
+    if (err.response?.status === 404) return null
+    throw err
+  }
+}
+
 export const likeProject = async (id: string | number): Promise<NormalizedProject> => {
   const response = await realApiClient.post(`/projects/${id}/like`)
   return normalizeProject(response.data.data)
