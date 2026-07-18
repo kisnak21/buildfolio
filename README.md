@@ -45,7 +45,7 @@ Buildfolio lets developers:
 | State Management | Redux Toolkit + React Redux                                 |
 | Database         | PostgreSQL (Neon)                                           |
 | ORM / Query      | node-postgres (pg)                                          |
-| Authentication   | bcrypt + JSON Web Token (JWT)                               |
+| Authentication   | bcrypt + JWT (httpOnly cookie)                              |
 | Email            | Nodemailer + Mailtrap                                       |
 | File Upload      | Uploadthing                                                 |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
@@ -69,8 +69,8 @@ Buildfolio lets developers:
 - Register with name, email, password
 - Email verification via Nodemailer + Mailtrap
 - Login with bcrypt password comparison and JWT token
-- Session persisted via localStorage — survives page refresh
-- Logout clears session
+- Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS
+- Logout clears session cookie server-side
 
 ### Protected (requires login)
 
@@ -212,16 +212,14 @@ Open `http://localhost:3000` in your browser.
 
 ## Known Limitations
 
-- **No server-side session middleware** — authentication is handled client-side via localStorage + JWT. Server-side protected routes via Next.js `middleware.ts` are planned for a future iteration using cookie-based sessions.
-- **No real authorization middleware on all routes** — currently ownership checks are enforced in the UI layer and on specific API routes. A full RBAC system is planned.
 - **Comments and bookmarks reference MockAPI project IDs** in the Vite version — fully migrated to real PostgreSQL UUIDs in this Next.js version.
+- **OAuth (Google login)** not yet implemented — planned via Auth.js v5.
+- **Prisma ORM** not yet integrated — currently uses raw `pg` queries.
 
 ---
 
 ## Planned Improvements
 
-- [ ] Server-side session with Next.js middleware and cookie-based JWT
-- [ ] Full project ownership enforcement across all API routes
 - [ ] Auth.js v5 integration for OAuth (Google login)
 - [ ] Prisma ORM migration from raw pg queries
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
