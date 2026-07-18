@@ -27,13 +27,6 @@ const LoginClient = () => {
   const [remember, setRemember] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
-  const [googleSubmitting, setGoogleSubmitting] = useState(false)
-
-  const handleGoogleSignIn = async () => {
-    if (googleSubmitting || submitting) return
-    setGoogleSubmitting(true)
-    await signIn('google', { callbackUrl: '/auth/google-callback' })
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -120,12 +113,18 @@ const LoginClient = () => {
               {submitting ? 'Logging in...' : 'Log in'}
             </Button>
           </div>
-          <GoogleButton
-            onClick={handleGoogleSignIn}
-            disabled={submitting || googleSubmitting}
+          <div
+            role='button'
+            tabIndex={0}
+            onClick={() => signIn('google', { callbackUrl: '/auth/google-callback' })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                signIn('google', { callbackUrl: '/auth/google-callback' })
+              }
+            }}
           >
-            {googleSubmitting ? 'Redirecting to Google...' : 'Continue with Google'}
-          </GoogleButton>
+            <GoogleButton>Continue with Google</GoogleButton>
+          </div>
         </form>
 
         <Divider />

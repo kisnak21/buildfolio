@@ -7,13 +7,12 @@ export const runtime = 'nodejs'
 export async function POST(req: NextRequest) {
   const nextAuthToken = await getToken({ req, secret: process.env.NEXTAUTH_SECRET })
 
-  const localId = (nextAuthToken as any)?.localId
-  if (!nextAuthToken?.email || !nextAuthToken?.name || !localId) {
+  if (!nextAuthToken?.email || !nextAuthToken?.name || !nextAuthToken?.sub) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
   }
 
   const appToken = signToken({
-    id: localId,
+    id: nextAuthToken.sub,
     email: nextAuthToken.email,
     name: nextAuthToken.name,
   })

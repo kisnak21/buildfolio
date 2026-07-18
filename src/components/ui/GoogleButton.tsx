@@ -4,13 +4,11 @@ import Button from './Button'
 
 interface GoogleButtonProps {
   children: React.ReactNode
-  onClick?: () => void
-  disabled?: boolean
 }
 
-const GoogleButton = ({ children, onClick, disabled = false }: GoogleButtonProps) => {
+const GoogleButton = ({ children }: GoogleButtonProps) => {
   return (
-    <Button type='button' variant='secondary' fullWidth onClick={onClick} disabled={disabled}>
+    <Button type='button' variant='secondary' fullWidth>
       <span className='flex items-center justify-center gap-2'>
         <svg
           width='16'
