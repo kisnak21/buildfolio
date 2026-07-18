@@ -16,14 +16,16 @@ interface AvatarDropdownProps {
 
 const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
   const [open, setOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
+  const [imgSrc, setImgSrc] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
   const dispatch = useDispatch()
   const router = useRouter()
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setImgSrc(
+      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.email}`,
+    )
+  }, [user.email])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -42,17 +44,11 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
     router.push('/')
   }
 
-  if (!mounted) {
-    return (
-      <div className='w-8 h-8 rounded-full border border-gray-200 bg-gray-100' />
-    )
-  }
-
   return (
     <div className='relative' ref={ref}>
       <button onClick={() => setOpen(!open)} className='block'>
         <img
-          src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.email}`}
+          src={imgSrc || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23f3f4f6" rx="16"/></svg>`}
           alt={user.name}
           className='w-8 h-8 rounded-full border border-gray-200'
         />
