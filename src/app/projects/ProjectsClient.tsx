@@ -1,35 +1,36 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { likeProject } from '@/store/redux/projectsSlice'
+import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import { technologies } from '@/lib/data/project'
 
-const categoryList = [
-  'SaaS',
-  'AI',
-  'Web App',
-  'Mobile App',
-  'Open Source',
-  'Game',
-]
+const categoryList = ['SaaS', 'AI', 'Web App', 'Mobile App', 'Open Source', 'Game']
+
+const PAGE_SIZE = 3
 
 const ProjectsClient = () => {
   const dispatch = useDispatch()
-  const {
-    items: projects,
-    loading,
-    error,
-  } = useSelector((state: any) => state.projects)
+  const { items: projects, loading, error, pagination } = useSelector(
+    (state: any) => state.projects,
+  )
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
   const [sortBy, setSortBy] = useState('newest')
+  const [page, setPage] = useState(1)
+
+  // Load projects on mount + when page/filter/sort changes
+  useEffect(() => {
+    dispatch(
+      fetchProjects({ page, limit: PAGE_SIZE, sort: sortBy }) as any,
+    )
+  }, [dispatch, page, sortBy])
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
@@ -55,8 +56,16 @@ const ProjectsClient = () => {
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   })
 
+  const totalPages = pagination?.totalPages || 1
   const handleLike = (id: string, currentLikes: number) => {
     dispatch(likeProject(id) as any)
+  }
+
+  const goToPage = (newPage: number) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   return (
@@ -68,7 +77,7 @@ const ProjectsClient = () => {
             All Projects
           </h1>
           <p className='text-sm text-gray-500'>
-            {projects.length} projects on Buildfolio
+            {pagination?.total || projects.length} projects on Buildfolio
           </p>
         </div>
 
@@ -137,7 +146,7 @@ const ProjectsClient = () => {
         {!error && (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
             {loading ? (
-              Array.from({ length: 6 }).map((_, i) => (
+              Array.from({ length: 3 }).map((_, i) => (
                 <ProjectCardSkeleton key={i} />
               ))
             ) : sorted.length === 0 ? (
@@ -155,6 +164,39 @@ const ProjectsClient = () => {
                 />
               ))
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!error && !loading && totalPages > 1 && (
+          <div className='flex items-center justify-center gap-2 mt-8'>
+            <button
+              onClick={() => goToPage(page - 1)}
+              disabled={page === 1}
+              className='px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+            >
+              Prev
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => goToPage(p)}
+                className={`px-3 py-1.5 text-sm rounded-lg border transition-colors ${
+                  p === page
+                    ? 'border-primary bg-primary text-white'
+                    : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+            <button
+              onClick={() => goToPage(page + 1)}
+              disabled={page === totalPages}
+              className='px-3 py-1.5 text-sm rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+            >
+              Next
+            </button>
           </div>
         )}
       </main>
