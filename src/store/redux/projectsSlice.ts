@@ -6,7 +6,6 @@ import {
   deleteProject as deleteProjectApi,
   likeProject as likeProjectApi,
   type NormalizedProject,
-  type GetProjectsResult,
 } from '../../lib/api/projectsApi'
 
 interface Project {
@@ -37,23 +36,12 @@ interface NewProjectInput {
   category_id?: string | number | null
 }
 
-interface PaginationState {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
-}
-
 // Async thunks
-export const fetchProjects = createAsyncThunk<
-  GetProjectsResult,
-  { page?: number; limit?: number; search?: string; category?: string; sort?: string },
-  { rejectValue: string }
->(
+export const fetchProjects = createAsyncThunk<Project[], void, { rejectValue: string }>(
   'projects/fetchAll',
-  async (params, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      return await getProjects(params)
+      return await getProjects()
     } catch (err) {
       return rejectWithValue('Failed to load projects. Please try again.')
     }
@@ -121,12 +109,7 @@ const initialState: ProjectsState = {
 // Slice
 const projectsSlice = createSlice({
   name: 'projects',
-  initialState: {
-    items: [],
-    loading: false,
-    error: null,
-    pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
-  } as { items: Project[]; loading: boolean; error: string | null; pagination: PaginationState },
+  initialState,
   reducers: {},
   extraReducers: (builder) => {
     // fetchProjects
@@ -137,8 +120,7 @@ const projectsSlice = createSlice({
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.loading = false
-        state.items = action.payload.items
-        state.pagination = action.payload.pagination
+        state.items = action.payload
       })
       .addCase(fetchProjects.rejected, (state, action) => {
         state.loading = false

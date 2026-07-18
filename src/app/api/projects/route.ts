@@ -11,10 +11,8 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') || undefined
     const category = searchParams.get('category') || undefined
     const sort = searchParams.get('sort') || undefined
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100) // max 100
-    const result = await getAllProjects({ search, category, sort, page, limit })
-    return NextResponse.json({ success: true, data: result.data, pagination: result.pagination })
+    const projects = await getAllProjects({ search, category, sort })
+    return NextResponse.json({ success: true, data: projects })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
