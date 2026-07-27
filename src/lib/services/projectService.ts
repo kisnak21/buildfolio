@@ -1,5 +1,36 @@
-import pool from '@/lib/db'
-import { v4 as uuidv4 } from 'uuid'
+import prisma from '@/lib/db'
+
+const projectSelect = {
+  id: true,
+  title: true,
+  slug: true,
+  description: true,
+  thumbnail: true,
+  githubUrl: true,
+  liveUrl: true,
+  likes: true,
+  userId: true,
+  categoryId: true,
+  createdAt: true,
+  user: { select: { name: true } },
+  category: { select: { name: true } },
+  technologies: {
+    select: { technology: { select: { name: true } } },
+  },
+}
+
+const normalizeProject = (p: any) => ({
+  ...p,
+  github_url: p.githubUrl,
+  live_url: p.liveUrl,
+  user_id: p.userId,
+  category_id: p.categoryId,
+  created_at: p.createdAt,
+  author_name: p.user?.name ?? null,
+  category_name: p.category?.name ?? null,
+  category: p.category?.name ?? null, // client expects category to be the category name
+  technologies: p.technologies?.map((pt: any) => pt.technology.name) ?? [],
+})
 
 export const getAllProjects = async ({
   search,
@@ -14,71 +45,41 @@ export const getAllProjects = async ({
   page?: number
   limit?: number
 } = {}) => {
-  const conditions: string[] = []
-  const values: string[] = []
-  let paramIndex = 1
+  const where: any = {}
 
   if (search) {
-    conditions.push(
-      `(p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`,
-    )
-    values.push(`%${search}%`)
-    paramIndex++
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ]
   }
 
   if (category) {
-    conditions.push(`c.name = $${paramIndex}`)
-    values.push(category)
-    paramIndex++
+    where.category = { name: category }
   }
 
-  const whereClause =
-    conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : ''
-
-  const orderClause =
+  const orderBy =
     sort === 'likes'
-      ? 'ORDER BY p.likes DESC'
+      ? { likes: 'desc' as const }
       : sort === 'oldest'
-        ? 'ORDER BY p.created_at ASC'
+        ? { createdAt: 'asc' as const }
         : sort === 'title'
-          ? 'ORDER BY p.title ASC'
-          : 'ORDER BY p.created_at DESC'
+          ? { title: 'asc' as const }
+          : { createdAt: 'desc' as const }
 
-  const offset = (page - 1) * limit
-
-  // Count total
-  const countResult = await pool.query(
-    `SELECT COUNT(*) FROM projects p
-     LEFT JOIN categories c ON p.category_id = c.id
-     ${whereClause}`,
-    values,
-  )
-  const total = parseInt(countResult.rows[0].count, 10)
-
-  // Fetch page
-  const result = await pool.query(
-    `SELECT
-      p.*,
-      u.name as author_name,
-      c.name as category_name,
-      COALESCE(
-        json_agg(t.name) FILTER (WHERE t.name IS NOT NULL),
-        '[]'
-      ) as technologies
-     FROM projects p
-     LEFT JOIN users u ON p.user_id = u.id
-     LEFT JOIN categories c ON p.category_id = c.id
-     LEFT JOIN project_technologies pt ON p.id = pt.project_id
-     LEFT JOIN technologies t ON pt.technology_id = t.id
-     ${whereClause}
-     GROUP BY p.id, u.name, c.name
-     ${orderClause}
-     LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-    [...values, limit, offset],
-  )
+  const [total, rows] = await Promise.all([
+    prisma.project.count({ where }),
+    prisma.project.findMany({
+      where,
+      orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+      select: projectSelect,
+    }),
+  ])
 
   return {
-    data: result.rows,
+    data: rows.map(normalizeProject),
     pagination: {
       page,
       limit,
@@ -89,25 +90,11 @@ export const getAllProjects = async ({
 }
 
 export const getProjectById = async (id: string) => {
-  const result = await pool.query(
-    `SELECT
-      p.*,
-      u.name as author_name,
-      c.name as category_name,
-      COALESCE(
-        json_agg(t.name) FILTER (WHERE t.name IS NOT NULL),
-        '[]'
-      ) as technologies
-     FROM projects p
-     LEFT JOIN users u ON p.user_id = u.id
-     LEFT JOIN categories c ON p.category_id = c.id
-     LEFT JOIN project_technologies pt ON p.id = pt.project_id
-     LEFT JOIN technologies t ON pt.technology_id = t.id
-     WHERE p.id = $1
-     GROUP BY p.id, u.name, c.name`,
-    [id],
-  )
-  return result.rows[0] || null
+  const project = await prisma.project.findUnique({
+    where: { id },
+    select: projectSelect,
+  })
+  return project ? normalizeProject(project) : null
 }
 
 export const createProject = async ({
@@ -119,6 +106,8 @@ export const createProject = async ({
   live_url,
   user_id,
   category_id,
+  category, // Accept category name
+  technologies,
 }: {
   title: string
   slug: string
@@ -128,25 +117,40 @@ export const createProject = async ({
   live_url?: string
   user_id: string
   category_id?: string
+  category?: string
+  technologies?: string[]
 }) => {
-  const id = uuidv4()
-  const result = await pool.query(
-    `INSERT INTO projects (id, title, slug, description, thumbnail, github_url, live_url, user_id, category_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING *`,
-    [
-      id,
+  const techConnects = technologies?.length
+    ? await resolveTechnologies(technologies)
+    : []
+
+  // Resolve category name to ID if category_id is not provided
+  let finalCategoryId = category_id
+  if (!finalCategoryId && category) {
+    const cat = await prisma.category.findUnique({ where: { name: category } })
+    if (cat) finalCategoryId = cat.id
+  }
+
+  const project = await prisma.project.create({
+    data: {
       title,
       slug,
       description,
-      thumbnail || null,
-      github_url || null,
-      live_url || null,
-      user_id,
-      category_id || null,
-    ],
-  )
-  return result.rows[0]
+      thumbnail: thumbnail ?? null,
+      githubUrl: github_url ?? null,
+      liveUrl: live_url ?? null,
+      userId: user_id,
+      categoryId: finalCategoryId ?? null,
+      technologies: {
+        create: techConnects.map((techId) => ({
+          technology: { connect: { id: techId } },
+        })),
+      },
+    },
+    select: projectSelect,
+  })
+
+  return normalizeProject(project)
 }
 
 export const updateProject = async (
@@ -159,7 +163,9 @@ export const updateProject = async (
     github_url,
     live_url,
     category_id,
+    category, // Accept category name
     likes,
+    technologies,
   }: {
     title?: string
     slug?: string
@@ -168,40 +174,61 @@ export const updateProject = async (
     github_url?: string
     live_url?: string
     category_id?: string
+    category?: string
     likes?: number
+    technologies?: string[]
   },
 ) => {
-  const result = await pool.query(
-    `UPDATE projects
-     SET title = COALESCE($1, title),
-         slug = COALESCE($2, slug),
-         description = COALESCE($3, description),
-         thumbnail = COALESCE($4, thumbnail),
-         github_url = COALESCE($5, github_url),
-         live_url = COALESCE($6, live_url),
-         category_id = COALESCE($7, category_id),
-         likes = COALESCE($8, likes)
-     WHERE id = $9
-     RETURNING *`,
-    [
-      title || null,
-      slug || null,
-      description || null,
-      thumbnail || null,
-      github_url || null,
-      live_url || null,
-      category_id || null,
-      likes ?? null,
-      id,
-    ],
-  )
-  return result.rows[0] || null
+  const techUpdate =
+    technologies !== undefined
+      ? {
+          deleteMany: {},
+          create: (await resolveTechnologies(technologies)).map((techId) => ({
+            technology: { connect: { id: techId } },
+          })),
+        }
+      : undefined
+
+  // Resolve category name to ID if needed
+  let finalCategoryId = category_id
+  if (!finalCategoryId && category) {
+    const cat = await prisma.category.findUnique({ where: { name: category } })
+    if (cat) finalCategoryId = cat.id
+  }
+
+  const project = await prisma.project.update({
+    where: { id },
+    data: {
+      ...(title !== undefined && { title }),
+      ...(slug !== undefined && { slug }),
+      ...(description !== undefined && { description }),
+      ...(thumbnail !== undefined && { thumbnail }),
+      ...(github_url !== undefined && { githubUrl: github_url }),
+      ...(live_url !== undefined && { liveUrl: live_url }),
+      ...(finalCategoryId !== undefined && { categoryId: finalCategoryId }),
+      ...(likes !== undefined && { likes }),
+      ...(techUpdate && { technologies: techUpdate }),
+    },
+    select: projectSelect,
+  })
+
+  return normalizeProject(project)
 }
 
 export const deleteProject = async (id: string) => {
-  const result = await pool.query(
-    'DELETE FROM projects WHERE id = $1 RETURNING id',
-    [id],
-  )
-  return result.rows[0] || null
+  return prisma.project.delete({ where: { id } })
+}
+
+async function resolveTechnologies(names: string[]): Promise<string[]> {
+  const ids: string[] = []
+  for (const name of names) {
+    if (!name.trim()) continue
+    const tech = await prisma.technology.upsert({
+      where: { name: name.trim() },
+      update: {},
+      create: { name: name.trim() },
+    })
+    ids.push(tech.id)
+  }
+  return ids
 }

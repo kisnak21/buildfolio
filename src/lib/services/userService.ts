@@ -1,26 +1,42 @@
 export const runtime = 'nodejs'
 
-import pool from '@/lib/db'
+import prisma from '@/lib/db'
 import bcrypt from 'bcrypt'
 import { signToken } from '@/lib/auth'
-import { v4 as uuidv4 } from 'uuid'
 import transporter from '@/lib/email'
 
 const SALT_ROUNDS = 10
 
 export const getAllUsers = async () => {
-  const result = await pool.query(
-    'SELECT id, name, username, email, image, bio, is_verified, created_at FROM users ORDER BY created_at DESC',
-  )
-  return result.rows
+  return prisma.user.findMany({
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      image: true,
+      bio: true,
+      isVerified: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  })
 }
 
 export const getUserById = async (id: string) => {
-  const result = await pool.query(
-    'SELECT id, name, username, email, image, bio, is_verified, created_at FROM users WHERE id = $1',
-    [id],
-  )
-  return result.rows[0] || null
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      image: true,
+      bio: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  })
 }
 
 export const createUser = async ({
@@ -36,7 +52,6 @@ export const createUser = async ({
   image?: string
   bio?: string
 }) => {
-  // Password strength validation
   if (password.length < 8) {
     throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
   }
@@ -50,28 +65,32 @@ export const createUser = async ({
     throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
   }
 
-  const id = uuidv4()
   const username = name.toLowerCase().replace(/\s+/g, '')
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
-  const verificationToken = uuidv4()
+  const verificationToken = crypto.randomUUID()
 
-  const result = await pool.query(
-    `INSERT INTO users (id, name, username, email, password, image, bio, verification_token, is_verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
-     RETURNING id, name, username, email, image, bio, is_verified, created_at`,
-    [
-      id,
+  const user = await prisma.user.create({
+    data: {
       name,
       username,
       email,
-      hashedPassword,
-      image || null,
-      bio || null,
+      password: hashedPassword,
+      image: image ?? null,
+      bio: bio ?? null,
       verificationToken,
-    ],
-  )
-
-  const user = result.rows[0]
+      isVerified: false,
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      image: true,
+      bio: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  })
 
   await transporter.sendMail({
     from: '"Buildfolio" <noreply@buildfolio.dev>',
@@ -96,10 +115,7 @@ export const loginUserService = async ({
   email: string
   password: string
 }) => {
-  const result = await pool.query('SELECT * FROM users WHERE email = $1', [
-    email,
-  ])
-  const user = result.rows[0]
+  const user = await prisma.user.findUnique({ where: { email } })
   if (!user) return null
 
   const passwordMatch = await bcrypt.compare(password, user.password)
@@ -116,23 +132,20 @@ export const loginUserService = async ({
       email: user.email,
       image: user.image,
       bio: user.bio,
-      is_verified: user.is_verified,
+      is_verified: user.isVerified,
     },
   }
 }
 
 export const verifyEmailService = async (token: string) => {
-  const result = await pool.query(
-    'SELECT * FROM users WHERE verification_token = $1',
-    [token],
-  )
-  const user = result.rows[0]
+  const user = await prisma.user.findFirst({ where: { verificationToken: token } })
   if (!user) return null
 
-  await pool.query(
-    'UPDATE users SET is_verified = true, verification_token = NULL WHERE id = $1',
-    [user.id],
-  )
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { isVerified: true, verificationToken: null },
+  })
+
   return user
 }
 
@@ -140,16 +153,24 @@ export const updateUser = async (
   id: string,
   { name, image, bio }: { name?: string; image?: string; bio?: string },
 ) => {
-  const result = await pool.query(
-    `UPDATE users
-     SET name = COALESCE($1, name),
-         image = COALESCE($2, image),
-         bio = COALESCE($3, bio)
-     WHERE id = $4
-     RETURNING id, name, username, email, image, bio, is_verified, created_at`,
-    [name || null, image || null, bio || null, id],
-  )
-  return result.rows[0] || null
+  return prisma.user.update({
+    where: { id },
+    data: {
+      ...(name !== undefined && { name }),
+      ...(image !== undefined && { image }),
+      ...(bio !== undefined && { bio }),
+    },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      email: true,
+      image: true,
+      bio: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  })
 }
 
 export const changePassword = async (
@@ -157,7 +178,6 @@ export const changePassword = async (
   currentPassword: string,
   newPassword: string,
 ) => {
-  // Password strength validation
   if (newPassword.length < 8) {
     throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
   }
@@ -171,8 +191,7 @@ export const changePassword = async (
     throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
   }
 
-  const result = await pool.query('SELECT * FROM users WHERE id = $1', [id])
-  const user = result.rows[0]
+  const user = await prisma.user.findUnique({ where: { id } })
   if (!user) return null
 
   const passwordMatch = await bcrypt.compare(currentPassword, user.password)
@@ -181,15 +200,11 @@ export const changePassword = async (
   }
 
   const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS)
-  await pool.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, id])
+  await prisma.user.update({ where: { id }, data: { password: hashedPassword } })
 
   return { success: true }
 }
 
 export const deleteUser = async (id: string) => {
-  const result = await pool.query(
-    'DELETE FROM users WHERE id = $1 RETURNING id',
-    [id],
-  )
-  return result.rows[0] || null
+  return prisma.user.delete({ where: { id } })
 }

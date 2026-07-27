@@ -65,7 +65,7 @@ export async function PATCH(
     }
     return NextResponse.json({ success: true, data: project })
   } catch (err: any) {
-    if (err.code === '23505') {
+    if (err.code === '23505' || err.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Slug already exists' },
         { status: 409 },

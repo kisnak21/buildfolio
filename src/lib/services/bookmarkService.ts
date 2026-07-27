@@ -1,18 +1,41 @@
-import pool from '@/lib/db'
-import { v4 as uuidv4 } from 'uuid'
+import prisma from '@/lib/db'
 
 export const getBookmarksByUser = async (userId: string) => {
-  const result = await pool.query(
-    `SELECT b.*, p.title, p.slug, p.description, p.likes,
-            p.github_url, p.live_url, u.name as author_name
-     FROM bookmarks b
-     JOIN projects p ON b.project_id = p.id
-     JOIN users u ON p.user_id = u.id
-     WHERE b.user_id = $1
-     ORDER BY b.created_at DESC`,
-    [userId],
-  )
-  return result.rows
+  const bookmarks = await prisma.bookmark.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      userId: true,
+      projectId: true,
+      createdAt: true,
+      project: {
+        select: {
+          title: true,
+          slug: true,
+          description: true,
+          likes: true,
+          githubUrl: true,
+          liveUrl: true,
+          user: { select: { name: true } },
+        },
+      },
+    },
+  })
+
+  return bookmarks.map((b) => ({
+    id: b.id,
+    user_id: b.userId,
+    project_id: b.projectId,
+    created_at: b.createdAt,
+    title: b.project.title,
+    slug: b.project.slug,
+    description: b.project.description,
+    likes: b.project.likes,
+    github_url: b.project.githubUrl,
+    live_url: b.project.liveUrl,
+    author_name: b.project.user.name,
+  }))
 }
 
 export const addBookmark = async ({
@@ -22,22 +45,23 @@ export const addBookmark = async ({
   user_id: string
   project_id: string
 }) => {
-  const id = uuidv4()
-  const result = await pool.query(
-    `INSERT INTO bookmarks (id, user_id, project_id)
-     VALUES ($1, $2, $3)
-     RETURNING *`,
-    [id, user_id, project_id],
-  )
-  return result.rows[0]
+  const bookmark = await prisma.bookmark.create({
+    data: { userId: user_id, projectId: project_id },
+  })
+  return {
+    id: bookmark.id,
+    user_id: bookmark.userId,
+    project_id: bookmark.projectId,
+    created_at: bookmark.createdAt,
+  }
 }
 
 export const removeBookmark = async (id: string) => {
-  const result = await pool.query(
-    'DELETE FROM bookmarks WHERE id = $1 RETURNING id, user_id',
-    [id],
-  )
-  return result.rows[0] || null
+  const bookmark = await prisma.bookmark.delete({
+    where: { id },
+    select: { id: true, userId: true },
+  })
+  return { id: bookmark.id, user_id: bookmark.userId }
 }
 
 export const getBookmark = async ({
@@ -47,9 +71,7 @@ export const getBookmark = async ({
   user_id: string
   project_id: string
 }) => {
-  const result = await pool.query(
-    'SELECT * FROM bookmarks WHERE user_id = $1 AND project_id = $2',
-    [user_id, project_id],
-  )
-  return result.rows[0] || null
+  return prisma.bookmark.findUnique({
+    where: { userId_projectId: { userId: user_id, projectId: project_id } },
+  })
 }

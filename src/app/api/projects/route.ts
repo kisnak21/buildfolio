@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       github_url,
       live_url,
       category_id,
+      category,
+      technologies,
     } = body
 
     if (!title || !slug || !description) {
@@ -59,16 +61,18 @@ export async function POST(req: NextRequest) {
       live_url,
       user_id: user!.id,
       category_id,
+      category,
+      technologies,
     })
     return NextResponse.json({ success: true, data: project }, { status: 201 })
   } catch (err: any) {
-    if (err.code === '23505') {
+    if (err.code === '23505' || err.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Slug already exists' },
         { status: 409 },
       )
     }
-    if (err.code === '23503') {
+    if (err.code === '23503' || err.code === 'P2003') {
       return NextResponse.json(
         { success: false, message: 'Invalid category_id' },
         { status: 400 },

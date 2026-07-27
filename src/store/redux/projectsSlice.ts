@@ -34,6 +34,7 @@ interface NewProjectInput {
   live?: string
   user_id: string | number
   category_id?: string | number | null
+  technologies?: string[]
 }
 
 interface ProjectsState {

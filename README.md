@@ -44,7 +44,7 @@ Buildfolio lets developers:
 | Styling          | Tailwind CSS v4 + shadcn/ui                                 |
 | State Management | Redux Toolkit + React Redux                                 |
 | Database         | PostgreSQL (Neon)                                           |
-| ORM / Query      | node-postgres (pg)                                          |
+| ORM / Query      | Prisma ORM (v7) + @prisma/adapter-pg                        |
 | Authentication   | bcrypt + JWT (httpOnly cookie) + NextAuth v4 (Google OAuth) |
 | Email            | Nodemailer + Mailtrap                                       |
 | File Upload      | Uploadthing                                                 |
@@ -181,7 +181,16 @@ See `.env.example` for reference.
 
 ### Database Setup
 
-Run the SQL setup script in your Neon SQL Editor to create all required tables and seed data. The schema includes: `users`, `projects`, `categories`, `technologies`, `project_technologies`, `bookmarks`, `comments`.
+1. Configure `DATABASE_URL` in `.env.local`
+2. Run Prisma migrations or db push to set up the schema:
+   ```bash
+   npx prisma db push
+   # Or run the provided SQL scripts in the /migrations folder in your Neon SQL editor.
+   ```
+3. Generate the Prisma client:
+   ```bash
+   npx prisma generate
+   ```
 
 ### Running Locally
 
@@ -224,16 +233,15 @@ Open `http://localhost:3000` in your browser.
 ## Known Limitations
 
 - **Comments and bookmarks reference MockAPI project IDs** in the Vite version — fully migrated to real PostgreSQL UUIDs in this Next.js version.
-- **Prisma ORM** not yet integrated — currently uses raw `pg` queries.
 
 ---
 
 ## Planned Improvements
 
-- [ ] Prisma ORM migration from raw pg queries
+- [x] Prisma ORM migration from raw pg queries
+- [x] Deployment to Vercel with environment variable configuration
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
-- [ ] Deployment to Vercel with environment variable configuration
 
 ---
 

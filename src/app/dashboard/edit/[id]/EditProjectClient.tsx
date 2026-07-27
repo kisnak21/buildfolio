@@ -36,6 +36,7 @@ const EditProjectClient = () => {
           description: projectData.description,
           github: projectData.github,
           live: projectData.live,
+          technologies: projectData.technologies,
         },
       }) as any,
     )

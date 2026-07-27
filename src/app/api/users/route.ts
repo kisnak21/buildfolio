@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
-    if (err.code === '23505') {
+    if (err.code === '23505' || err.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Email already exists' },
         { status: 409 },

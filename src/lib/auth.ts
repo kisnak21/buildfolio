@@ -1,6 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import pool from '@/lib/db'
+import prisma from '@/lib/db'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET!
@@ -23,26 +23,31 @@ export const verifyToken = (token: string) => {
 }
 
 const syncGoogleUser = async (email: string, name: string, image?: string | null) => {
-  const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email])
-  if (existing.rows.length > 0) return existing.rows[0].id
+  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
+  if (existing) return existing.id
 
-  const id = crypto.randomUUID()
   const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
   let username = baseUsername
   let attempt = 0
   while (true) {
-    const check = await pool.query('SELECT id FROM users WHERE username = $1', [username])
-    if (check.rows.length === 0) break
+    const check = await prisma.user.findUnique({ where: { username }, select: { id: true } })
+    if (!check) break
     attempt++
     username = `${baseUsername}${attempt}`
   }
 
-  await pool.query(
-    `INSERT INTO users (id, username, name, email, password, image, is_verified)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-    [id, username, name, email, 'google-oauth', image || null, true],
-  )
-  return id
+  const user = await prisma.user.create({
+    data: {
+      username,
+      name,
+      email,
+      password: 'google-oauth',
+      image: image ?? null,
+      isVerified: true,
+    },
+    select: { id: true },
+  })
+  return user.id
 }
 
 export const authOptions: NextAuthOptions = {

@@ -1,16 +1,27 @@
-import pool from '@/lib/db'
-import { v4 as uuidv4 } from 'uuid'
+import prisma from '@/lib/db'
 
 export const getCommentsByProject = async (projectId: string) => {
-  const result = await pool.query(
-    `SELECT c.*, u.name as author_name
-     FROM comments c
-     JOIN users u ON c.user_id = u.id
-     WHERE c.project_id = $1
-     ORDER BY c.created_at DESC`,
-    [projectId],
-  )
-  return result.rows
+  const comments = await prisma.comment.findMany({
+    where: { projectId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      content: true,
+      userId: true,
+      projectId: true,
+      createdAt: true,
+      user: { select: { name: true } },
+    },
+  })
+
+  return comments.map((c) => ({
+    id: c.id,
+    content: c.content,
+    user_id: c.userId,
+    project_id: c.projectId,
+    created_at: c.createdAt,
+    author_name: c.user.name,
+  }))
 }
 
 export const addComment = async ({
@@ -22,20 +33,31 @@ export const addComment = async ({
   user_id: string
   project_id: string
 }) => {
-  const id = uuidv4()
-  const result = await pool.query(
-    `INSERT INTO comments (id, content, user_id, project_id)
-     VALUES ($1, $2, $3, $4)
-     RETURNING *`,
-    [id, content, user_id, project_id],
-  )
-  return result.rows[0]
+  const comment = await prisma.comment.create({
+    data: { content, userId: user_id, projectId: project_id },
+    select: {
+      id: true,
+      content: true,
+      userId: true,
+      projectId: true,
+      createdAt: true,
+      user: { select: { name: true } },
+    },
+  })
+  return {
+    id: comment.id,
+    content: comment.content,
+    user_id: comment.userId,
+    project_id: comment.projectId,
+    created_at: comment.createdAt,
+    author_name: comment.user.name,
+  }
 }
 
 export const deleteComment = async (id: string) => {
-  const result = await pool.query(
-    'DELETE FROM comments WHERE id = $1 RETURNING id, user_id',
-    [id],
-  )
-  return result.rows[0] || null
+  const comment = await prisma.comment.delete({
+    where: { id },
+    select: { id: true, userId: true },
+  })
+  return { id: comment.id, user_id: comment.userId }
 }
