@@ -3,6 +3,7 @@ import projectsReducer from './projectsSlice'
 import authReducer from './authSlice'
 import bookmarksReducer from './bookmarksSlice'
 import commentsReducer from './commentsSlice'
+import toastReducer from './toastSlice'
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     auth: authReducer,
     bookmarks: bookmarksReducer,
     comments: commentsReducer,
+    toast: toastReducer,
   },
 })
 

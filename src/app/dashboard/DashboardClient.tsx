@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProjects, deleteProject } from '@/store/redux/projectsSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
@@ -43,6 +44,7 @@ const DashboardClient = () => {
   const handleConfirmDelete = async () => {
     try {
       await dispatch(deleteProject(deleteTarget.id) as any)
+      dispatch(showToast({ message: 'Project deleted successfully.', type: 'success' }))
       setDeleteTarget(null)
     } catch {
       setDeleteError('Failed to delete project. Please try again.')

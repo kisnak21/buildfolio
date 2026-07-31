@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import { addProject } from '@/store/redux/projectsSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectForm from '@/components/dashboard/ProjectForm'
@@ -37,6 +38,7 @@ const NewProjectClient = () => {
       }) as any,
     )
     if (addProject.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Project created successfully!', type: 'success' }))
       router.push('/dashboard')
     } else {
       setSubmitError(result.payload || 'Failed to create project.')

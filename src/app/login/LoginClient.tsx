@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { loginUser } from '@/store/redux/authSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import { loginUserApi } from '@/lib/api/authApi'
 import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
@@ -60,6 +61,7 @@ const LoginClient = () => {
         }),
       )
       const redirectTo = searchParams.get('redirect') || '/'
+      dispatch(showToast({ message: 'Welcome back!', type: 'success' }))
       router.push(redirectTo)
     } catch (err: any) {
       if (err.response?.status === 401) {

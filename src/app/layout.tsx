@@ -3,6 +3,7 @@ import { Public_Sans } from 'next/font/google'
 import './globals.css'
 import ReduxProvider from '@/store/redux/provider'
 import AuthSessionProvider from '@/components/auth/AuthSessionProvider'
+import Toast from '@/components/ui/Toast'
 
 const publicSans = Public_Sans({ subsets: ['latin'], weight: ['400', '600', '800', '900'] })
 
@@ -29,7 +30,10 @@ export default function RootLayout({
     <html lang='en'>
       <body className={`${publicSans.className} antialiased min-h-screen flex flex-col`}>
         <ReduxProvider>
-          <AuthSessionProvider>{children}</AuthSessionProvider>
+          <AuthSessionProvider>
+            {children}
+            <Toast />
+          </AuthSessionProvider>
         </ReduxProvider>
       </body>
     </html>

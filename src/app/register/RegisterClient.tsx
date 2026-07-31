@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { loginUser } from '@/store/redux/authSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import { registerUser, loginUserApi } from '@/lib/api/authApi'
 import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
@@ -71,6 +72,7 @@ const RegisterClient = () => {
           token: result.token,
         }),
       )
+      dispatch(showToast({ message: 'Account created! Welcome aboard.', type: 'success' }))
       router.push('/')
     } catch (err: any) {
       if (err.response?.status === 409) {

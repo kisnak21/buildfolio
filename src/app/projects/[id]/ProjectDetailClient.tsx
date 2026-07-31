@@ -13,6 +13,7 @@ import {
   clearComments,
 } from '@/store/redux/commentsSlice'
 import { getProjectById } from '@/lib/api/projectsApi'
+import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
@@ -79,6 +80,7 @@ const ProjectDetailClient = () => {
   }, [id, dispatch])
 
   const handleLike = () => {
+    dispatch(showToast({ message: 'You liked this project!', type: 'success' }))
     dispatch(likeProjectThunk(id) as any)
   }
 
@@ -86,8 +88,10 @@ const ProjectDetailClient = () => {
     if (!currentUser) return router.push('/login')
     if (isBookmarked) {
       dispatch(removeBookmark({ bookmarkId: existingBookmark.id }) as any)
+      dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
     } else {
       dispatch(addBookmark({ project_id: id }) as any)
+      dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
     }
   }
 
@@ -101,11 +105,13 @@ const ProjectDetailClient = () => {
         project_id: id,
       }) as any,
     )
+    dispatch(showToast({ message: 'Comment posted!', type: 'success' }))
     setComment('')
   }
 
   const handleDeleteComment = (commentId: string) => {
     dispatch(deleteComment(commentId) as any)
+    dispatch(showToast({ message: 'Comment deleted.', type: 'info' }))
   }
 
   const catColor = project ? getCategoryColor(project.category) : ''

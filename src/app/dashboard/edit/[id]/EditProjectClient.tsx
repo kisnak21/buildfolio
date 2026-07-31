@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchProjects, updateProject } from '@/store/redux/projectsSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectForm from '@/components/dashboard/ProjectForm'
@@ -42,6 +43,7 @@ const EditProjectClient = () => {
       }) as any,
     )
     if (updateProject.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Project updated successfully!', type: 'success' }))
       router.push('/dashboard')
     } else {
       setSubmitError(result.payload || 'Failed to update project.')
