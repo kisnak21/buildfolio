@@ -15,6 +15,30 @@ import {
 import { getProjectById } from '@/lib/api/projectsApi'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import Button from '@/components/ui/Button'
+import ProjectDetailSkeleton from '@/components/ui/ProjectDetailSkeleton'
+import {
+  HeartIcon as HeartOutline,
+  BookmarkIcon as BookmarkOutline,
+} from '@heroicons/react/24/outline'
+import {
+  HeartIcon as HeartSolid,
+  BookmarkIcon as BookmarkSolid,
+  ArrowLeftIcon,
+} from '@heroicons/react/24/solid'
+
+// Generate consistent background color based on category
+const getCategoryColor = (category: string) => {
+  const map: Record<string, string> = {
+    SaaS: 'bg-secondary',
+    AI: 'bg-[#a78bfa] text-white',
+    'Web App': 'bg-[#c4f0ff]',
+    'Mobile App': 'bg-[#fecaca]',
+    'Open Source': 'bg-[#fde047]',
+    Game: 'bg-[#4ade80]',
+  }
+  return map[category] || 'bg-secondary'
+}
 
 const ProjectDetailClient = () => {
   const { id } = useParams<{ id: string }>()
@@ -30,7 +54,9 @@ const ProjectDetailClient = () => {
     (state: any) => state.comments,
   )
 
-  const existingBookmark = bookmarks.find((b: any) => b.project_id === id)
+  const existingBookmark = bookmarks.find(
+    (b: any) => String(b.project_id) === id,
+  )
   const isBookmarked = !!existingBookmark
   const [comment, setComment] = useState('')
 
@@ -82,225 +108,225 @@ const ProjectDetailClient = () => {
     dispatch(deleteComment(commentId) as any)
   }
 
-  if (loading) {
-    return (
-      <div className='bg-gray-50 min-h-screen flex flex-col'>
-        <Header />
-        <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
-          <p className='text-sm text-gray-500'>Loading project...</p>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
-
-  if (!project) {
-    return (
-      <div className='bg-gray-50 min-h-screen flex flex-col'>
-        <Header />
-        <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
-          <p className='text-sm text-gray-500'>Project not found.</p>
-        </main>
-        <Footer />
-      </div>
-    )
-  }
+  const catColor = project ? getCategoryColor(project.category) : ''
+  const isLightText = catColor.includes('text-white')
+    ? 'text-white'
+    : 'text-dark'
 
   return (
-    <div className='bg-gray-50 min-h-screen flex flex-col'>
+    <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
         <Link
           href='/projects'
-          className='text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 inline-block'
+          className='btn-brutal bg-white border-2 border-dark px-4 py-2 rounded-xl font-bold shadow-brutal-sm text-sm mb-8 inline-flex items-center gap-2 hover:bg-yellow-50'
         >
-          ← Back to projects
+          <ArrowLeftIcon className='w-4 h-4' />
+          Back to projects
         </Link>
 
-        <div className='bg-white border border-gray-200 rounded-xl p-6 mb-6'>
-          <div className='mb-4'>
-            <span className='text-xs bg-blue-50 text-primary border border-blue-100 px-2 py-0.5 rounded-md font-medium'>
-              {project.category}
-            </span>
-            <h1 className='text-2xl font-semibold text-gray-900 mt-3 mb-2'>
-              {project.title}
-            </h1>
-            <p className='text-sm text-gray-500 leading-relaxed'>
-              {project.description}
+        {loading ? (
+          <ProjectDetailSkeleton />
+        ) : !project ? (
+          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
+            <p className='text-lg font-bold text-gray-500'>
+              Project not found.
             </p>
           </div>
-
-          <div className='flex flex-wrap gap-1.5 mb-4'>
-            {project.technologies?.map((tech: string) => (
-              <span
-                key={tech}
-                className='text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded'
+        ) : (
+          <>
+            <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-8 shadow-brutal relative'>
+              {/* Category Tag */}
+              <div
+                className={`inline-block border-2 border-dark px-3 py-1 rounded-md text-sm font-bold shadow-brutal-sm ${catColor} ${isLightText} mb-6`}
               >
-                {tech}
-              </span>
-            ))}
-          </div>
+                {project.category || 'Uncategorized'}
+              </div>
 
-          <div className='flex items-center gap-2 mb-6'>
-            <img
-              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${project.author}`}
-              className='w-6 h-6 rounded-full border border-gray-200'
-              alt={project.author}
-            />
-            <span className='text-xs text-gray-500'>{project.author}</span>
-          </div>
+              <h1 className='text-4xl font-black text-dark mb-4'>
+                {project.title}
+              </h1>
 
-          <div className='flex items-center gap-3 pt-4 border-t border-gray-100'>
-            <button
-              onClick={handleLike}
-              className='flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-500 transition-colors'
-            >
-              <svg
-                width='16'
-                height='16'
-                viewBox='0 0 24 24'
-                fill='none'
-                stroke='currentColor'
-                strokeWidth='2'
-              >
-                <path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' />
-              </svg>
-              {project.likes} likes
-            </button>
+              <p className='text-lg font-medium text-gray-700 leading-relaxed mb-6'>
+                {project.description}
+              </p>
 
-            <button
-              onClick={handleBookmark}
-              className={`flex items-center gap-1.5 text-sm transition-colors ${
-                isBookmarked
-                  ? 'text-primary'
-                  : 'text-gray-500 hover:text-primary'
-              }`}
-            >
-              <svg
-                width='16'
-                height='16'
-                viewBox='0 0 24 24'
-                fill={isBookmarked ? 'currentColor' : 'none'}
-                stroke='currentColor'
-                strokeWidth='2'
-              >
-                <path d='M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z' />
-              </svg>
-              {isBookmarked ? 'Bookmarked' : 'Bookmark'}
-            </button>
-
-            <div className='flex items-center gap-3 ml-auto'>
-              {project.github && project.github !== '#' && (
-                <a
-                  href={project.github}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='text-sm text-gray-500 hover:text-gray-900 transition-colors'
-                >
-                  GitHub →
-                </a>
-              )}
-              {project.live && project.live !== '#' && (
-                <a
-                  href={project.live}
-                  target='_blank'
-                  rel='noreferrer'
-                  className='text-sm text-primary hover:text-primary-hover transition-colors'
-                >
-                  Live Demo →
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className='bg-white border border-gray-200 rounded-xl p-6'>
-          <h2 className='text-base font-semibold text-gray-900 mb-4'>
-            Comments ({comments.length})
-          </h2>
-
-          {currentUser ? (
-            <form onSubmit={handleAddComment} className='mb-6'>
-              <div className='flex items-start gap-3'>
-                <img
-                  src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${currentUser.email}`}
-                  className='w-7 h-7 rounded-full border border-gray-200 shrink-0'
-                  alt={currentUser.name}
-                />
-                <div className='flex-1'>
-                  <textarea
-                    rows={2}
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    placeholder='Write a comment...'
-                    className='w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors resize-none'
-                  />
-                  <button
-                    type='submit'
-                    className='mt-2 bg-primary hover:bg-primary-hover text-white text-xs font-medium px-4 py-1.5 rounded-lg transition-colors'
+              {/* Tech Pills */}
+              <div className='flex flex-wrap gap-2 mb-6'>
+                {project.technologies?.map((tech: string) => (
+                  <span
+                    key={tech}
+                    className='bg-gray-100 border-2 border-dark px-3 py-1 rounded-md text-xs font-bold'
                   >
-                    Post comment
-                  </button>
+                    {tech}
+                  </span>
+                ))}
+              </div>
+
+              {/* Author Info */}
+              <div className='flex items-center gap-3 border-t-2 border-dark border-dashed pt-6 mb-6'>
+                <img
+                  src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${project.author}`}
+                  className='w-10 h-10 rounded-full border-2 border-dark bg-yellow-100'
+                  alt={project.author}
+                />
+                <div>
+                  <p className='text-sm font-bold text-dark'>
+                    {project.author}
+                  </p>
+                  <p className='text-xs font-bold text-gray-400'>Creator</p>
                 </div>
               </div>
-            </form>
-          ) : (
-            <p className='text-sm text-gray-500 mb-6'>
-              <Link
-                href='/login'
-                className='text-primary hover:text-primary-hover transition-colors'
-              >
-                Log in
-              </Link>{' '}
-              to leave a comment.
-            </p>
-          )}
 
-          {commentsLoading && (
-            <p className='text-sm text-gray-400'>Loading comments...</p>
-          )}
+              {/* Buttons Actions */}
+              <div className='flex flex-wrap items-center gap-4 pt-6 border-t-2 border-dark border-dashed'>
+                <button
+                  onClick={handleLike}
+                  className='btn-brutal bg-white border-2 border-dark px-5 py-3 rounded-xl font-bold shadow-brutal-sm flex items-center gap-2 text-sm hover:bg-pink-50'
+                >
+                  <HeartSolid className='w-5 h-5 text-primary' />
+                  <span className='font-bold'>{project.likes} Likes</span>
+                </button>
 
-          {!commentsLoading && comments.length === 0 && (
-            <p className='text-sm text-gray-400 text-center py-6'>
-              No comments yet. Be the first to comment.
-            </p>
-          )}
+                <button
+                  onClick={handleBookmark}
+                  className={`btn-brutal border-2 border-dark px-5 py-3 rounded-xl font-bold shadow-brutal-sm flex items-center gap-2 text-sm ${
+                    isBookmarked
+                      ? 'bg-primary text-dark'
+                      : 'bg-white hover:bg-yellow-50'
+                  }`}
+                >
+                  {isBookmarked ? (
+                    <BookmarkSolid className='w-5 h-5 text-dark' />
+                  ) : (
+                    <BookmarkOutline className='w-5 h-5 text-dark' />
+                  )}
+                  <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+                </button>
 
-          {!commentsLoading && comments.length > 0 && (
-            <div className='flex flex-col gap-4'>
-              {comments.map((c: any) => (
-                <div key={c.id} className='flex items-start gap-3'>
-                  <img
-                    src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${c.author_name}`}
-                    className='w-7 h-7 rounded-full border border-gray-200 shrink-0'
-                    alt={c.author_name}
-                  />
-                  <div className='flex-1 bg-gray-50 rounded-lg px-3 py-2'>
-                    <div className='flex items-center justify-between mb-1'>
-                      <div className='flex items-center gap-2'>
-                        <span className='text-xs font-medium text-gray-900'>
-                          {c.author_name}
-                        </span>
-                        <span className='text-xs text-gray-400'>
-                          {new Date(c.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {currentUser?.id === c.user_id && (
-                        <button
-                          onClick={() => handleDeleteComment(c.id)}
-                          className='text-xs text-red-400 hover:text-red-600 transition-colors'
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
-                    <p className='text-sm text-gray-700'>{c.content}</p>
-                  </div>
+                <div className='flex items-center gap-4 ml-auto'>
+                  {project.github && project.github !== '#' && (
+                    <a
+                      href={project.github}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='btn-brutal bg-dark text-white border-2 border-dark px-6 py-3 rounded-xl font-bold text-sm shadow-brutal-sm'
+                    >
+                      GitHub
+                    </a>
+                  )}
+                  {project.live && project.live !== '#' && (
+                    <a
+                      href={project.live}
+                      target='_blank'
+                      rel='noreferrer'
+                      className='btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold text-sm shadow-brutal-sm hover:bg-accentDark'
+                    >
+                      Live Demo
+                    </a>
+                  )}
                 </div>
-              ))}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Comments Section */}
+            <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal'>
+              <h2 className='text-2xl font-black text-dark mb-6'>
+                Comments ({comments.length})
+              </h2>
+
+              {currentUser ? (
+                <form
+                  onSubmit={handleAddComment}
+                  className='mb-8 border-b-2 border-dark border-dashed pb-8'
+                >
+                  <div className='flex items-start gap-4'>
+                    <img
+                      src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${currentUser.email}`}
+                      className='w-10 h-10 rounded-full border-2 border-dark bg-yellow-100 shrink-0'
+                      alt={currentUser.name}
+                    />
+                    <div className='flex-1'>
+                      <textarea
+                        rows={3}
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        placeholder='Write a feedback...'
+                        className='input-brutal w-full bg-[#f3f4f6] border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none'
+                      />
+                      <Button
+                        type='submit'
+                        variant='primary'
+                        className='mt-3 font-bold'
+                      >
+                        Post comment
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <p className='font-bold text-dark mb-8 border-b-2 border-dark border-dashed pb-8 text-center bg-yellow-50 py-4 border-2 rounded-xl'>
+                  <Link href='/login' className='text-primary hover:underline'>
+                    Log in
+                  </Link>{' '}
+                  to leave a comment.
+                </p>
+              )}
+
+              {commentsLoading && (
+                <p className='text-sm font-bold text-gray-400'>
+                  Loading comments...
+                </p>
+              )}
+
+              {!commentsLoading && comments.length === 0 && (
+                <p className='font-bold text-gray-400 text-center py-6'>
+                  No comments yet. Be the first to comment.
+                </p>
+              )}
+
+              {!commentsLoading && comments.length > 0 && (
+                <div className='flex flex-col gap-6'>
+                  {comments.map((c: any) => (
+                    <div
+                      key={c.id}
+                      className='flex items-start gap-4 border-b-2 border-dark border-dashed pb-6 last:border-b-0 last:pb-0'
+                    >
+                      <img
+                        src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${c.author_name}`}
+                        className='w-10 h-10 rounded-full border-2 border-dark bg-blue-50 shrink-0'
+                        alt={c.author_name}
+                      />
+                      <div className='flex-1 bg-[#fdfcf7] border-2 border-dark rounded-xl px-4 py-3 shadow-brutal-sm'>
+                        <div className='flex items-center justify-between mb-2'>
+                          <div className='flex items-center gap-2'>
+                            <span className='font-bold text-dark'>
+                              {c.author_name}
+                            </span>
+                            <span className='text-xs font-bold text-gray-400'>
+                              {new Date(c.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {currentUser?.id === c.user_id && (
+                            <button
+                              onClick={() => handleDeleteComment(c.id)}
+                              className='text-xs font-bold text-red-500 hover:underline'
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                        <p className='font-medium text-gray-800 leading-relaxed'>
+                          {c.content}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </main>
       <Footer />
     </div>
