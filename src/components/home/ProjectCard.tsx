@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
+import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
 
 interface Project {
   id: string
@@ -20,6 +22,32 @@ interface ProjectCardProps {
   onLike: (id: string, likes: number) => void
 }
 
+// Generate consistent background color based on category
+const getCategoryColor = (category: string) => {
+  const map: Record<string, string> = {
+    'SaaS': 'bg-secondary',
+    'AI': 'bg-[#a78bfa] text-white',
+    'Web App': 'bg-[#c4f0ff]',
+    'Mobile App': 'bg-[#fecaca]',
+    'Open Source': 'bg-[#fde047]',
+    'Game': 'bg-[#4ade80]',
+  }
+  return map[category] || 'bg-secondary'
+}
+
+// Generate consistent emoji based on category if no thumbnail
+const getCategoryEmoji = (category: string) => {
+  const map: Record<string, string> = {
+    'SaaS': '🚀',
+    'AI': '🤖',
+    'Web App': '🌐',
+    'Mobile App': '📱',
+    'Open Source': '🔓',
+    'Game': '🎮',
+  }
+  return map[category] || '✨'
+}
+
 const ProjectCard = ({ project, onLike }: ProjectCardProps) => {
   const {
     id,
@@ -34,90 +62,81 @@ const ProjectCard = ({ project, onLike }: ProjectCardProps) => {
   } = project
 
   const router = useRouter()
+  const catColor = getCategoryColor(category)
+  const isLightText = catColor.includes('text-white') ? 'text-white' : 'text-dark'
 
   return (
-    <div
+    <article
       onClick={() => router.push(`/projects/${id}`)}
-      className='group bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm rounded-xl p-5 flex flex-col gap-4 transition-all cursor-pointer'
+      className='card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal cursor-pointer'
     >
-      <div className='flex items-start justify-between'>
-        <span className='text-xs bg-blue-50 text-primary border border-blue-100 px-2 py-0.5 rounded-md font-medium'>
-          {project.category}
-        </span>
+      <div className='aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group flex items-center justify-center'>
+        {/* Thumbnail fallback to emoji */}
+        <div className={`w-full h-full flex items-center justify-center text-5xl ${catColor.split(' ')[0]} opacity-50`}>
+          {getCategoryEmoji(category)}
+        </div>
+        
+        {/* Category Tag */}
+        <div className={`absolute top-3 left-3 border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm ${catColor} ${isLightText}`}>
+          {category || 'Uncategorized'}
+        </div>
+        
+        {/* Like Button */}
         <button
           onClick={(e) => {
             e.stopPropagation()
             onLike(id, likes)
           }}
-          className='flex items-center gap-1 text-gray-400 hover:text-red-500 transition-colors'
+          className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
         >
-          <svg
-            width='14'
-            height='14'
-            viewBox='0 0 24 24'
-            fill='none'
-            stroke='currentColor'
-            strokeWidth='2'
-          >
-            <path d='M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z' />
-          </svg>
-          <span className='text-xs'>{likes}</span>
+          <HeartOutline className='w-5 h-5 text-dark' />
         </button>
       </div>
 
-      <div>
-        <h3 className='text-sm font-semibold text-gray-900 mb-1 group-hover:text-blue-600 transition-colors'>
-          {title}
-        </h3>
-        <p className='text-xs text-gray-500 leading-relaxed line-clamp-2'>
+      <div className='p-5 flex flex-col flex-1'>
+        <h3 className='text-xl font-black mb-2 line-clamp-1'>{title}</h3>
+        <p className='text-sm font-medium mb-4 line-clamp-2 text-gray-700'>
           {description}
         </p>
-      </div>
+        
+        {/* Tech Pills */}
+        <div className='flex flex-wrap gap-2 mb-6'>
+          {technologies.slice(0, 3).map((tech: string) => (
+            <span
+              key={tech}
+              className='bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold'
+            >
+              {tech}
+            </span>
+          ))}
+          {technologies.length > 3 && (
+            <span className='bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold'>
+              +{technologies.length - 3}
+            </span>
+          )}
+        </div>
 
-      <div className='flex flex-wrap gap-1'>
-        {technologies.map((tech: string) => (
-          <span
-            key={tech}
-            className='text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded'
-          >
-            {tech}
-          </span>
-        ))}
-      </div>
-
-      <div className='flex items-center justify-between pt-1 border-t border-gray-100'>
-        <Link
-          href={`/u/${author}`}
-          onClick={(e) => e.stopPropagation()}
-          className='flex items-center gap-2 hover:opacity-80 transition-opacity'
-        >
-          <img
-            src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${author}`}
-            className='w-6 h-6 rounded-full border border-gray-200'
-            alt={author}
-          />
-          <span className='text-xs text-gray-500 hover:text-gray-900 transition-colors'>
-            {author}
-          </span>
-        </Link>
-        <div className='flex items-center gap-2'>
-          <a
-            href={github}
+        {/* Footer Card */}
+        <div className='mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed'>
+          <Link
+            href={`/u/${author}`}
             onClick={(e) => e.stopPropagation()}
-            className='text-xs text-gray-400 hover:text-gray-700 transition-colors'
+            className='flex items-center gap-2 hover:opacity-80 transition-opacity'
           >
-            GitHub
-          </a>
-          <a
-            href={live}
-            onClick={(e) => e.stopPropagation()}
-            className='text-xs text-primary hover:text-primary-hover transition-colors'
-          >
-            Live →
-          </a>
+            <img
+              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${author}`}
+              className='w-8 h-8 rounded-full border-2 border-dark bg-yellow-100'
+              alt={author}
+            />
+            <span className='text-sm font-bold text-dark hover:underline'>{author}</span>
+          </Link>
+          <div className='flex items-center gap-1 font-bold text-sm'>
+            <HeartSolid className='w-5 h-5 text-primary' />
+            {likes}
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

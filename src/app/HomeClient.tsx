@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import Link from 'next/link'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -13,6 +12,7 @@ import CategoryCard from '@/components/home/CategoryCard'
 import TechPill from '@/components/home/TechPill'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import { technologies } from '@/lib/data/project'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
 
 const categoryList = [
   { icon: '🚀', name: 'SaaS' },
@@ -78,51 +78,61 @@ const HomeClient = () => {
     ).length,
   }))
 
-  const handleLike = (id: string, currentLikes: number) => {
+  const handleLike = (id: string) => {
     dispatch(likeProject(id) as any)
   }
 
   return (
-    <div className='bg-gray-50 text-gray-900'>
+    <div className='bg-bgMain text-dark flex-1 flex flex-col'>
       <Header />
 
-      <main>
+      <main className='flex-1'>
         <Hero currentUser={currentUser} />
 
         {/* Search + Filter */}
-        <div className='max-w-6xl mx-auto px-4 mb-4'>
-          <div className='flex flex-col md:flex-row gap-3'>
-            <input
-              type='text'
-              placeholder='Search projects...'
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className='flex-1 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors'
-            />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className='bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors'
-            >
-              <option value=''>All Categories</option>
-              {categoryList.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedTech}
-              onChange={(e) => setSelectedTech(e.target.value)}
-              className='bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-700 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors'
-            >
-              <option value=''>All Technologies</option>
-              {technologies.map((tech) => (
-                <option key={tech.name} value={tech.name}>
-                  {tech.name}
-                </option>
-              ))}
-            </select>
+        <section className='py-8 bg-bgMain border-b-4 border-dark'>
+          <div className='max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-4'>
+            <div className='flex-1 relative'>
+              <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
+                <MagnifyingGlassIcon className='w-6 h-6 text-dark' />
+              </div>
+              <input
+                type='text'
+                placeholder='Search projects...'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className='input-brutal w-full pl-12 pr-4 py-3 bg-white border-2 border-dark rounded-xl font-bold shadow-brutal-sm transition-shadow'
+              />
+            </div>
+            
+            <div className="flex gap-4">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className='input-brutal bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none pr-10 cursor-pointer'
+              >
+                <option value=''>All Categories</option>
+                {categoryList.map((cat) => (
+                  <option key={cat.name} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+
+              <select
+                value={selectedTech}
+                onChange={(e) => setSelectedTech(e.target.value)}
+                className='input-brutal bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none pr-10 cursor-pointer'
+              >
+                <option value=''>All Technologies</option>
+                {technologies.map((tech) => (
+                  <option key={tech.name} value={tech.name}>
+                    {tech.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {(search || selectedCategory || selectedTech) && (
               <button
                 onClick={() => {
@@ -130,28 +140,31 @@ const HomeClient = () => {
                   setSelectedCategory('')
                   setSelectedTech('')
                 }}
-                className='text-sm text-gray-500 hover:text-gray-900 transition-colors whitespace-nowrap'
+                className='btn-brutal bg-white border-2 border-dark px-5 py-3 rounded-xl font-bold shadow-brutal-sm text-sm'
               >
                 Clear filters
               </button>
             )}
           </div>
           {(search || selectedCategory || selectedTech) && (
-            <p className='text-xs text-gray-400 mt-2'>
-              {filtered.length} project{filtered.length !== 1 ? 's' : ''} found
-            </p>
+            <div className='max-w-6xl mx-auto px-4 mt-3'>
+              <p className='text-xs font-bold text-gray-500'>
+                {filtered.length} project{filtered.length !== 1 ? 's' : ''} found
+              </p>
+            </div>
           )}
-        </div>
+        </section>
 
+        {/* Featured Projects */}
         <Section
           id='projects'
           title='Featured Projects'
           subtitle='Handpicked by the community'
           viewAllHref='/projects'
         >
-          {error && <p className='text-sm text-red-500'>{error}</p>}
+          {error && <p className='text-sm font-bold text-red-500'>{error}</p>}
           {!error && (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
               {loading
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />
@@ -167,12 +180,14 @@ const HomeClient = () => {
           )}
         </Section>
 
+        {/* Categories */}
         <Section
           id='categories'
           title='Browse by Category'
           subtitle='Find projects that match your interests'
+          className='bg-[#fed7aa] border-t-4 border-b-4 border-dark'
         >
-          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3'>
+          <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
             {derivedCategories.map((category) => (
               <CategoryCard
                 key={category.name}
@@ -182,19 +197,22 @@ const HomeClient = () => {
                   setSelectedCategory(
                     selectedCategory === category.name ? '' : category.name,
                   )
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  const el = document.getElementById('projects')
+                  if (el) el.scrollIntoView({ behavior: 'smooth' })
                 }}
               />
             ))}
           </div>
         </Section>
 
+        {/* Technologies */}
         <Section
           id='technologies'
           title='Trending Technologies'
           subtitle='What developers are building with right now'
+          className='bg-[#bbf7d0] border-b-4 border-dark'
         >
-          <div className='flex flex-wrap gap-2'>
+          <div className='flex flex-wrap gap-4'>
             {techCounts.map((tech) => (
               <TechPill
                 key={tech.name}
@@ -202,22 +220,23 @@ const HomeClient = () => {
                 isSelected={selectedTech === tech.name}
                 onClick={() => {
                   setSelectedTech(selectedTech === tech.name ? '' : tech.name)
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
+                  const el = document.getElementById('projects')
+                  if (el) el.scrollIntoView({ behavior: 'smooth' })
                 }}
               />
             ))}
           </div>
         </Section>
 
+        {/* Favorite Projects */}
         <Section
           id='favorites'
           title='Community Favorites'
           subtitle='Most liked projects this month'
-          viewAllHref='/projects'
         >
-          {error && <p className='text-sm text-red-500'>{error}</p>}
+          {error && <p className='text-sm font-bold text-red-500'>{error}</p>}
           {!error && (
-            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
               {loading
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />

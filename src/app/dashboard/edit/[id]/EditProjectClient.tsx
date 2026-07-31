@@ -16,7 +16,7 @@ const EditProjectClient = () => {
 
   const { currentUser } = useSelector((state: any) => state.auth)
   const project = useSelector((state: any) =>
-    state.projects.items.find((p: any) => p.id === id),
+    state.projects.items.find((p: any) => String(p.id) === id),
   )
 
   useEffect(() => {
@@ -24,7 +24,7 @@ const EditProjectClient = () => {
     dispatch(fetchProjects() as any)
   }, [dispatch, project])
 
-  const isOwner = project?.user_id === currentUser?.id
+  const isOwner = String(project?.user_id) === String(currentUser?.id)
 
   const handleSubmit = async (projectData: any) => {
     setSubmitError('')
@@ -37,6 +37,7 @@ const EditProjectClient = () => {
           github: projectData.github,
           live: projectData.live,
           technologies: projectData.technologies,
+          category: projectData.category,
         },
       }) as any,
     )
@@ -49,10 +50,10 @@ const EditProjectClient = () => {
 
   if (!project) {
     return (
-      <div className='bg-gray-50 text-gray-900 min-h-screen flex flex-col'>
+      <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
         <Header />
         <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
-          <p className='text-sm text-gray-500'>Project not found.</p>
+          <p className='font-bold text-gray-500'>Project not found.</p>
         </main>
         <Footer />
       </div>
@@ -61,10 +62,10 @@ const EditProjectClient = () => {
 
   if (!isOwner) {
     return (
-      <div className='bg-gray-50 text-gray-900 min-h-screen flex flex-col'>
+      <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
         <Header />
         <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
-          <p className='text-sm text-gray-500'>
+          <p className='font-bold text-gray-500'>
             You don&apos;t have permission to edit this project.
           </p>
         </main>
@@ -74,17 +75,17 @@ const EditProjectClient = () => {
   }
 
   return (
-    <div className='bg-gray-50 text-gray-900 min-h-screen flex flex-col'>
+    <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
-        <h1 className='text-xl font-semibold text-gray-900 mb-1'>
+        <h1 className='text-4xl font-black mb-2'>
           Edit Project
         </h1>
-        <p className='text-sm text-gray-500 mb-8'>
+        <p className='font-medium text-gray-600 text-lg mb-8'>
           Update your project details
         </p>
         {submitError && (
-          <p className='text-sm text-red-500 mb-4'>{submitError}</p>
+          <p className='text-sm font-bold text-red-500 mb-4'>{submitError}</p>
         )}
         <ProjectForm
           initialValues={project}

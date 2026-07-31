@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Public_Sans } from 'next/font/google'
 import './globals.css'
 import ReduxProvider from '@/store/redux/provider'
 import AuthSessionProvider from '@/components/auth/AuthSessionProvider'
 
-const inter = Inter({ subsets: ['latin'] })
+const publicSans = Public_Sans({ subsets: ['latin'], weight: ['400', '600', '800', '900'] })
 
 export const metadata: Metadata = {
   title: {
@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang='en'>
-      <body className={inter.className}>
+      <body className={`${publicSans.className} antialiased min-h-screen flex flex-col`}>
         <ReduxProvider>
           <AuthSessionProvider>{children}</AuthSessionProvider>
         </ReduxProvider>

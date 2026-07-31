@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Buildfolio - Neo-Brutalism Mockup</title>
+  
+  <!-- Font: Public Sans for that modern playful look -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Public Sans"', 'sans-serif'],
+          },
+          colors: {
+            // Playful/Gumroad inspired palette
+            bgMain: '#Fdfcf7',     // Off-white/cream background
+            primary: '#FF90E8',    // Vibrant Pink
+            secondary: '#FFC900',  // Vibrant Yellow
+            accent: '#23A094',     // Vibrant Teal
+            accentDark: '#1a7a71', // Darker Teal for hover
+            dark: '#111111',       // Almost black
+            cardBg: '#FFFFFF',     // White
+            borderBlack: '#111111' // Black borders
+          },
+          boxShadow: {
+            // Neo-brutalism solid shadows
+            'brutal-sm': '2px 2px 0px 0px rgba(17,17,17,1)',
+            'brutal': '4px 4px 0px 0px rgba(17,17,17,1)',
+            'brutal-lg': '8px 8px 0px 0px rgba(17,17,17,1)',
+            'brutal-hover': '2px 2px 0px 0px rgba(17,17,17,1)',
+            'brutal-active': '0px 0px 0px 0px rgba(17,17,17,1)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: theme('colors.bgMain');
+      color: theme('colors.dark');
+    }
+    
+    /* Interactive Brutalism Button Styles */
+    .btn-brutal {
+      transition: all 0.15s ease-in-out;
+    }
+    .btn-brutal:active {
+      transform: translate(4px, 4px);
+      box-shadow: 0px 0px 0px 0px rgba(17,17,17,1);
+    }
+    
+    .card-brutal {
+      transition: all 0.2s ease-in-out;
+    }
+    .card-brutal:hover {
+      transform: translate(-4px, -4px);
+      box-shadow: 8px 8px 0px 0px rgba(17,17,17,1);
+    }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- HEADER -->
+  <header class="border-b-4 border-dark bg-bgMain sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <!-- Logo -->
+      <a href="#" class="text-2xl font-black tracking-tight text-dark flex items-center gap-2">
+        <div class="w-8 h-8 bg-secondary border-2 border-dark rounded-md flex items-center justify-center shadow-brutal-sm">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+        </div>
+        buildfolio
+      </a>
+
+      <!-- Desktop Nav -->
+      <nav class="hidden md:flex items-center gap-8 font-semibold">
+        <a href="#" class="text-dark hover:underline decoration-2 underline-offset-4">Explore</a>
+        <a href="#" class="text-dark hover:underline decoration-2 underline-offset-4">Trending</a>
+        <a href="#" class="text-dark hover:underline decoration-2 underline-offset-4">Collections</a>
+      </nav>
+
+      <!-- Auth Actions -->
+      <div class="flex items-center gap-4 font-bold">
+        <a href="#" class="hidden sm:block text-dark hover:underline decoration-2 underline-offset-4">Log in</a>
+        <a href="#" class="btn-brutal bg-primary text-dark border-2 border-dark px-5 py-2 rounded-lg shadow-brutal hover:bg-pink-400">
+          Sign Up
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="py-16 md:py-24 border-b-4 border-dark bg-[#c4f0ff]">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div class="space-y-6">
+          <div class="inline-block bg-white border-2 border-dark px-3 py-1 rounded-full text-sm font-bold shadow-brutal-sm transform -rotate-2">
+            🚀 The Developer Playground
+          </div>
+          <h1 class="text-5xl md:text-7xl font-black leading-[1.1] tracking-tight">
+            Discover.<br>
+            Share.<br>
+            <span class="bg-secondary px-2 border-2 border-dark shadow-brutal-sm">Build.</span>
+          </h1>
+          <p class="text-lg md:text-xl font-medium max-w-lg leading-relaxed">
+            The platform for developers to showcase their work, find inspiration, and connect with other builders.
+          </p>
+          <div class="flex flex-wrap gap-4 pt-4">
+            <button class="btn-brutal bg-dark text-white border-2 border-dark px-8 py-4 rounded-xl font-bold text-lg shadow-brutal flex items-center gap-2">
+              Start Exploring
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+            </button>
+            <button class="btn-brutal bg-white text-dark border-2 border-dark px-8 py-4 rounded-xl font-bold text-lg shadow-brutal">
+              Submit Project
+            </button>
+          </div>
+        </div>
+        
+        <!-- Decorative Hero Illustration / Graphic -->
+        <div class="hidden md:block relative">
+          <div class="absolute inset-0 bg-primary border-4 border-dark rounded-2xl shadow-brutal-lg transform rotate-3"></div>
+          <div class="relative bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal-lg transform -rotate-1 aspect-video flex flex-col">
+            <div class="flex gap-2 mb-4 border-b-2 border-dark pb-4">
+              <div class="w-4 h-4 rounded-full border-2 border-dark bg-red-400"></div>
+              <div class="w-4 h-4 rounded-full border-2 border-dark bg-secondary"></div>
+              <div class="w-4 h-4 rounded-full border-2 border-dark bg-green-400"></div>
+            </div>
+            <div class="flex-1 rounded-xl border-2 border-dark bg-bgMain p-4 flex flex-col gap-3">
+              <div class="h-4 bg-gray-200 border-2 border-dark rounded w-3/4"></div>
+              <div class="h-4 bg-gray-200 border-2 border-dark rounded w-1/2"></div>
+              <div class="h-4 bg-gray-200 border-2 border-dark rounded w-5/6"></div>
+              <div class="mt-auto flex justify-end">
+                <div class="h-8 w-24 bg-accent border-2 border-dark rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+          <!-- Decorative shapes -->
+          <div class="absolute -bottom-6 -left-6 w-16 h-16 bg-secondary border-4 border-dark rounded-full shadow-brutal z-10 flex items-center justify-center font-bold text-xl">
+            ✨
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTERS & SEARCH -->
+  <section class="py-8 bg-bgMain border-b-4 border-dark">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row gap-4">
+      <div class="flex-1 relative">
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg class="w-6 h-6 text-dark" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <input type="text" placeholder="Search projects by name, description..." class="w-full pl-12 pr-4 py-3 bg-white border-2 border-dark rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:ring-2 focus:ring-primary">
+      </div>
+      <select class="bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm focus:outline-none appearance-none pr-10 relative">
+        <option value="">All Categories</option>
+        <option value="SaaS">SaaS</option>
+        <option value="AI">AI</option>
+        <option value="WebApp">Web App</option>
+      </select>
+      <select class="bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm focus:outline-none appearance-none pr-10">
+        <option value="">Sort by: Trending</option>
+        <option value="newest">Newest</option>
+        <option value="likes">Most Liked</option>
+      </select>
+    </div>
+  </section>
+
+  <!-- PROJECTS GRID -->
+  <section class="py-16 flex-1">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between mb-10">
+        <h2 class="text-3xl font-black">Featured Projects</h2>
+        <a href="#" class="font-bold hover:underline decoration-2 underline-offset-4 flex items-center gap-1">
+          View all 
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </a>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
+        <!-- PROJECT CARD 1 -->
+        <article class="card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal">
+          <div class="aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group">
+            <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80" alt="Thumbnail" class="w-full h-full object-cover">
+            <!-- Category Tag -->
+            <div class="absolute top-3 left-3 bg-secondary border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm">
+              SaaS
+            </div>
+            <!-- Like Button overlay -->
+            <button class="absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            </button>
+          </div>
+          <div class="p-5 flex flex-col flex-1">
+            <h3 class="text-xl font-black mb-2 line-clamp-1">DevFlow Dashboard</h3>
+            <p class="text-sm font-medium mb-4 line-clamp-2 text-gray-700">A real-time developer metrics and project management SaaS designed specifically for agile engineering teams.</p>
+            
+            <!-- Tech Pills -->
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">Next.js</span>
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">TypeScript</span>
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">Tailwind</span>
+            </div>
+
+            <!-- Footer Card -->
+            <div class="mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed">
+              <div class="flex items-center gap-2">
+                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=johndoe" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-dark bg-yellow-100">
+                <span class="text-sm font-bold">John Doe</span>
+              </div>
+              <div class="flex items-center gap-1 font-bold text-sm">
+                <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                142
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- PROJECT CARD 2 -->
+        <article class="card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal">
+          <div class="aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group">
+            <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80" alt="Thumbnail" class="w-full h-full object-cover">
+            <div class="absolute top-3 left-3 bg-[#a78bfa] border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm text-white">
+              AI
+            </div>
+            <button class="absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            </button>
+          </div>
+          <div class="p-5 flex flex-col flex-1">
+            <h3 class="text-xl font-black mb-2 line-clamp-1">CodeReview AI</h3>
+            <p class="text-sm font-medium mb-4 line-clamp-2 text-gray-700">An AI-powered pull request assistant that automatically flags bugs, suggests refactors, and generates PR summaries.</p>
+            
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">Python</span>
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">React</span>
+            </div>
+
+            <div class="mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed">
+              <div class="flex items-center gap-2">
+                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=sarahlin" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-dark bg-blue-100">
+                <span class="text-sm font-bold">Sarah Lin</span>
+              </div>
+              <div class="flex items-center gap-1 font-bold text-sm">
+                <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                289
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- PROJECT CARD 3 -->
+        <article class="card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal">
+          <div class="aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group">
+            <div class="w-full h-full bg-[#fecaca] flex items-center justify-center text-4xl">
+              🎮
+            </div>
+            <div class="absolute top-3 left-3 bg-[#4ade80] border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm text-dark">
+              Game
+            </div>
+            <button class="absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            </button>
+          </div>
+          <div class="p-5 flex flex-col flex-1">
+            <h3 class="text-xl font-black mb-2 line-clamp-1">VoxelCraft Browser</h3>
+            <p class="text-sm font-medium mb-4 line-clamp-2 text-gray-700">3D voxel block-building sandbox game using Three.js and TypeScript. Features infinite procedural terrain generation.</p>
+            
+            <div class="flex flex-wrap gap-2 mb-6">
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">Three.js</span>
+              <span class="bg-gray-100 border-2 border-dark px-2 py-0.5 rounded-md text-xs font-bold">TypeScript</span>
+            </div>
+
+            <div class="mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed">
+              <div class="flex items-center gap-2">
+                <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=alexrivera" alt="Avatar" class="w-8 h-8 rounded-full border-2 border-dark bg-green-100">
+                <span class="text-sm font-bold">Alex Rivera</span>
+              </div>
+              <div class="flex items-center gap-1 font-bold text-sm">
+                <svg class="w-4 h-4 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>
+                178
+              </div>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TRENDING TECHNOLOGIES -->
+  <section class="py-16 bg-[#bbf7d0] border-t-4 border-dark">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-3xl font-black mb-8">Trending Technologies</h2>
+      <div class="flex flex-wrap gap-4">
+        <a href="#" class="card-brutal bg-white border-2 border-dark px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-brutal-sm">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span> Next.js <span class="bg-gray-100 border border-dark rounded px-1.5 text-xs ml-1">312</span>
+        </a>
+        <a href="#" class="card-brutal bg-white border-2 border-dark px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-brutal-sm">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span> React <span class="bg-gray-100 border border-dark rounded px-1.5 text-xs ml-1">287</span>
+        </a>
+        <a href="#" class="card-brutal bg-white border-2 border-dark px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-brutal-sm">
+          <span class="w-2 h-2 rounded-full bg-blue-600"></span> TypeScript <span class="bg-gray-100 border border-dark rounded px-1.5 text-xs ml-1">241</span>
+        </a>
+        <a href="#" class="card-brutal bg-white border-2 border-dark px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-brutal-sm">
+          <span class="w-2 h-2 rounded-full bg-yellow-400"></span> Python <span class="bg-gray-100 border border-dark rounded px-1.5 text-xs ml-1">198</span>
+        </a>
+        <a href="#" class="card-brutal bg-white border-2 border-dark px-6 py-3 rounded-xl font-bold flex items-center gap-2 shadow-brutal-sm">
+          <span class="w-2 h-2 rounded-full bg-teal-500"></span> Tailwind <span class="bg-gray-100 border border-dark rounded px-1.5 text-xs ml-1">143</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-dark text-white border-t-4 border-dark py-12 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div class="text-xl font-black flex items-center gap-2">
+        <div class="w-6 h-6 bg-primary border-2 border-white rounded-md"></div>
+        buildfolio
+      </div>
+      <div class="flex gap-6 font-bold text-sm">
+        <a href="#" class="hover:text-primary transition-colors">About</a>
+        <a href="#" class="hover:text-primary transition-colors">Privacy</a>
+        <a href="#" class="hover:text-primary transition-colors">Terms</a>
+        <a href="#" class="hover:text-primary transition-colors">Contact</a>
+      </div>
+      <p class="font-medium text-sm text-gray-400">© 2026 Buildfolio.</p>
+    </div>
+  </footer>
+
+</body>
+</html>

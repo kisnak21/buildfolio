@@ -3,10 +3,11 @@
 interface ButtonProps {
   children: React.ReactNode
   type?: 'button' | 'submit' | 'reset'
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'accent' | 'danger' | 'ghost'
   fullWidth?: boolean
   disabled?: boolean
   onClick?: () => void
+  className?: string
 }
 
 const Button = ({
@@ -16,13 +17,16 @@ const Button = ({
   fullWidth = false,
   disabled = false,
   onClick,
+  className = '',
 }: ButtonProps) => {
-  const baseStyles = 'text-sm font-medium rounded-lg py-2.5 transition-colors'
+  const baseStyles = 'btn-brutal font-bold border-2 border-dark py-3 px-6 rounded-xl shadow-brutal flex justify-center items-center gap-2'
 
   const variantStyles = {
-    primary: 'bg-primary hover:bg-primary-hover text-white',
-    secondary:
-      'bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700',
+    primary: 'bg-primary text-dark hover:bg-pink-400',
+    secondary: 'bg-white text-dark hover:bg-gray-50',
+    accent: 'bg-accent text-white hover:bg-accentDark',
+    danger: 'bg-red-500 text-white hover:bg-red-600',
+    ghost: 'border-transparent shadow-none hover:bg-gray-100 hover:shadow-brutal-sm hover:border-dark',
   }
 
   const widthStyle = fullWidth ? 'w-full' : ''
@@ -33,8 +37,8 @@ const Button = ({
       onClick={onClick}
       disabled={disabled}
       className={`${baseStyles} ${variantStyles[variant]} ${widthStyle} ${
-        disabled ? 'opacity-50 cursor-not-allowed' : ''
-      }`}
+        disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+      } ${className}`}
     >
       {children}
     </button>

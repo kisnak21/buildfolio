@@ -1,66 +1,39 @@
 import Link from 'next/link'
+import { CodeBracketIcon } from '@heroicons/react/24/solid'
 
 const footerLinks = [
   { label: 'FAQ', href: '/faq' },
-  { label: 'Contact us', href: '/contact' },
-  { label: 'Privacy Policy', href: '/privacy' },
-  { label: 'Terms of Service', href: '/terms' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Terms', href: '/terms' },
 ]
 
 const Footer = () => {
   return (
-    <footer className='border-t border-gray-200 py-10 bg-white'>
-      <div className='max-w-6xl mx-auto px-4'>
-        <div className='flex flex-col md:flex-row items-center justify-between gap-6'>
-          <div className='flex items-center gap-2'>
-            <div className='w-6 h-6 bg-primary rounded-md flex items-center justify-center'>
-              <svg width='12' height='12' viewBox='0 0 14 14' fill='none'>
-                <rect x='1' y='1' width='5' height='5' rx='1' fill='white' />
-                <rect
-                  x='8'
-                  y='1'
-                  width='5'
-                  height='5'
-                  rx='1'
-                  fill='white'
-                  opacity='0.6'
-                />
-                <rect
-                  x='1'
-                  y='8'
-                  width='5'
-                  height='5'
-                  rx='1'
-                  fill='white'
-                  opacity='0.6'
-                />
-                <rect
-                  x='8'
-                  y='8'
-                  width='5'
-                  height='5'
-                  rx='1'
-                  fill='white'
-                  opacity='0.3'
-                />
-              </svg>
-            </div>
-            <span className='text-sm text-gray-500'>
-              © {new Date().getFullYear()} Buildfolio. All rights reserved.
-            </span>
+    <footer className='bg-dark text-white border-t-4 border-dark py-12 mt-auto'>
+      <div className='max-w-6xl mx-auto px-4 flex flex-col md:flex-row items-center justify-between gap-6'>
+        <Link href='/' className='text-xl font-black flex items-center gap-2'>
+          <div className='w-6 h-6 bg-primary border-2 border-white rounded-md flex items-center justify-center'>
+            <CodeBracketIcon className='w-4 h-4 text-dark' />
           </div>
-          <nav className='flex items-center gap-6 flex-wrap justify-center'>
-            {footerLinks.map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                className='text-sm text-gray-500 hover:text-gray-900 transition-colors'
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
+          buildfolio
+        </Link>
+
+        <nav className='flex gap-6 font-bold text-sm flex-wrap justify-center'>
+          {footerLinks.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              className='hover:text-primary transition-colors'
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <p className='font-medium text-sm text-gray-400'>
+          © {new Date().getFullYear()} Buildfolio.
+        </p>
       </div>
     </footer>
   )

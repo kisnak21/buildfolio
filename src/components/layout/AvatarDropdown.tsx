@@ -46,46 +46,46 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
 
   return (
     <div className='relative' ref={ref}>
-      <button onClick={() => setOpen(!open)} className='block'>
+      <button onClick={() => setOpen(!open)} className='block btn-brutal rounded-full shadow-brutal-sm border-2 border-dark'>
         <img
           src={imgSrc || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23f3f4f6" rx="16"/></svg>`}
           alt={user.name}
-          className='w-8 h-8 rounded-full border border-gray-200'
+          className='w-10 h-10 rounded-full bg-blue-100 object-cover'
         />
       </button>
 
       {open && (
-        <div className='absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50'>
-          <div className='px-4 py-2 border-b border-gray-100'>
-            <p className='text-sm font-medium text-gray-900 truncate'>
+        <div className='absolute right-0 mt-3 w-56 bg-white border-4 border-dark rounded-xl shadow-brutal py-2 z-50 overflow-hidden'>
+          <div className='px-4 py-3 border-b-2 border-dark border-dashed'>
+            <p className='font-black text-dark truncate'>
               {user.name}
             </p>
-            <p className='text-xs text-gray-500 truncate'>{user.email}</p>
+            <p className='text-xs font-bold text-gray-500 truncate'>{user.email}</p>
           </div>
           <Link
             href='/dashboard'
             onClick={() => setOpen(false)}
-            className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+            className='block px-4 py-3 font-bold text-dark hover:bg-yellow-100 transition-colors'
           >
             Dashboard
           </Link>
           <Link
             href='/bookmarks'
             onClick={() => setOpen(false)}
-            className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+            className='block px-4 py-3 font-bold text-dark hover:bg-yellow-100 transition-colors'
           >
             Bookmarks
           </Link>
           <Link
             href='/settings'
             onClick={() => setOpen(false)}
-            className='block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors'
+            className='block px-4 py-3 font-bold text-dark hover:bg-yellow-100 transition-colors border-b-2 border-dark border-dashed'
           >
             Settings
           </Link>
           <button
             onClick={handleLogout}
-            className='block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 transition-colors'
+            className='block w-full text-left px-4 py-3 font-bold text-red-500 hover:bg-red-50 transition-colors'
           >
             Log out
           </button>

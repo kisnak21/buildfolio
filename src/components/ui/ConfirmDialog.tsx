@@ -1,5 +1,7 @@
 'use client'
 
+import Button from './Button'
+
 interface ConfirmDialogProps {
   open: boolean
   title: string
@@ -18,23 +20,17 @@ const ConfirmDialog = ({
   if (!open) return null
 
   return (
-    <div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4'>
-      <div className='bg-white rounded-xl p-6 w-full max-w-sm'>
-        <h3 className='text-base font-semibold text-gray-900 mb-1'>{title}</h3>
-        <p className='text-sm text-gray-500 mb-6'>{message}</p>
+    <div className='fixed inset-0 bg-dark/60 backdrop-blur-sm flex items-center justify-center z-50 px-4'>
+      <div className='bg-white border-4 border-dark rounded-2xl p-6 w-full max-w-sm shadow-brutal-lg'>
+        <h3 className='text-xl font-black text-dark mb-2'>{title}</h3>
+        <p className='text-sm font-medium text-gray-700 mb-8'>{message}</p>
         <div className='flex items-center justify-end gap-3'>
-          <button
-            onClick={onCancel}
-            className='text-sm text-gray-600 hover:text-gray-900 px-4 py-2 transition-colors'
-          >
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className='text-sm bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors'
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm}>
             Delete
-          </button>
+          </Button>
         </div>
       </div>
     </div>

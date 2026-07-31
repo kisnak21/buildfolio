@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Buildfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Public Sans"', 'sans-serif'] },
+          colors: {
+            bgMain: '#Fdfcf7',
+            primary: '#FF90E8',
+            secondary: '#FFC900',
+            accent: '#23A094',
+            dark: '#111111',
+          },
+          boxShadow: {
+            'brutal-sm': '2px 2px 0px 0px rgba(17,17,17,1)',
+            'brutal': '4px 4px 0px 0px rgba(17,17,17,1)',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: theme('colors.bgMain'); color: theme('colors.dark'); }
+    .btn-brutal { transition: all 0.15s ease-in-out; }
+    .btn-brutal:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px 0px rgba(17,17,17,1); }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col font-sans">
+
+  <!-- HEADER -->
+  <header class="border-b-4 border-dark bg-white sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="home.html" class="text-xl font-black tracking-tight flex items-center gap-2">
+        <div class="w-6 h-6 bg-secondary border-2 border-dark rounded-md shadow-brutal-sm"></div>
+        buildfolio
+      </a>
+      
+      <!-- User Profile Dropdown Mock -->
+      <div class="flex items-center gap-3">
+        <span class="font-bold hidden sm:block">John Doe</span>
+        <div class="w-10 h-10 rounded-full border-2 border-dark bg-blue-100 overflow-hidden shadow-brutal-sm cursor-pointer">
+          <img src="https://api.dicebear.com/7.x/pixel-art/svg?seed=johndoe" alt="Avatar">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-6xl mx-auto px-4 py-10 w-full">
+    
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 border-b-4 border-dark pb-6">
+      <div>
+        <h1 class="text-4xl font-black mb-2">Dashboard</h1>
+        <p class="font-medium text-gray-600 text-lg">Manage your showcase and profile.</p>
+      </div>
+      <button class="btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal flex items-center gap-2 w-fit">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4"></path></svg>
+        New Project
+      </button>
+    </div>
+
+    <!-- STATS -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div class="bg-primary border-4 border-dark rounded-2xl p-6 shadow-brutal">
+        <p class="font-bold text-dark mb-1">Total Projects</p>
+        <p class="text-5xl font-black">12</p>
+      </div>
+      <div class="bg-[#a78bfa] text-white border-4 border-dark rounded-2xl p-6 shadow-brutal">
+        <p class="font-bold text-white mb-1">Likes Received</p>
+        <p class="text-5xl font-black">482</p>
+      </div>
+      <div class="bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal">
+        <p class="font-bold text-gray-500 mb-1">Bookmarks</p>
+        <p class="text-5xl font-black">35</p>
+      </div>
+    </div>
+
+    <!-- PROJECT LIST -->
+    <h2 class="text-2xl font-black mb-6">Your Projects</h2>
+    <div class="bg-white border-4 border-dark rounded-2xl shadow-brutal overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead class="bg-gray-100 border-b-4 border-dark">
+            <tr>
+              <th class="p-4 font-black">Project</th>
+              <th class="p-4 font-black">Category</th>
+              <th class="p-4 font-black text-center">Likes</th>
+              <th class="p-4 font-black text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors">
+              <td class="p-4 font-bold">DevFlow Dashboard</td>
+              <td class="p-4">
+                <span class="bg-primary border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm">SaaS</span>
+              </td>
+              <td class="p-4 font-bold text-center">142</td>
+              <td class="p-4 text-right space-x-2">
+                <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm">Edit</button>
+                <button class="btn-brutal bg-red-400 text-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm">Delete</button>
+              </td>
+            </tr>
+            <tr class="border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors">
+              <td class="p-4 font-bold">SQL Buddy</td>
+              <td class="p-4">
+                <span class="bg-blue-300 border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm text-dark">Web App</span>
+              </td>
+              <td class="p-4 font-bold text-center">64</td>
+              <td class="p-4 text-right space-x-2">
+                <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm">Edit</button>
+                <button class="btn-brutal bg-red-400 text-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+</body>
+</html>

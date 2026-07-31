@@ -10,23 +10,17 @@ const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardPr
   return (
     <button
       onClick={onClick}
-      className={`group w-full border rounded-xl p-4 text-center transition-all ${
+      className={`card-brutal group w-full border-4 border-dark rounded-2xl p-4 text-center transition-all shadow-brutal-sm ${
         isSelected
-          ? 'bg-blue-50 border-primary shadow-sm'
-          : 'bg-white border-gray-200 hover:border-blue-300 hover:shadow-sm'
+          ? 'bg-[#c4f0ff] shadow-[4px_4px_0px_0px_#111111] transform -translate-y-1 -translate-x-1'
+          : 'bg-white hover:bg-yellow-50'
       }`}
     >
-      <div className='text-2xl mb-2'>{icon}</div>
-      <p
-        className={`text-sm font-medium transition-colors ${
-          isSelected
-            ? 'text-primary'
-            : 'text-gray-700 group-hover:text-gray-900'
-        }`}
-      >
+      <div className='text-3xl mb-2'>{icon}</div>
+      <p className='text-base font-black text-dark'>
         {name}
       </p>
-      <p className='text-xs text-gray-400 mt-0.5'>{count} projects</p>
+      <p className='text-xs font-bold text-gray-500 mt-1'>{count} projects</p>
     </button>
   )
 }

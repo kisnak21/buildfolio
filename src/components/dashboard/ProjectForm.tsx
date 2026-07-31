@@ -76,21 +76,42 @@ const ProjectForm = ({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className='bg-white border border-gray-200 rounded-xl p-6 max-w-xl'
+      className='bg-[#c4f0ff] border-4 border-dark rounded-2xl p-8 max-w-2xl shadow-brutal-lg'
     >
       <Input
-        label='Project title'
+        label='Project Title'
         id='title'
-        placeholder='DevLink'
+        placeholder='E.g. DevFlow'
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         error={errors.title}
       />
 
-      <div className='mb-4'>
+      <div className='mb-5'>
+        <label
+          htmlFor='category'
+          className='block font-bold text-dark mb-2'
+        >
+          Category
+        </label>
+        <select
+          id='category'
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className='input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-bold text-dark shadow-brutal-sm cursor-pointer appearance-none'
+        >
+          {categoryOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className='mb-5'>
         <label
           htmlFor='description'
-          className='block text-xs text-gray-600 mb-1.5'
+          className='block font-bold text-dark mb-2'
         >
           Description
         </label>
@@ -100,36 +121,15 @@ const ProjectForm = ({
           placeholder='What does this project do?'
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 transition-colors resize-none ${
+          className={`input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none ${
             errors.description
-              ? 'border-red-500'
-              : 'border-gray-200 focus:border-primary'
+              ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]'
+              : ''
           }`}
         />
         {errors.description && (
-          <p className='text-xs text-red-500 mt-1.5'>{errors.description}</p>
+          <p className='text-sm font-bold text-red-500 mt-2'>{errors.description}</p>
         )}
-      </div>
-
-      <div className='mb-4'>
-        <label
-          htmlFor='category'
-          className='block text-xs text-gray-600 mb-1.5'
-        >
-          Category
-        </label>
-        <select
-          id='category'
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className='w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-colors'
-        >
-          {categoryOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
       </div>
 
       <Input
@@ -140,22 +140,23 @@ const ProjectForm = ({
         onChange={(e) => setTechnologies(e.target.value)}
       />
 
-      <Input
-        label='Author name'
-        id='author'
-        placeholder='John Doe'
-        value={author}
-        onChange={(e) => setAuthor(e.target.value)}
-        error={errors.author}
-      />
-
-      <Input
-        label='GitHub URL'
-        id='github'
-        placeholder='https://github.com/...'
-        value={github}
-        onChange={(e) => setGithub(e.target.value)}
-      />
+      <div className='grid md:grid-cols-2 gap-4'>
+        <Input
+          label='Author name'
+          id='author'
+          placeholder='John Doe'
+          value={author}
+          onChange={(e) => setAuthor(e.target.value)}
+          error={errors.author}
+        />
+        <Input
+          label='GitHub URL'
+          id='github'
+          placeholder='https://github.com/...'
+          value={github}
+          onChange={(e) => setGithub(e.target.value)}
+        />
+      </div>
 
       <Input
         label='Live URL'
@@ -165,9 +166,11 @@ const ProjectForm = ({
         onChange={(e) => setLive(e.target.value)}
       />
 
-      <Button type='submit' fullWidth>
-        {submitLabel}
-      </Button>
+      <div className='pt-6'>
+        <Button type='submit' fullWidth variant='primary'>
+          {submitLabel}
+        </Button>
+      </div>
     </form>
   )
 }

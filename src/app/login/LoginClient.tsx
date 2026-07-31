@@ -73,10 +73,10 @@ const LoginClient = () => {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center px-4 bg-gray-50'>
+    <div className='min-h-screen flex items-center justify-center px-4 bg-bgMain'>
       <AuthCard
-        title='Welcome back'
-        subtitle='Log in to your Buildfolio account'
+        title='Welcome Back'
+        subtitle='Log in to manage your projects.'
       >
         <form onSubmit={handleSubmit} noValidate>
           <Input
@@ -114,22 +114,25 @@ const LoginClient = () => {
             />
           </div>
           <div className='mb-3'>
-            <Button type='submit' fullWidth disabled={submitting}>
-              {submitting ? 'Logging in...' : 'Log in'}
+            <Button type='submit' fullWidth disabled={submitting} variant='primary'>
+              {submitting ? 'Logging in...' : 'Log In'}
             </Button>
           </div>
-          <GoogleButton onClick={handleGoogle} disabled={googleSubmitting}>
-            {googleSubmitting ? 'Connecting...' : 'Continue with Google'}
-          </GoogleButton>
         </form>
 
-        <Divider />
+        <Divider text="or" />
 
-        <p className='text-center text-sm text-gray-500'>
+        <div className='mb-6'>
+          <GoogleButton onClick={handleGoogle} disabled={googleSubmitting}>
+            {googleSubmitting ? 'Connecting...' : 'Google'}
+          </GoogleButton>
+        </div>
+
+        <p className='text-center text-sm font-bold text-dark'>
           Don&apos;t have an account?{' '}
           <Link
             href='/register'
-            className='text-primary hover:text-primary-hover transition-colors font-medium'
+            className='text-primary hover:underline transition-colors'
           >
             Register
           </Link>

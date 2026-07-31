@@ -11,10 +11,10 @@ interface GoogleButtonProps {
 const GoogleButton = ({ children, onClick, disabled }: GoogleButtonProps) => {
   return (
     <Button type='button' variant='secondary' fullWidth onClick={onClick} disabled={disabled}>
-      <span className='flex items-center justify-center gap-2'>
+      <span className='flex items-center justify-center gap-3 w-full'>
         <svg
-          width='16'
-          height='16'
+          width='20'
+          height='20'
           viewBox='0 0 24 24'
           xmlns='http://www.w3.org/2000/svg'
         >

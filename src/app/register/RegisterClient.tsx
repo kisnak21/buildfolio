@@ -86,9 +86,9 @@ const RegisterClient = () => {
   }
 
   return (
-    <div className='min-h-screen flex items-center justify-center px-4 py-10 bg-gray-50'>
+    <div className='min-h-screen flex items-center justify-center px-4 py-10 bg-bgMain'>
       <AuthCard
-        title='Create an account'
+        title='Create Account'
         subtitle='Start building your portfolio today'
       >
         <form onSubmit={handleSubmit} noValidate>
@@ -138,14 +138,14 @@ const RegisterClient = () => {
                   I agree to the{' '}
                   <Link
                     href='/privacy'
-                    className='text-primary hover:text-primary-hover transition-colors'
+                    className='text-primary hover:underline font-bold'
                   >
                     Privacy Policy
                   </Link>{' '}
                   and{' '}
                   <Link
                     href='/terms'
-                    className='text-primary hover:text-primary-hover transition-colors'
+                    className='text-primary hover:underline font-bold'
                   >
                     Terms of Service
                   </Link>
@@ -154,20 +154,23 @@ const RegisterClient = () => {
             />
           </div>
           <div className='mb-3'>
-            <Button type='submit' fullWidth disabled={submitting}>
-              {submitting ? 'Creating account...' : 'Sign up'}
+            <Button type='submit' fullWidth disabled={submitting} variant='primary'>
+              {submitting ? 'Creating account...' : 'Sign Up'}
             </Button>
           </div>
-          <GoogleButton>Continue with Google</GoogleButton>
         </form>
 
-        <Divider />
+        <Divider text="or" />
 
-        <p className='text-center text-sm text-gray-500'>
+        <div className='mb-6'>
+          <GoogleButton>Google</GoogleButton>
+        </div>
+
+        <p className='text-center text-sm font-bold text-dark'>
           Already have an account?{' '}
           <Link
             href='/login'
-            className='text-primary hover:text-primary-hover transition-colors font-medium'
+            className='text-primary hover:underline transition-colors'
           >
             Log in
           </Link>

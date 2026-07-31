@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { CodeBracketIcon } from '@heroicons/react/24/solid'
 
 interface AuthCardProps {
   title: string
@@ -11,45 +12,16 @@ interface AuthCardProps {
 const AuthCard = ({ title, subtitle, children }: AuthCardProps) => {
   return (
     <div className='w-full max-w-sm'>
-      <Link href='/' className='flex items-center gap-2 mb-8'>
-        <div className='w-7 h-7 bg-primary rounded-md flex items-center justify-center'>
-          <svg width='14' height='14' viewBox='0 0 14 14' fill='none'>
-            <rect x='1' y='1' width='5' height='5' rx='1' fill='white' />
-            <rect
-              x='8'
-              y='1'
-              width='5'
-              height='5'
-              rx='1'
-              fill='white'
-              opacity='0.6'
-            />
-            <rect
-              x='1'
-              y='8'
-              width='5'
-              height='5'
-              rx='1'
-              fill='white'
-              opacity='0.6'
-            />
-            <rect
-              x='8'
-              y='8'
-              width='5'
-              height='5'
-              rx='1'
-              fill='white'
-              opacity='0.3'
-            />
-          </svg>
+      <Link href='/' className='flex items-center gap-2 mb-8 text-2xl font-black tracking-tight'>
+        <div className='w-8 h-8 bg-secondary border-2 border-dark rounded-md flex items-center justify-center shadow-brutal-sm'>
+          <CodeBracketIcon className='w-5 h-5 text-dark' />
         </div>
-        <span className='text-sm font-medium text-gray-900'>Buildfolio</span>
+        buildfolio
       </Link>
 
-      <div className='bg-white border border-gray-200 rounded-xl p-8'>
-        <h1 className='text-xl font-semibold text-gray-900 mb-1'>{title}</h1>
-        <p className='text-sm text-gray-500 mb-6'>{subtitle}</p>
+      <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal-lg relative'>
+        <h1 className='text-3xl font-black text-dark mb-2'>{title}</h1>
+        <p className='font-medium text-gray-600 mb-8'>{subtitle}</p>
         {children}
       </div>
     </div>

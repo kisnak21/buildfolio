@@ -24,9 +24,9 @@ const Input = ({
   rightElement,
 }: InputProps) => {
   return (
-    <div className='mb-4'>
-      <div className='flex items-center justify-between mb-1.5'>
-        <label htmlFor={id} className='block text-xs text-gray-600'>
+    <div className='mb-5'>
+      <div className='flex items-center justify-between mb-2'>
+        <label htmlFor={id} className='block font-bold text-dark'>
           {label}
         </label>
         {rightElement}
@@ -38,11 +38,11 @@ const Input = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 transition-colors ${
-          error ? 'border-red-500' : 'border-gray-200 focus:border-primary'
+        className={`input-brutal w-full px-4 py-3 bg-[#f3f4f6] border-2 border-dark rounded-xl font-medium transition-shadow ${
+          error ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]' : ''
         }`}
       />
-      {error && <p className='text-xs text-red-500 mt-1.5'>{error}</p>}
+      {error && <p className='text-sm font-bold text-red-500 mt-2'>{error}</p>}
     </div>
   )
 }
