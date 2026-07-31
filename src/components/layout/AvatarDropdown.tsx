@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useDispatch } from 'react-redux'
 import { logoutUser } from '@/store/redux/authSlice'
 import { useRouter } from 'next/navigation'
@@ -47,9 +48,12 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
   return (
     <div className='relative' ref={ref}>
       <button onClick={() => setOpen(!open)} className='block btn-brutal rounded-full shadow-brutal-sm border-2 border-dark'>
-        <img
+        <Image
           src={imgSrc || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23f3f4f6" rx="16"/></svg>`}
           alt={user.name}
+          width={40}
+          height={40}
+          unoptimized
           className='w-10 h-10 rounded-full bg-blue-100 object-cover'
         />
       </button>

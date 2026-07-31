@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
@@ -123,10 +124,13 @@ const ProjectCard = ({ project, onLike }: ProjectCardProps) => {
             onClick={(e) => e.stopPropagation()}
             className='flex items-center gap-2 hover:opacity-80 transition-opacity'
           >
-            <img
+            <Image
               src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${author}`}
               className='w-8 h-8 rounded-full border-2 border-dark bg-yellow-100'
               alt={author}
+              width={32}
+              height={32}
+              unoptimized
             />
             <span className='text-sm font-bold text-dark hover:underline'>{author}</span>
           </Link>

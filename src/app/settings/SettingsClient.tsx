@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { updateProfile } from '@/store/redux/authSlice'
 import { updateUserApi, changePasswordApi } from '@/lib/api/authApi'
@@ -134,9 +135,12 @@ const SettingsClient = () => {
         {tab === 'profile' && (
           <div className='bg-white border border-gray-200 rounded-xl p-6 max-w-lg'>
             <div className='flex items-center gap-4 mb-6 pb-6 border-b border-gray-100'>
-              <img
+              <Image
                 src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${currentUser?.email}`}
-                alt={currentUser?.name}
+                alt={currentUser?.name || 'User Avatar'}
+                width={56}
+                height={56}
+                unoptimized
                 className='w-14 h-14 rounded-full border border-gray-200'
               />
               <div>

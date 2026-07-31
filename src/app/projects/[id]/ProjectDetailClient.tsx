@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
 import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
@@ -171,10 +172,13 @@ const ProjectDetailClient = () => {
 
               {/* Author Info */}
               <div className='flex items-center gap-3 border-t-2 border-dark border-dashed pt-6 mb-6'>
-                <img
+                <Image
                   src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${project.author}`}
                   className='w-10 h-10 rounded-full border-2 border-dark bg-yellow-100'
                   alt={project.author}
+                  width={40}
+                  height={40}
+                  unoptimized
                 />
                 <div>
                   <p className='text-sm font-bold text-dark'>
@@ -247,10 +251,13 @@ const ProjectDetailClient = () => {
                   className='mb-8 border-b-2 border-dark border-dashed pb-8'
                 >
                   <div className='flex items-start gap-4'>
-                    <img
+                    <Image
                       src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${currentUser.email}`}
                       className='w-10 h-10 rounded-full border-2 border-dark bg-yellow-100 shrink-0'
                       alt={currentUser.name}
+                      width={40}
+                      height={40}
+                      unoptimized
                     />
                     <div className='flex-1'>
                       <textarea
@@ -298,10 +305,13 @@ const ProjectDetailClient = () => {
                       key={c.id}
                       className='flex items-start gap-4 border-b-2 border-dark border-dashed pb-6 last:border-b-0 last:pb-0'
                     >
-                      <img
+                      <Image
                         src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${c.author_name}`}
                         className='w-10 h-10 rounded-full border-2 border-dark bg-blue-50 shrink-0'
                         alt={c.author_name}
+                        width={40}
+                        height={40}
+                        unoptimized
                       />
                       <div className='flex-1 bg-[#fdfcf7] border-2 border-dark rounded-xl px-4 py-3 shadow-brutal-sm'>
                         <div className='flex items-center justify-between mb-2'>

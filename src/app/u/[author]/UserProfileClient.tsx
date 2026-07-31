@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
@@ -43,9 +44,12 @@ const UserProfileClient = () => {
       <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
         <div className='bg-white border border-gray-200 rounded-xl p-6 mb-8'>
           <div className='flex items-start gap-5'>
-            <img
+            <Image
               src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${decodedAuthor}`}
               alt={decodedAuthor}
+              width={64}
+              height={64}
+              unoptimized
               className='w-16 h-16 rounded-full border border-gray-200'
             />
             <div className='flex-1'>
