@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -15,9 +15,9 @@ const categoryList = ['SaaS', 'AI', 'Web App', 'Mobile App', 'Open Source', 'Gam
 const PAGE_SIZE = 6
 
 const ProjectsClient = () => {
-  const dispatch = useDispatch()
-  const { items: projects, loading, error, pagination } = useSelector(
-    (state: any) => state.projects,
+  const dispatch = useAppDispatch()
+  const { items: projects, loading, error, pagination } = useAppSelector(
+    (state) => state.projects,
   )
 
   const [search, setSearch] = useState('')

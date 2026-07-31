@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { useSelector } from 'react-redux'
+import { useAppSelector } from '@/store/redux/hooks'
 import AvatarDropdown from './AvatarDropdown'
 import { Bars3Icon, XMarkIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
 
@@ -14,7 +14,7 @@ const navLinks = [
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { currentUser } = useSelector((state: any) => state.auth)
+  const { currentUser } = useAppSelector((state) => state.auth)
 
   return (
     <header className='border-b-4 border-dark bg-bgMain sticky top-0 z-50'>
@@ -42,8 +42,8 @@ const Header = () => {
 
         {/* Auth Actions Desktop */}
         <div className='hidden md:flex items-center gap-4 font-bold'>
-          {currentUser ? (
-            <AvatarDropdown user={currentUser} />
+          {currentUser && currentUser.id ? (
+            <AvatarDropdown user={currentUser as any} />
           ) : (
             <>
               <Link href='/login' className='text-dark hover:underline decoration-2 underline-offset-4'>

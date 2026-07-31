@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
 import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
 import {
@@ -43,16 +43,16 @@ const getCategoryColor = (category: string) => {
 
 const ProjectDetailClient = () => {
   const { id } = useParams<{ id: string }>()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const router = useRouter()
 
   const [project, setProject] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  const { currentUser } = useSelector((state: any) => state.auth)
-  const { items: bookmarks } = useSelector((state: any) => state.bookmarks)
-  const { items: comments, loading: commentsLoading } = useSelector(
-    (state: any) => state.comments,
+  const { currentUser } = useAppSelector((state) => state.auth)
+  const { items: bookmarks } = useAppSelector((state) => state.bookmarks)
+  const { items: comments, loading: commentsLoading } = useAppSelector(
+    (state) => state.comments,
   )
 
   const existingBookmark = bookmarks.find(

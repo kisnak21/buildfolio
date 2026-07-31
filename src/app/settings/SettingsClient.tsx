@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { updateProfile } from '@/store/redux/authSlice'
 import { updateUserApi, changePasswordApi } from '@/lib/api/authApi'
 import Header from '@/components/layout/Header'
@@ -12,8 +12,8 @@ import Button from '@/components/ui/Button'
 type Tab = 'profile' | 'security'
 
 const SettingsClient = () => {
-  const dispatch = useDispatch()
-  const { currentUser } = useSelector((state: any) => state.auth)
+  const dispatch = useAppDispatch()
+  const { currentUser } = useAppSelector((state) => state.auth)
 
   const [tab, setTab] = useState<Tab>('profile')
 
@@ -34,6 +34,7 @@ const SettingsClient = () => {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!currentUser) return
     if (!name.trim()) {
       setProfileError('Name is required.')
       return
@@ -54,6 +55,7 @@ const SettingsClient = () => {
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!currentUser) return
     setPwError('')
 
     if (!currentPassword || !newPassword || !confirmPassword) {

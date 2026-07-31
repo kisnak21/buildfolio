@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, updateProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
@@ -11,12 +11,12 @@ import ProjectForm from '@/components/dashboard/ProjectForm'
 
 const EditProjectClient = () => {
   const { id } = useParams<{ id: string }>()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const router = useRouter()
   const [submitError, setSubmitError] = useState('')
 
-  const { currentUser } = useSelector((state: any) => state.auth)
-  const project = useSelector((state: any) =>
+  const { currentUser } = useAppSelector((state) => state.auth)
+  const project = useAppSelector((state) =>
     state.projects.items.find((p: any) => String(p.id) === id),
   )
 
@@ -29,6 +29,7 @@ const EditProjectClient = () => {
 
   const handleSubmit = async (projectData: any) => {
     setSubmitError('')
+    if (!project) return
     const result = await dispatch(
       updateProject({
         id: project.id,

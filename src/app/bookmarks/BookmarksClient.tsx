@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
@@ -10,14 +10,14 @@ import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 
 const BookmarksClient = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const router = useRouter()
 
-  const { items: bookmarks, loading } = useSelector(
-    (state: any) => state.bookmarks,
+  const { items: bookmarks, loading } = useAppSelector(
+    (state) => state.bookmarks,
   )
-  const allProjects = useSelector((state: any) => state.projects.items)
-  const currentUser = useSelector((state: any) => state.auth.currentUser)
+  const allProjects = useAppSelector((state) => state.projects.items)
+  const currentUser = useAppSelector((state) => state.auth.currentUser)
 
   useEffect(() => {
     if (allProjects.length === 0) {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
 import { addProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
@@ -10,9 +10,9 @@ import Footer from '@/components/layout/Footer'
 import ProjectForm from '@/components/dashboard/ProjectForm'
 
 const NewProjectClient = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const router = useRouter()
-  const { currentUser } = useSelector((state: any) => state.auth)
+  const { currentUser } = useAppSelector((state) => state.auth)
   const [submitError, setSubmitError] = useState('')
 
   const handleSubmit = async (projectData: any) => {

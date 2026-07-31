@@ -6,17 +6,17 @@ import {
 } from '../../lib/api/bookmarksApi'
 
 interface Bookmark {
-  id: number
+  id: string
   user_id: string
   project_id: string
   [key: string]: unknown
 }
 
-export const fetchBookmarks = createAsyncThunk<Bookmark[], number, { rejectValue: string }>(
+export const fetchBookmarks = createAsyncThunk<Bookmark[], string, { rejectValue: string }>(
   'bookmarks/fetchAll',
   async (userId, { rejectWithValue }) => {
     try {
-      return await getUserBookmarks(userId.toString())
+      return await getUserBookmarks(userId)
     } catch (err) {
       return rejectWithValue('Failed to load bookmarks.')
     }
@@ -36,11 +36,11 @@ export const addBookmark = createAsyncThunk<Bookmark, { project_id: string | num
   },
 )
 
-export const removeBookmark = createAsyncThunk<number, { bookmarkId: number }, { rejectValue: string }>(
+export const removeBookmark = createAsyncThunk<string, { bookmarkId: string }, { rejectValue: string }>(
   'bookmarks/remove',
   async ({ bookmarkId }, { rejectWithValue }) => {
     try {
-      await removeBookmarkApi(bookmarkId.toString())
+      await removeBookmarkApi(bookmarkId)
       return bookmarkId
     } catch (err) {
       return rejectWithValue('Failed to remove bookmark.')

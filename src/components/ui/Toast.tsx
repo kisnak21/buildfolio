@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { hideToast, type ToastType } from '@/store/redux/toastSlice'
 import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/solid'
 
@@ -21,8 +21,8 @@ const toastStyles: Record<ToastType, { box: string; icon: React.ReactNode }> = {
 }
 
 const Toast = () => {
-  const dispatch = useDispatch()
-  const { message, type, visible } = useSelector((state: any) => state.toast)
+  const dispatch = useAppDispatch()
+  const { message, type, visible } = useAppSelector((state) => state.toast)
   const toastType = type as ToastType
 
   useEffect(() => {

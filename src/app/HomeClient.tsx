@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -24,13 +24,13 @@ const categoryList = [
 ]
 
 const HomeClient = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const {
     items: projects,
     loading,
     error,
-  } = useSelector((state: any) => state.projects)
-  const { currentUser } = useSelector((state: any) => state.auth)
+  } = useAppSelector((state) => state.projects)
+  const { currentUser } = useAppSelector((state) => state.auth)
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')

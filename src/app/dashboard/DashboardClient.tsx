@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, deleteProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
@@ -12,13 +12,13 @@ import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import { PlusIcon } from '@heroicons/react/24/solid'
 
 const DashboardClient = () => {
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
   const {
     items: projects,
     loading,
     error,
-  } = useSelector((state: any) => state.projects)
-  const { currentUser, bookmarks } = useSelector((state: any) => ({
+  } = useAppSelector((state) => state.projects)
+  const { currentUser, bookmarks } = useAppSelector((state) => ({
     currentUser: state.auth.currentUser,
     bookmarks: state.bookmarks.items,
   }))

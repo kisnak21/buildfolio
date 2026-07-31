@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { useSelector, useDispatch } from 'react-redux'
+import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -11,10 +11,10 @@ import ProjectCard from '@/components/home/ProjectCard'
 
 const UserProfileClient = () => {
   const { author } = useParams<{ author: string }>()
-  const dispatch = useDispatch()
+  const dispatch = useAppDispatch()
 
-  const allProjects = useSelector((state: any) => state.projects.items)
-  const { currentUser } = useSelector((state: any) => state.auth)
+  const allProjects = useAppSelector((state) => state.projects.items)
+  const { currentUser } = useAppSelector((state) => state.auth)
 
   const decodedAuthor = decodeURIComponent(author)
 
