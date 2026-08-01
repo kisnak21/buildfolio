@@ -80,9 +80,17 @@ const ProjectDetailClient = () => {
     }
   }, [id, dispatch])
 
-  const handleLike = () => {
-    dispatch(showToast({ message: 'You liked this project!', type: 'success' }))
-    dispatch(likeProjectThunk(id) as any)
+  const handleLike = async () => {
+    const result = await dispatch(likeProjectThunk(id) as any)
+    if (likeProjectThunk.fulfilled.match(result)) {
+      const liked = result.payload?.liked
+      dispatch(
+        showToast({
+          message: liked ? 'You liked this project!' : 'You removed your like.',
+          type: liked ? 'success' : 'info',
+        }),
+      )
+    }
   }
 
   const handleBookmark = () => {

@@ -147,7 +147,12 @@ export const getProjectById = async (id: string | number): Promise<NormalizedPro
   }
 }
 
-export const likeProject = async (id: string | number): Promise<NormalizedProject> => {
+export interface LikeResult {
+  liked: boolean
+  likes: number
+}
+
+export const likeProject = async (id: string | number): Promise<LikeResult> => {
   const response = await realApiClient.post(`/projects/${id}/like`)
-  return normalizeProject(response.data.data)
+  return response.data.data
 }

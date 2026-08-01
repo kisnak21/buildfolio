@@ -219,6 +219,32 @@ export const deleteProject = async (id: string) => {
   return prisma.project.delete({ where: { id } })
 }
 
+export const toggleLikeProject = async (projectId: string, userId: string) => {
+  const existing = await prisma.projectLike.findUnique({
+    where: { userId_projectId: { userId, projectId } },
+  })
+
+  if (existing) {
+    await prisma.$transaction([
+      prisma.projectLike.delete({ where: { id: existing.id } }),
+      prisma.project.update({
+        where: { id: projectId },
+        data: { likes: { decrement: 1 } },
+      }),
+    ])
+    return { liked: false, likes: (await getProjectById(projectId))?.likes ?? 0 }
+  }
+
+  await prisma.$transaction([
+    prisma.projectLike.create({ data: { userId, projectId } }),
+    prisma.project.update({
+      where: { id: projectId },
+      data: { likes: { increment: 1 } },
+    }),
+  ])
+  return { liked: true, likes: (await getProjectById(projectId))?.likes ?? 0 }
+}
+
 async function resolveTechnologies(names: string[]): Promise<string[]> {
   const ids: string[] = []
   for (const name of names) {
