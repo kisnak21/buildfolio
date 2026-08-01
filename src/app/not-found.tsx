@@ -4,22 +4,24 @@ import Footer from '@/components/layout/Footer'
 
 export default function NotFound() {
   return (
-    <div className='bg-gray-50 min-h-screen flex flex-col'>
+    <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 flex flex-col items-center justify-center px-4 text-center'>
-        <p className='text-6xl font-semibold text-gray-200 mb-4'>404</p>
-        <h1 className='text-xl font-semibold text-gray-900 mb-2'>
-          Page not found
-        </h1>
-        <p className='text-sm text-gray-500 mb-6'>
-          The page you&apos;re looking for doesn&apos;t exist or has been moved.
-        </p>
-        <Link
-          href='/'
-          className='text-sm bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg transition-colors'
-        >
-          Back to homepage
-        </Link>
+        <div className='bg-[#c4f0ff] border-4 border-dark rounded-2xl p-12 shadow-brutal-lg max-w-md w-full'>
+          <p className='text-8xl font-black text-dark mb-4 drop-shadow-[4px_4px_0_#FF90E8]'>404</p>
+          <h1 className='text-3xl font-black text-dark mb-4'>
+            Page not found
+          </h1>
+          <p className='font-bold text-gray-700 mb-8'>
+            The page you're looking for doesn't exist or has been moved.
+          </p>
+          <Link
+            href='/'
+            className='btn-brutal inline-block bg-primary text-dark border-2 border-dark px-8 py-4 rounded-xl font-black shadow-brutal hover:bg-pink-400'
+          >
+            Back to homepage
+          </Link>
+        </div>
       </main>
       <Footer />
     </div>

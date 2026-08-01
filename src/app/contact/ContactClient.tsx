@@ -47,31 +47,37 @@ const ContactClient = () => {
   }
 
   return (
-    <div className='bg-gray-50 min-h-screen flex flex-col'>
+    <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 max-w-2xl mx-auto px-4 py-12 w-full'>
-        <div className='mb-10'>
-          <h1 className='text-2xl font-semibold text-gray-900 mb-2'>
+        <div className='mb-10 border-b-4 border-dark pb-6'>
+          <h1 className='text-4xl font-black mb-2'>
             Contact us
           </h1>
-          <p className='text-sm text-gray-500'>
+          <p className='text-lg font-bold text-gray-600'>
             Have a question or feedback? We&apos;d love to hear from you.
           </p>
         </div>
         {submitted ? (
-          <div className='bg-white border border-gray-200 rounded-xl p-8 text-center'>
-            <p className='text-2xl mb-3'>✅</p>
-            <h2 className='text-base font-semibold text-gray-900 mb-1'>
+          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
+            <p className='text-6xl mb-4'>✅</p>
+            <h2 className='text-2xl font-black text-dark mb-2'>
               Message sent!
             </h2>
-            <p className='text-sm text-gray-500'>
+            <p className='font-medium text-gray-600'>
               Thanks for reaching out. We&apos;ll get back to you shortly.
             </p>
+            <button
+              onClick={() => setSubmitted(false)}
+              className='mt-8 btn-brutal inline-block bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
+            >
+              Send another message
+            </button>
           </div>
         ) : (
-          <div className='bg-white border border-gray-200 rounded-xl p-6'>
+          <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal'>
             {serverError && (
-              <p className='text-sm text-red-500 mb-4'>{serverError}</p>
+              <p className='text-sm font-bold text-red-500 mb-6'>{serverError}</p>
             )}
             <form onSubmit={handleSubmit} noValidate>
               <Input
@@ -91,10 +97,10 @@ const ContactClient = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 error={errors.email}
               />
-              <div className='mb-6'>
+              <div className='mb-8'>
                 <label
                   htmlFor='message'
-                  className='block text-xs text-gray-600 mb-1.5'
+                  className='block font-bold text-dark mb-2'
                 >
                   Message
                 </label>
@@ -104,19 +110,19 @@ const ContactClient = () => {
                   placeholder='Write your message here...'
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className={`w-full bg-gray-50 border rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 outline-none focus:ring-2 focus:ring-primary/20 transition-colors resize-none ${
+                  className={`input-brutal w-full bg-[#f3f4f6] border-2 border-dark rounded-xl px-4 py-3 font-medium transition-shadow resize-none ${
                     errors.message
-                      ? 'border-red-500'
-                      : 'border-gray-200 focus:border-primary'
+                      ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]'
+                      : ''
                   }`}
                 />
                 {errors.message && (
-                  <p className='text-xs text-red-500 mt-1.5'>
+                  <p className='text-sm font-bold text-red-500 mt-2'>
                     {errors.message}
                   </p>
                 )}
               </div>
-              <Button type='submit' fullWidth disabled={submitting}>
+              <Button type='submit' fullWidth disabled={submitting} variant='primary'>
                 {submitting ? 'Sending...' : 'Send message'}
               </Button>
             </form>

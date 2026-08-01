@@ -52,27 +52,27 @@ const faqs = [
 
 export default function FAQPage() {
   return (
-    <div className='bg-gray-50 min-h-screen flex flex-col'>
+    <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 max-w-3xl mx-auto px-4 py-12 w-full'>
-        <div className='mb-10'>
-          <h1 className='text-2xl font-semibold text-gray-900 mb-2'>
+        <div className='mb-10 border-b-4 border-dark pb-6'>
+          <h1 className='text-4xl font-black mb-2'>
             Frequently Asked Questions
           </h1>
-          <p className='text-sm text-gray-500'>
+          <p className='font-bold text-gray-600 text-lg'>
             Everything you need to know about Buildfolio.
           </p>
         </div>
-        <div className='flex flex-col gap-4'>
+        <div className='flex flex-col gap-6'>
           {faqs.map((faq, index) => (
             <div
               key={index}
-              className='bg-white border border-gray-200 rounded-xl p-6'
+              className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal-sm'
             >
-              <h2 className='text-sm font-semibold text-gray-900 mb-2'>
+              <h2 className='text-xl font-black text-dark mb-2'>
                 {faq.question}
               </h2>
-              <p className='text-sm text-gray-500 leading-relaxed'>
+              <p className='font-medium text-gray-700 leading-relaxed'>
                 {faq.answer}
               </p>
             </div>
