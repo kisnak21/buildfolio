@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
+import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
@@ -24,13 +25,15 @@ const ProjectsClient = () => {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
   const [sortBy, setSortBy] = useState('newest')
+  const currentUser = useAppSelector((state) => state.auth.currentUser)
+  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
+
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    dispatch(
-      fetchProjects({ page, limit: PAGE_SIZE, sort: sortBy }) as any,
-    )
-  }, [dispatch, page, sortBy])
+    dispatch(fetchProjects({ page, limit: PAGE_SIZE, sort: sortBy }) as any)
+    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+  }, [dispatch, page, sortBy, currentUser?.id])
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
@@ -57,8 +60,12 @@ const ProjectsClient = () => {
   })
 
   const totalPages = pagination?.totalPages || 1
-  const handleLike = (id: string, currentLikes: number) => {
-    dispatch(likeProject(id) as any)
+  const handleLike = async (id: string, currentLikes: number) => {
+    if (!currentUser) return
+    const result = await dispatch(likeProject(id) as any)
+    if (likeProject.fulfilled.match(result)) {
+      dispatch(syncLike({ project: projects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    }
   }
 
   const goToPage = (newPage: number) => {
@@ -169,6 +176,7 @@ const ProjectsClient = () => {
                   key={project.id}
                   project={project}
                   onLike={handleLike}
+                  isLiked={likedProjectIds.includes(String(project.id))}
                 />
               ))
             )}

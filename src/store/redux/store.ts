@@ -4,6 +4,7 @@ import authReducer from './authSlice'
 import bookmarksReducer from './bookmarksSlice'
 import commentsReducer from './commentsSlice'
 import toastReducer from './toastSlice'
+import likesReducer from './likesSlice'
 
 const store = configureStore({
   reducer: {
@@ -12,6 +13,7 @@ const store = configureStore({
     bookmarks: bookmarksReducer,
     comments: commentsReducer,
     toast: toastReducer,
+    likes: likesReducer,
   },
 })
 

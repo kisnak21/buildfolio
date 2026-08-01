@@ -97,6 +97,19 @@ export const getProjectById = async (id: string) => {
   return project ? normalizeProject(project) : null
 }
 
+export const getLikedProjectsByUser = async (userId: string) => {
+  const likes = await prisma.projectLike.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      createdAt: true,
+      project: { select: projectSelect },
+    },
+  })
+  return likes.map((l) => normalizeProject(l.project))
+}
+
 export const createProject = async ({
   title,
   slug,

@@ -21,6 +21,7 @@ interface Project {
 interface ProjectCardProps {
   project: Project
   onLike: (id: string, likes: number) => void
+  isLiked?: boolean
 }
 
 // Generate consistent background color based on category
@@ -49,7 +50,7 @@ const getCategoryEmoji = (category: string) => {
   return map[category] || '✨'
 }
 
-const ProjectCard = ({ project, onLike }: ProjectCardProps) => {
+const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => {
   const {
     id,
     title,
@@ -90,7 +91,11 @@ const ProjectCard = ({ project, onLike }: ProjectCardProps) => {
           }}
           className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
         >
-          <HeartOutline className='w-5 h-5 text-dark' />
+          {isLiked ? (
+            <HeartSolid className='w-5 h-5 text-primary' />
+          ) : (
+            <HeartOutline className='w-5 h-5 text-dark' />
+          )}
         </button>
       </div>
 

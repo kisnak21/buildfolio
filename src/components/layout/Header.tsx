@@ -92,6 +92,7 @@ const Header = () => {
                 <>
                   <Link href='/dashboard' onClick={() => setMenuOpen(false)} className='text-dark hover:underline decoration-2 underline-offset-4'>Dashboard</Link>
                   <Link href='/bookmarks' onClick={() => setMenuOpen(false)} className='text-dark hover:underline decoration-2 underline-offset-4'>Bookmarks</Link>
+                  <Link href='/liked' onClick={() => setMenuOpen(false)} className='text-dark hover:underline decoration-2 underline-offset-4'>Liked Projects</Link>
                   <Link href='/settings' onClick={() => setMenuOpen(false)} className='text-dark hover:underline decoration-2 underline-offset-4'>Settings</Link>
                 </>
               ) : (

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
+import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
 import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
 import {
   fetchComments,
@@ -52,9 +53,12 @@ const ProjectDetailClient = () => {
 
   const { currentUser } = useAppSelector((state) => state.auth)
   const { items: bookmarks } = useAppSelector((state) => state.bookmarks)
+  const likedProjects = useAppSelector((state) => state.likes.items)
   const { items: comments, loading: commentsLoading } = useAppSelector(
     (state) => state.comments,
   )
+
+  const isLiked = likedProjects.some((p: any) => String(p.id) === id)
 
   const existingBookmark = bookmarks.find(
     (b: any) => String(b.project_id) === id,
@@ -74,6 +78,8 @@ const ProjectDetailClient = () => {
         if (mounted) setLoading(false)
       })
 
+    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+
     return () => {
       mounted = false
       dispatch(clearComments())
@@ -81,9 +87,11 @@ const ProjectDetailClient = () => {
   }, [id, dispatch])
 
   const handleLike = async () => {
+    if (!currentUser) return router.push('/login')
     const result = await dispatch(likeProjectThunk(id) as any)
     if (likeProjectThunk.fulfilled.match(result)) {
       const liked = result.payload?.liked
+      dispatch(syncLike({ project: project, liked }))
       dispatch(
         showToast({
           message: liked ? 'You liked this project!' : 'You removed your like.',
@@ -200,10 +208,16 @@ const ProjectDetailClient = () => {
               <div className='flex flex-wrap items-center gap-4 pt-6 border-t-2 border-dark border-dashed'>
                 <button
                   onClick={handleLike}
-                  className='btn-brutal bg-white border-2 border-dark px-5 py-3 rounded-xl font-bold shadow-brutal-sm flex items-center gap-2 text-sm hover:bg-pink-50'
+                  className={`btn-brutal border-2 border-dark px-5 py-3 rounded-xl font-bold shadow-brutal-sm flex items-center gap-2 text-sm ${
+                    isLiked ? 'bg-primary text-dark' : 'bg-white text-dark hover:bg-pink-50'
+                  }`}
                 >
-                  <HeartSolid className='w-5 h-5 text-primary' />
-                  <span className='font-bold'>{project.likes} Likes</span>
+                  {isLiked ? (
+                    <HeartSolid className='w-5 h-5 text-dark' />
+                  ) : (
+                    <HeartOutline className='w-5 h-5 text-dark' />
+                  )}
+                  <span className='font-bold'>{project.likes} {isLiked ? 'Liked' : 'Likes'}</span>
                 </button>
 
                 <button

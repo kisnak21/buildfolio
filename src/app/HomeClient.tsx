@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
+import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Hero from '@/components/home/Hero'
@@ -31,6 +32,7 @@ const HomeClient = () => {
     error,
   } = useAppSelector((state) => state.projects)
   const { currentUser } = useAppSelector((state) => state.auth)
+  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -38,7 +40,8 @@ const HomeClient = () => {
 
   useEffect(() => {
     dispatch(fetchProjects() as any)
-  }, [dispatch])
+    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+  }, [dispatch, currentUser?.id])
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
@@ -78,8 +81,15 @@ const HomeClient = () => {
     ).length,
   }))
 
-  const handleLike = (id: string) => {
-    dispatch(likeProject(id) as any)
+  const handleLike = async (id: string) => {
+    if (!currentUser) {
+      window.location.href = '/login'
+      return
+    }
+    const result = await dispatch(likeProject(id) as any)
+    if (likeProject.fulfilled.match(result)) {
+      dispatch(syncLike({ project: projects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    }
   }
 
   return (
@@ -174,6 +184,7 @@ const HomeClient = () => {
                       key={project.id}
                       project={project}
                       onLike={handleLike}
+                      isLiked={likedProjectIds.includes(String(project.id))}
                     />
                   ))}
             </div>
@@ -246,6 +257,7 @@ const HomeClient = () => {
                       key={project.id}
                       project={project}
                       onLike={handleLike}
+                      isLiked={likedProjectIds.includes(String(project.id))}
                     />
                   ))}
             </div>

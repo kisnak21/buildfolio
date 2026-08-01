@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
+import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
@@ -16,6 +17,7 @@ const UserProfileClient = () => {
 
   const allProjects = useAppSelector((state) => state.projects.items)
   const { currentUser } = useAppSelector((state) => state.auth)
+  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
 
   const decodedAuthor = decodeURIComponent(author)
 
@@ -23,7 +25,8 @@ const UserProfileClient = () => {
     if (allProjects.length === 0) {
       dispatch(fetchProjects() as any)
     }
-  }, [dispatch, allProjects.length])
+    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+  }, [dispatch, allProjects.length, currentUser?.id])
 
   const userProjects = allProjects.filter(
     (p: any) => p.author === decodedAuthor,
@@ -34,8 +37,11 @@ const UserProfileClient = () => {
   )
   const isOwnProfile = currentUser?.name === decodedAuthor
 
-  const handleLike = (id: string, currentLikes: number) => {
-    dispatch(likeProject(id) as any)
+  const handleLike = async (id: string, currentLikes: number) => {
+    const result = await dispatch(likeProject(id) as any)
+    if (likeProject.fulfilled.match(result)) {
+      dispatch(syncLike({ project: allProjects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    }
   }
 
   return (
@@ -114,6 +120,7 @@ const UserProfileClient = () => {
                 key={project.id}
                 project={project}
                 onLike={handleLike}
+                isLiked={likedProjectIds.includes(String(project.id))}
               />
             ))}
           </div>
