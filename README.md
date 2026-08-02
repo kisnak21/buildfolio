@@ -41,7 +41,7 @@ Buildfolio lets developers:
 | ---------------- | ----------------------------------------------------------- |
 | Framework        | Next.js 16 (App Router)                                     |
 | Language         | TypeScript                                                  |
-| Styling          | Tailwind CSS v4 + shadcn/ui                                 |
+| Styling          | Tailwind CSS v4 + custom neo-brutalism components           |
 | State Management | Redux Toolkit + React Redux                                 |
 | Database         | PostgreSQL (Neon)                                           |
 | ORM / Query      | Prisma ORM (v7) + @prisma/adapter-pg                        |
@@ -60,9 +60,10 @@ Buildfolio lets developers:
 - Search projects by title or description
 - Filter by category and technology
 - Sort by newest, most liked, or alphabetical
-- View all projects on a dedicated page with pagination (3 projects per page)
-- Like projects (persisted to database)
+- View all projects on a dedicated page with pagination (6 projects per page)
+- Like and unlike projects once per authenticated user (persisted via `project_likes`)
 - View public user profiles with stats
+- Neo-brutalism UI, loading skeletons, and global toast notifications
 
 ### Auth
 
@@ -81,6 +82,7 @@ Buildfolio lets developers:
 - **Edit Project** — update any project you own (ownership enforced)
 - **Delete Project** — with confirmation dialog
 - **Bookmarks** — save and view bookmarked projects (persisted to database)
+- **Liked Projects** — view projects you have liked; likes can be toggled
 - **Comments** — post and delete comments on project detail pages (persisted to database)
 - **Settings** — update name and bio (persisted to database)
 
@@ -98,7 +100,7 @@ src/
 ├── app/
 │   ├── api/                  # Next.js API route handlers
 │   │   ├── users/            # Register, login, verify-email, CRUD
-│   │   ├── projects/         # GET (filter/sort/search/pagination), POST, PATCH, DELETE
+│   │   ├── projects/         # GET/filter/sort/search/pagination, CRUD, like/unlike, liked projects
 │   │   ├── bookmarks/        # GET by user, POST, DELETE
 │   │   ├── comments/         # GET by project, POST, DELETE
 │   │   ├── contact/          # POST send email
@@ -107,6 +109,7 @@ src/
 │   ├── projects/             # All Projects, Project Detail
 │   ├── u/[author]/           # User Profile
 │   ├── bookmarks/            # Bookmarks page
+│   ├── liked/                # Liked projects page
 │   ├── settings/             # Settings page
 │   ├── login/                # Login page
 │   ├── register/             # Register page
@@ -121,7 +124,7 @@ src/
 │   ├── layout/               # Header, Footer, AuthCard, AvatarDropdown
 │   ├── home/                 # Hero, Section, ProjectCard, CategoryCard, TechPill
 │   ├── dashboard/            # ProjectForm
-│   └── ui/                   # Button, Input, Checkbox, Divider, ConfirmDialog, Skeleton
+│   └── ui/                   # Button, Input, Checkbox, Divider, ConfirmDialog, Skeleton, Toast
 ├── lib/
 │   ├── api/                  # Client-side Axios service files
 │   ├── services/             # Server-side DB service files
@@ -133,7 +136,7 @@ src/
 │   ├── rateLimit.ts          # In-memory rate limiting middleware
 │   └── uploadthing.ts        # Uploadthing config
 └── store/
-    └── redux/                # Redux store, slices (projects, auth, bookmarks, comments)
+    └── redux/                # Redux store, slices (projects, auth, bookmarks, comments, likes, toast)
 ```
 
 ---
@@ -218,6 +221,8 @@ Open `http://localhost:3000` in your browser.
 | GET    | `/api/projects/:id`              | —    | Get project by ID                     |
 | PATCH  | `/api/projects/:id`              | ✅   | Update project                        |
 | DELETE | `/api/projects/:id`              | ✅   | Delete project                        |
+| POST   | `/api/projects/:id/like`         | ✅   | Toggle like on a project              |
+| GET    | `/api/projects/liked`            | ✅   | Get liked projects for user           |
 | GET    | `/api/bookmarks?userId=`         | —    | Get bookmarks by user                 |
 | POST   | `/api/bookmarks`                 | ✅   | Add bookmark                          |
 | DELETE | `/api/bookmarks/:id`             | ✅   | Remove bookmark                       |
@@ -240,6 +245,7 @@ Open `http://localhost:3000` in your browser.
 
 - [x] Prisma ORM migration from raw pg queries
 - [x] Deployment to Vercel with environment variable configuration
+- [x] Restyle to playful neo-brutalism UI globally
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
 
