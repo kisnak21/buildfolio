@@ -59,7 +59,7 @@ Buildfolio lets developers:
 - Homepage with Featured Projects, Browse by Category, Trending Technologies, Community Favorites
 - Search projects by title or description
 - Filter by category and technology
-- Sort by newest, most liked, or alphabetical
+- Sort by newest, most liked, oldest, or title (alphabetical)
 - View all projects on a dedicated page with pagination (6 projects per page)
 - Like and unlike projects once per authenticated user (persisted via `project_likes`)
 - View public user profiles with stats
@@ -99,12 +99,14 @@ Buildfolio lets developers:
 src/
 ├── app/
 │   ├── api/                  # Next.js API route handlers
-│   │   ├── users/            # Register, login, verify-email, CRUD
+│   │   ├── auth/             # NextAuth handler + session → JWT cookie exchange
+│   │   ├── users/            # Register, login, logout, verify-email, CRUD
 │   │   ├── projects/         # GET/filter/sort/search/pagination, CRUD, like/unlike, liked projects
 │   │   ├── bookmarks/        # GET by user, POST, DELETE
 │   │   ├── comments/         # GET by project, POST, DELETE
 │   │   ├── contact/          # POST send email
 │   │   └── uploadthing/      # Uploadthing file handler
+│   ├── auth/google-callback  # Post-OAuth redirect page
 │   ├── dashboard/            # Dashboard, New Project, Edit Project
 │   ├── projects/             # All Projects, Project Detail
 │   ├── u/[author]/           # User Profile
@@ -121,22 +123,36 @@ src/
 │   ├── page.tsx              # Homepage
 │   └── not-found.tsx         # 404 page
 ├── components/
+│   ├── auth/                 # AuthSessionProvider
 │   ├── layout/               # Header, Footer, AuthCard, AvatarDropdown
 │   ├── home/                 # Hero, Section, ProjectCard, CategoryCard, TechPill
 │   ├── dashboard/            # ProjectForm
-│   └── ui/                   # Button, Input, Checkbox, Divider, ConfirmDialog, Skeleton, Toast
+│   └── ui/                   # Button, Input, Checkbox, Divider, ConfirmDialog, GoogleButton, Toast, ProjectCardSkeleton, ProjectDetailSkeleton
+├── generated/prisma/         # Generated Prisma Client (via `npx prisma generate`)
 ├── lib/
 │   ├── api/                  # Client-side Axios service files
-│   ├── services/             # Server-side DB service files
+│   ├── services/             # Server-side Prisma service files
 │   ├── middleware/           # JWT auth middleware for API routes
 │   ├── data/                 # Static seed data (categories, technologies)
-│   ├── db.ts                 # PostgreSQL pool (Neon)
+│   ├── db.ts                 # Prisma Client singleton (pg Pool + @prisma/adapter-pg)
+│   ├── apiErrors.ts          # Error mapping (Prisma error codes → HTTP responses)
 │   ├── auth.ts               # JWT sign/verify helpers
 │   ├── email.ts              # Nodemailer transporter
 │   ├── rateLimit.ts          # In-memory rate limiting middleware
+│   ├── utils.ts              # Shared utilities (cn, etc.)
 │   └── uploadthing.ts        # Uploadthing config
+├── middleware.ts             # Route protection (protected + guest-only pages)
 └── store/
-    └── redux/                # Redux store, slices (projects, auth, bookmarks, comments, likes, toast)
+    └── redux/                # store, provider, typed hooks, slices (projects, auth, bookmarks, comments, likes, toast)
+```
+
+Prisma-related files live at the project root:
+
+```
+prisma/
+└── schema.prisma            # Prisma schema (models mapped to snake_case tables)
+prisma.config.ts             # Prisma config (datasource URL from DATABASE_URL)
+migrations/                  # Local-only SQL scripts (gitignored): schema + seed data
 ```
 
 ---
@@ -180,17 +196,14 @@ NEXTAUTH_URL=http://localhost:3000
 
 > 💡 Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
 
-See `.env.example` for reference.
-
 ### Database Setup
 
 1. Configure `DATABASE_URL` in `.env.local`
-2. Run Prisma migrations or db push to set up the schema:
+2. Set up the schema. Run the SQL scripts in the local `/migrations` folder in your Neon SQL editor, or push the Prisma schema directly:
    ```bash
    npx prisma db push
-   # Or run the provided SQL scripts in the /migrations folder in your Neon SQL editor.
    ```
-3. Generate the Prisma client:
+3. Generate the Prisma client (also runs automatically via `postinstall` after `npm install`):
    ```bash
    npx prisma generate
    ```
@@ -237,15 +250,17 @@ Open `http://localhost:3000` in your browser.
 
 ## Known Limitations
 
-- **Comments and bookmarks reference MockAPI project IDs** in the Vite version — fully migrated to real PostgreSQL UUIDs in this Next.js version.
-
----
+- **SQL migrations are kept local-only** — the `/migrations` folder is gitignored; schema changes are applied via `npx prisma db push` or run manually in the Neon SQL editor.
+- **File upload UI is not yet wired** — the Uploadthing config and API route exist, but project thumbnail upload is not exposed in the UI yet.
+- **Rate limiting is in-memory** — resets on server restart; fine for a single serverless instance.
 
 ## Planned Improvements
 
 - [x] Prisma ORM migration from raw pg queries
 - [x] Deployment to Vercel with environment variable configuration
 - [x] Restyle to playful neo-brutalism UI globally
+- [x] Real-time like/unlike synchronization with dedicated `project_likes` table
+- [ ] Project thumbnail upload via Uploadthing (UI wiring)
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
 
@@ -261,8 +276,8 @@ GitHub: [@kisnak21](https://github.com/kisnak21)
 ## References
 
 - [Next.js](https://nextjs.org) — full-stack React framework
+- [Prisma](https://www.prisma.io) — type-safe ORM for PostgreSQL
 - [Neon](https://neon.tech) — serverless PostgreSQL
-- [shadcn/ui](https://ui.shadcn.com) — component library
 - [Redux Toolkit](https://redux-toolkit.js.org) — state management
 - [Uploadthing](https://uploadthing.com) — file uploads for Next.js
 - [DiceBear](https://www.dicebear.com) — pixel-art avatar generation
