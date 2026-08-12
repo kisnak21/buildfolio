@@ -182,8 +182,10 @@ Create a `.env.local` file in the project root:
 ```
 DATABASE_URL=postgresql://username:***@ep-xxx.us-east-2.aws.neon.tech/neondb?sslmode=require
 JWT_SECRET=your_jwt_secret_key
-MAILTRAP_USER=your_mailtrap_username
-MAILTRAP_PASS=your_mailtrap_password
+RESEND_API_KEY=re_your_resend_api_key
+RESEND_FROM_EMAIL=noreply@yourdomain.com
+UPSTASH_REDIS_REST_URL=https://your-region.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
 UPLOADTHING_SECRET=your_uploadthing_secret
 UPLOADTHING_APP_ID=your_uploadthing_app_id
 NEXT_PUBLIC_REAL_API_BASE_URL=/api
@@ -195,6 +197,8 @@ NEXTAUTH_URL=http://localhost:3000
 ```
 
 > Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
+>
+> Email is sent via [Resend](https://resend.com). Add your sending domain in the Resend dashboard and verify the DNS records (SPF/DKIM/DMARC), or omit `RESEND_FROM_EMAIL` to fall back to `onboarding@resend.dev`. Rate limiting is backed by [Upstash Redis](https://upstash.com) when `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` are set (in-memory fallback otherwise).
 
 ### Database Setup
 
@@ -222,9 +226,10 @@ Open `http://localhost:3000` in your browser.
 
 | Method | Endpoint                         | Auth | Description                           |
 | ------ | -------------------------------- | ---- | ------------------------------------- |
-| GET    | `/api/users`                     | —    | Get all users                         |
+| GET    | `/api/users`                     | Yes | Get current user profile              |
 | POST   | `/api/users`                     | —    | Register                              |
-| POST   | `/api/users/login`               | —    | Login                                 |
+| POST   | `/api/users/login`               | —    | Login (unverified users get 403)      |
+| POST   | `/api/users/resend-verification` | —    | Resend verification email             |
 | GET    | `/api/users/verify-email?token=` | —    | Verify email                          |
 | GET    | `/api/users/:id`                 | —    | Get user by ID                        |
 | PATCH  | `/api/users/:id`                 | Yes | Update user                           |

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAppSelector } from '@/store/redux/hooks'
 import AvatarDropdown from './AvatarDropdown'
@@ -14,7 +14,20 @@ const navLinks = [
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
   const { currentUser } = useAppSelector((state) => state.auth)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [menuOpen])
 
   return (
     <header className='border-b-4 border-dark bg-bgMain sticky top-0 z-50'>
@@ -61,9 +74,11 @@ const Header = () => {
 
         {/* Hamburger Mobile */}
         <button
+          ref={menuButtonRef}
           onClick={() => setMenuOpen(!menuOpen)}
           className='md:hidden btn-brutal p-2 border-2 border-dark rounded-lg shadow-brutal-sm bg-white'
           aria-label='Toggle menu'
+          aria-expanded={menuOpen}
         >
           {menuOpen ? (
             <XMarkIcon className='w-5 h-5 text-dark' />

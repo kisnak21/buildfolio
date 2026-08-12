@@ -133,6 +133,16 @@ export const createProject = async ({
   category?: string
   technologies?: string[]
 }) => {
+  if (!title || title.length > 255) {
+    throw Object.assign(new Error('Title must be 1-255 characters'), { statusCode: 400 })
+  }
+  if (!slug || slug.length > 255) {
+    throw Object.assign(new Error('Slug must be 1-255 characters'), { statusCode: 400 })
+  }
+  if (!description || description.length > 10000) {
+    throw Object.assign(new Error('Description must be 1-10000 characters'), { statusCode: 400 })
+  }
+
   const techConnects = technologies?.length
     ? await resolveTechnologies(technologies)
     : []
@@ -177,7 +187,6 @@ export const updateProject = async (
     live_url,
     category_id,
     category, // Accept category name
-    likes,
     technologies,
   }: {
     title?: string
@@ -188,10 +197,18 @@ export const updateProject = async (
     live_url?: string
     category_id?: string
     category?: string
-    likes?: number
     technologies?: string[]
   },
 ) => {
+  if (title !== undefined && title.length > 255) {
+    throw Object.assign(new Error('Title must be at most 255 characters'), { statusCode: 400 })
+  }
+  if (slug !== undefined && slug.length > 255) {
+    throw Object.assign(new Error('Slug must be at most 255 characters'), { statusCode: 400 })
+  }
+  if (description !== undefined && description.length > 10000) {
+    throw Object.assign(new Error('Description must be at most 10000 characters'), { statusCode: 400 })
+  }
   const techUpdate =
     technologies !== undefined
       ? {
@@ -219,7 +236,6 @@ export const updateProject = async (
       ...(github_url !== undefined && { githubUrl: github_url }),
       ...(live_url !== undefined && { liveUrl: live_url }),
       ...(finalCategoryId !== undefined && { categoryId: finalCategoryId }),
-      ...(likes !== undefined && { likes }),
       ...(techUpdate && { technologies: techUpdate }),
     },
     select: projectSelect,

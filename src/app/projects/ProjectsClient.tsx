@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useDeferredValue } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
@@ -22,6 +22,7 @@ const ProjectsClient = () => {
   )
 
   const [search, setSearch] = useState('')
+  const deferredSearch = useDeferredValue(search)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
   const [sortBy, setSortBy] = useState('newest')
@@ -37,9 +38,9 @@ const ProjectsClient = () => {
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
-      search === '' ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
+      deferredSearch === '' ||
+      p.title.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+      p.description.toLowerCase().includes(deferredSearch.toLowerCase())
     const matchesCategory =
       selectedCategory === '' || p.category === selectedCategory
     const matchesTech =
@@ -153,7 +154,7 @@ const ProjectsClient = () => {
           </div>
         </div>
 
-        <p className='text-sm font-bold text-gray-500 mb-6'>
+        <p className='text-sm font-bold text-gray-600 mb-6'>
           {sorted.length} project{sorted.length !== 1 ? 's' : ''} found
         </p>
 
@@ -166,7 +167,7 @@ const ProjectsClient = () => {
               ))
             ) : sorted.length === 0 ? (
               <div className='col-span-1 md:col-span-2 lg:col-span-3 bg-white border-4 border-dark rounded-2xl shadow-brutal p-12 text-center'>
-                <p className='text-lg font-bold text-gray-500'>
+                <p className='text-lg font-bold text-gray-600'>
                   No projects match your filters.
                 </p>
               </div>

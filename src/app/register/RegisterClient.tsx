@@ -1,12 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useDispatch } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { loginUser } from '@/store/redux/authSlice'
-import { showToast } from '@/store/redux/toastSlice'
-import { registerUser, loginUserApi } from '@/lib/api/authApi'
+import { registerUser } from '@/lib/api/authApi'
 import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
 import Checkbox from '@/components/ui/Checkbox'
@@ -26,7 +23,6 @@ const isPasswordStrong = (pw: string): boolean => {
 }
 
 const RegisterClient = () => {
-  const dispatch = useDispatch()
   const router = useRouter()
 
   const [name, setName] = useState('')
@@ -62,17 +58,7 @@ const RegisterClient = () => {
     setSubmitting(true)
     try {
       await registerUser({ name: name.trim(), email: email.trim(), password })
-      const result = await loginUserApi({ email: email.trim(), password })
-      dispatch(
-        loginUser({
-          id: result.user.id,
-          name: result.user.name,
-          email: result.user.email,
-          bio: result.user.bio,
-        }),
-      )
-      dispatch(showToast({ message: 'Account created! Welcome aboard.', type: 'success' }))
-      router.push('/')
+      router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`)
     } catch (err: any) {
       if (err.response?.status === 409) {
         setErrors({ email: 'An account with this email already exists.' })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useDeferredValue } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
@@ -37,6 +37,7 @@ const HomeClient = () => {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
+  const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
     dispatch(fetchProjects() as any)
@@ -45,9 +46,9 @@ const HomeClient = () => {
 
   const filtered = projects.filter((p: any) => {
     const matchesSearch =
-      search === '' ||
-      p.title.toLowerCase().includes(search.toLowerCase()) ||
-      p.description.toLowerCase().includes(search.toLowerCase())
+      deferredSearch === '' ||
+      p.title.toLowerCase().includes(deferredSearch.toLowerCase()) ||
+      p.description.toLowerCase().includes(deferredSearch.toLowerCase())
     const matchesCategory =
       selectedCategory === '' || p.category === selectedCategory
     const matchesTech =
@@ -158,7 +159,7 @@ const HomeClient = () => {
           </div>
           {(search || selectedCategory || selectedTech) && (
             <div className='max-w-6xl mx-auto px-4 mt-3'>
-              <p className='text-xs font-bold text-gray-500'>
+              <p className='text-xs font-bold text-gray-600'>
                 {filtered.length} project{filtered.length !== 1 ? 's' : ''} found
               </p>
             </div>

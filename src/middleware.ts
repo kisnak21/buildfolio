@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { verifyJwtEdge } from '@/lib/middleware/verifyJwtEdge'
 
 // Routes that require authentication (server-side check via JWT cookie)
 const protectedRoutes = ['/dashboard', '/bookmarks', '/settings', '/liked']
@@ -6,37 +7,27 @@ const protectedRoutes = ['/dashboard', '/bookmarks', '/settings', '/liked']
 // Routes that should redirect to home if already authenticated
 const guestOnlyRoutes = ['/login', '/register']
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const token = req.cookies.get('buildfolio_token')?.value
+
+  const redirectToLogin = () => {
+    const loginUrl = new URL('/login', req.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
 
   // Check if route is protected
   const isProtected = protectedRoutes.some((route) =>
     pathname.startsWith(route),
   )
 
-  if (isProtected && !token) {
-    // No token → redirect to login
-    const loginUrl = new URL('/login', req.url)
-    loginUrl.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(loginUrl)
-  }
+  if (isProtected) {
+    if (!token) return redirectToLogin()
 
-  if (isProtected && token) {
-    // Structural JWT check (3 dot-separated parts).
-    // Full verification happens in authMiddleware.ts on API routes.
-    try {
-      const parts = token.split('.')
-      if (parts.length !== 3) {
-        const loginUrl = new URL('/login', req.url)
-        loginUrl.searchParams.set('redirect', pathname)
-        return NextResponse.redirect(loginUrl)
-      }
-    } catch {
-      const loginUrl = new URL('/login', req.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
+    // Full cryptographic verification on the edge
+    const payload = await verifyJwtEdge(token)
+    if (!payload) return redirectToLogin()
   }
 
   // Redirect already-logged-in users away from guest pages
@@ -44,7 +35,8 @@ export function middleware(req: NextRequest) {
     pathname.startsWith(route),
   )
   if (isGuestOnly && token) {
-    return NextResponse.redirect(new URL('/', req.url))
+    const payload = await verifyJwtEdge(token)
+    if (payload) return NextResponse.redirect(new URL('/', req.url))
   }
 
   return NextResponse.next()

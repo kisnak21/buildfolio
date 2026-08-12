@@ -36,6 +36,7 @@ const LoginClient = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState<string | null>(null)
 
   const handleGoogle = async () => {
     setGoogleSubmitting(true)
@@ -73,6 +74,9 @@ const LoginClient = () => {
     } catch (err: any) {
       if (err.response?.status === 401) {
         setErrors({ password: 'Invalid email or password.' })
+      } else if (err.response?.status === 403 && err.response?.data?.needsVerification) {
+        setNeedsVerification(err.response?.data?.email || null)
+        setErrors({})
       } else {
         setErrors({ password: 'Something went wrong. Please try again.' })
       }
@@ -88,6 +92,20 @@ const LoginClient = () => {
         subtitle='Log in to manage your projects.'
       >
         <form onSubmit={handleSubmit} noValidate>
+          {needsVerification && (
+            <div
+              role='alert'
+              className='mb-4 px-4 py-3 border-2 border-primary bg-primary/10 rounded-xl text-sm font-bold text-dark'
+            >
+              Please verify your email address before logging in.{' '}
+              <Link
+                href={`/verify-email?email=${encodeURIComponent(needsVerification)}`}
+                className='text-primary hover:underline underline-offset-2'
+              >
+                Resend verification email
+              </Link>
+            </div>
+          )}
           <Input
             label='Email'
             type='email'

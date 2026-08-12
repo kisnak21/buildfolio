@@ -83,7 +83,7 @@ const DashboardClient = () => {
             <p className='text-5xl font-black'>{totalLikes}</p>
           </div>
           <div className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-gray-500 mb-1'>Bookmarks</p>
+            <p className='font-bold text-gray-600 mb-1'>Bookmarks</p>
             <p className='text-5xl font-black'>
               {totalBookmarks}
             </p>
@@ -153,7 +153,7 @@ const DashboardClient = () => {
 
             {userProjects.length === 0 && (
               <div className='text-center py-16 bg-gray-50'>
-                <p className='font-bold text-gray-400 mb-4'>No projects yet.</p>
+                <p className='font-bold text-gray-600 mb-4'>No projects yet.</p>
                 <Link
                   href='/dashboard/new'
                   className='btn-brutal inline-flex items-center gap-2 bg-dark text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal'

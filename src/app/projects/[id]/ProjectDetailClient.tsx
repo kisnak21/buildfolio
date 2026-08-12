@@ -152,7 +152,7 @@ const ProjectDetailClient = () => {
           <ProjectDetailSkeleton />
         ) : !project ? (
           <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-500'>
+            <p className='text-lg font-bold text-gray-600'>
               Project not found.
             </p>
           </div>
@@ -200,7 +200,7 @@ const ProjectDetailClient = () => {
                   <p className='text-sm font-bold text-dark'>
                     {project.author}
                   </p>
-                  <p className='text-xs font-bold text-gray-400'>Creator</p>
+                  <p className='text-xs font-bold text-gray-600'>Creator</p>
                 </div>
               </div>
 
@@ -309,13 +309,13 @@ const ProjectDetailClient = () => {
               )}
 
               {commentsLoading && (
-                <p className='text-sm font-bold text-gray-400'>
+                <p className='text-sm font-bold text-gray-600'>
                   Loading comments...
                 </p>
               )}
 
               {!commentsLoading && comments.length === 0 && (
-                <p className='font-bold text-gray-400 text-center py-6'>
+                <p className='font-bold text-gray-600 text-center py-6'>
                   No comments yet. Be the first to comment.
                 </p>
               )}
@@ -341,7 +341,7 @@ const ProjectDetailClient = () => {
                             <span className='font-bold text-dark'>
                               {c.author_name}
                             </span>
-                            <span className='text-xs font-bold text-gray-400'>
+                            <span className='text-xs font-bold text-gray-600'>
                               {new Date(c.created_at).toLocaleDateString()}
                             </span>
                           </div>

@@ -34,7 +34,7 @@ export default function GoogleCallback() {
       <Header />
       <main className='flex-1 max-w-4xl mx-auto px-4 py-12 w-full'>
         {status === 'loading' ? (
-          <p className='text-sm text-gray-500'>Signing you in with Google...</p>
+          <p className='text-sm text-gray-600'>Signing you in with Google...</p>
         ) : (
           <p className='text-sm text-red-500'>
             Something went wrong. <a href='/login' className='underline'>Back to login</a>

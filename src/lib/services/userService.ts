@@ -3,25 +3,9 @@ export const runtime = 'nodejs'
 import prisma from '@/lib/db'
 import bcrypt from 'bcrypt'
 import { signToken } from '@/lib/auth'
-import transporter from '@/lib/email'
+import { sendEmail } from '@/lib/email'
 
 const SALT_ROUNDS = 10
-
-export const getAllUsers = async () => {
-  return prisma.user.findMany({
-    select: {
-      id: true,
-      name: true,
-      username: true,
-      email: true,
-      image: true,
-      bio: true,
-      isVerified: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  })
-}
 
 export const getUserById = async (id: string) => {
   return prisma.user.findUnique({
@@ -54,6 +38,15 @@ export const createUser = async ({
 }) => {
   if (password.length < 8) {
     throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
+  }
+  if (name.length > 100) {
+    throw Object.assign(new Error('Name must be at most 100 characters'), { statusCode: 400 })
+  }
+  if (email.length > 254) {
+    throw Object.assign(new Error('Email must be at most 254 characters'), { statusCode: 400 })
+  }
+  if (bio && bio.length > 500) {
+    throw Object.assign(new Error('Bio must be at most 500 characters'), { statusCode: 400 })
   }
   if (!/[A-Z]/.test(password)) {
     throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
@@ -92,14 +85,13 @@ export const createUser = async ({
     },
   })
 
-  await transporter.sendMail({
-    from: '"Buildfolio" <noreply@buildfolio.dev>',
+  await sendEmail({
     to: email,
     subject: 'Verify your Buildfolio account',
     html: `
       <h2>Welcome to Buildfolio, ${name}!</h2>
       <p>Click the link below to verify your email address:</p>
-      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/users/verify-email?token=${verificationToken}">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}">
         Verify Email
       </a>
     `,
@@ -121,6 +113,10 @@ export const loginUserService = async ({
   const passwordMatch = await bcrypt.compare(password, user.password)
   if (!passwordMatch) return null
 
+  if (!user.isVerified) {
+    return { needsVerification: true, email: user.email }
+  }
+
   const token = signToken({ id: user.id, email: user.email, name: user.name })
 
   return {
@@ -135,6 +131,32 @@ export const loginUserService = async ({
       is_verified: user.isVerified,
     },
   }
+}
+
+export const resendVerificationEmail = async (email: string) => {
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) return null
+  if (user.isVerified) return null
+
+  const verificationToken = crypto.randomUUID()
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { verificationToken },
+  })
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Verify your Buildfolio account',
+    html: `
+      <h2>Hi ${user.name}!</h2>
+      <p>Click the link below to verify your email address:</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}">
+        Verify Email
+      </a>
+    `,
+  })
+
+  return user
 }
 
 export const verifyEmailService = async (token: string) => {
@@ -153,6 +175,12 @@ export const updateUser = async (
   id: string,
   { name, image, bio }: { name?: string; image?: string; bio?: string },
 ) => {
+  if (name !== undefined && name.length > 100) {
+    throw Object.assign(new Error('Name must be at most 100 characters'), { statusCode: 400 })
+  }
+  if (bio !== undefined && bio.length > 500) {
+    throw Object.assign(new Error('Bio must be at most 500 characters'), { statusCode: 400 })
+  }
   return prisma.user.update({
     where: { id },
     data: {

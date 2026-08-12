@@ -1,15 +1,27 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getAllUsers, createUser } from '@/lib/services/userService'
+import { getUserById, createUser } from '@/lib/services/userService'
+import { authenticate } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const users = await getAllUsers()
-    return NextResponse.json({ success: true, data: users })
+    const { user, error } = authenticate(req)
+    if (error) return error
+
+    const profile = await getUserById(user.id)
+    if (!profile) {
+      return NextResponse.json(
+        { success: false, message: 'User not found' },
+        { status: 404 },
+      )
+    }
+
+    return NextResponse.json({ success: true, data: profile })
   } catch (err: any) {
+    console.error('GET USER ERROR:', err)
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: 500 },
@@ -24,7 +36,7 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown'
-    const { success, resetInMs } = rateLimit(`register:${ip}`, {
+    const { success, resetInMs } = await rateLimit(`register:${ip}`, {
       max: 5,
       windowMs: 60 * 60 * 1000,
     })

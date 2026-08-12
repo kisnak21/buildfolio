@@ -52,11 +52,11 @@ const BookmarksClient = () => {
           <p className='font-bold text-gray-600 text-lg'>Projects you&apos;ve saved</p>
         </div>
 
-        {loading && <p className='text-sm font-bold text-gray-400'>Loading bookmarks...</p>}
+        {loading && <p className='text-sm font-bold text-gray-600'>Loading bookmarks...</p>}
 
         {!loading && bookmarkedProjects.length === 0 && (
           <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-500 mb-6'>No bookmarks yet.</p>
+            <p className='text-lg font-bold text-gray-600 mb-6'>No bookmarks yet.</p>
             <button
               onClick={() => router.push('/projects')}
               className='btn-brutal bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
@@ -68,7 +68,7 @@ const BookmarksClient = () => {
 
         {!loading && bookmarkedProjects.length > 0 && (
           <>
-            <p className='text-sm font-bold text-gray-500 mb-6'>
+            <p className='text-sm font-bold text-gray-600 mb-6'>
               {bookmarkedProjects.length} saved
             </p>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>

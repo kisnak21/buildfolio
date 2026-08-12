@@ -89,6 +89,8 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
             e.stopPropagation()
             onLike(id, likes)
           }}
+          aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
+          aria-pressed={isLiked}
           className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
         >
           {isLiked ? (

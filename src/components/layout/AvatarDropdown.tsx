@@ -19,6 +19,7 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
   const [open, setOpen] = useState(false)
   const [imgSrc, setImgSrc] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const dispatch = useDispatch()
   const router = useRouter()
 
@@ -38,6 +39,18 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [open])
+
   const handleLogout = () => {
     dispatch(logoutUser())
     document.cookie = 'buildfolio_user=; path=/; max-age=0; SameSite=Lax'
@@ -47,7 +60,14 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
 
   return (
     <div className='relative' ref={ref}>
-      <button onClick={() => setOpen(!open)} className='block btn-brutal rounded-full shadow-brutal-sm border-2 border-dark'>
+      <button
+        ref={triggerRef}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-haspopup='menu'
+        aria-label='Account menu'
+        className='block btn-brutal rounded-full shadow-brutal-sm border-2 border-dark'
+      >
         <Image
           src={imgSrc || `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="%23f3f4f6" rx="16"/></svg>`}
           alt={user.name}
@@ -59,12 +79,12 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
       </button>
 
       {open && (
-        <div className='absolute right-0 mt-3 w-56 bg-white border-4 border-dark rounded-xl shadow-brutal py-2 z-50 overflow-hidden'>
+        <div role='menu' className='absolute right-0 mt-3 w-56 bg-white border-4 border-dark rounded-xl shadow-brutal py-2 z-50 overflow-hidden'>
           <div className='px-4 py-3 border-b-2 border-dark border-dashed'>
             <p className='font-black text-dark truncate'>
               {user.name}
             </p>
-            <p className='text-xs font-bold text-gray-500 truncate'>{user.email}</p>
+            <p className='text-xs font-bold text-gray-600 truncate'>{user.email}</p>
           </div>
           <Link
             href='/dashboard'

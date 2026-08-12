@@ -79,13 +79,13 @@ const UserProfileClient = () => {
                   <p className='text-2xl font-black text-dark'>
                     {userProjects.length}
                   </p>
-                  <p className='text-sm font-bold text-gray-500'>Projects</p>
+                  <p className='text-sm font-bold text-gray-600'>Projects</p>
                 </div>
                 <div className='text-center bg-gray-50 border-2 border-dark px-6 py-3 rounded-xl shadow-brutal-sm'>
                   <p className='text-2xl font-black text-dark'>
                     {totalLikes}
                   </p>
-                  <p className='text-sm font-bold text-gray-500'>Likes received</p>
+                  <p className='text-sm font-bold text-gray-600'>Likes received</p>
                 </div>
               </div>
             </div>
@@ -96,14 +96,14 @@ const UserProfileClient = () => {
           <h2 className='text-2xl font-black text-dark'>
             Projects by {decodedAuthor}
           </h2>
-          <span className='font-bold text-gray-500 text-lg'>
+          <span className='font-bold text-gray-600 text-lg'>
             {userProjects.length} total
           </span>
         </div>
 
         {userProjects.length === 0 ? (
           <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-500 mb-4'>No projects yet.</p>
+            <p className='text-lg font-bold text-gray-600 mb-4'>No projects yet.</p>
             {isOwnProfile && (
               <Link
                 href='/dashboard/new'

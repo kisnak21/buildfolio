@@ -68,7 +68,7 @@ const LikedClient = () => {
           </div>
         ) : likedProjects.length === 0 ? (
           <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-500 mb-6'>
+            <p className='text-lg font-bold text-gray-600 mb-6'>
               No liked projects yet.
             </p>
             <button
@@ -80,7 +80,7 @@ const LikedClient = () => {
           </div>
         ) : (
           <>
-            <p className='text-sm font-bold text-gray-500 mb-6'>
+            <p className='text-sm font-bold text-gray-600 mb-6'>
               {likedProjects.length} liked
             </p>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>

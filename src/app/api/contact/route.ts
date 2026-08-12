@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import transporter from '@/lib/email'
+import { sendEmail } from '@/lib/email'
 import { rateLimit } from '@/lib/rateLimit'
 
 const stripHeaderInjection = (value: string) =>
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       req.headers.get('x-real-ip') ||
       'unknown'
-    const { success, resetInMs } = rateLimit(`contact:${ip}`, {
+    const { success, resetInMs } = await rateLimit(`contact:${ip}`, {
       max: 3,
       windowMs: 15 * 60 * 1000,
     })
@@ -58,11 +58,9 @@ export async function POST(req: NextRequest) {
     const safeName = stripHeaderInjection(cleanName)
     const safeEmail = stripHeaderInjection(cleanEmail)
 
-    await transporter.sendMail({
-      from: `"Buildfolio Contact" <noreply@buildfolio.dev>`,
-      to: 'admin@buildfolio.dev',
+    await sendEmail({
+      to: 'admin@buildfolio.my.id',
       subject: 'Contact Form: Message from ' + safeName.slice(0, 50),
-      text: `Name: ${safeName}\nEmail: ${safeEmail}\n\n${cleanMessage}`,
       html: `
         <h3>New Contact Form Submission</h3>
         <p><strong>Name:</strong> ${safeName.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>

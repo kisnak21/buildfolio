@@ -148,7 +148,7 @@ const SettingsClient = () => {
                 <p className='text-lg font-black text-dark'>
                   {currentUser?.name}
                 </p>
-                <p className='font-bold text-gray-500'>{currentUser?.email}</p>
+                <p className='font-bold text-gray-600'>{currentUser?.email}</p>
               </div>
             </div>
 

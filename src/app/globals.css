@@ -4,6 +4,11 @@
   scroll-behavior: smooth;
 }
 
+*:focus-visible {
+  outline: 3px solid var(--color-dark);
+  outline-offset: 2px;
+}
+
 @theme {
   --color-bgMain: #Fdfcf7;
   --color-primary: #FF90E8;

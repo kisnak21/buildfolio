@@ -33,6 +33,9 @@ export const addComment = async ({
   user_id: string
   project_id: string
 }) => {
+  if (!content || content.length > 2000) {
+    throw Object.assign(new Error('Comment must be 1-2000 characters'), { statusCode: 400 })
+  }
   const comment = await prisma.comment.create({
     data: { content, userId: user_id, projectId: project_id },
     select: {

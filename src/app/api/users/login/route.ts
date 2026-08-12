@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     // Rate limit: 10 attempts per 15 minutes per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
-    const { success, remaining, resetInMs } = rateLimit(`login:${ip}`, { max: 10, windowMs: 15 * 60 * 1000 })
+    const { success, remaining, resetInMs } = await rateLimit(`login:${ip}`, { max: 10, windowMs: 15 * 60 * 1000 })
 
     if (!success) {
       return NextResponse.json(
@@ -36,6 +36,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'Invalid email or password' },
         { status: 401 },
+      )
+    }
+
+    if ('needsVerification' in result) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Please verify your email address before logging in.',
+          needsVerification: true,
+          email: result.email,
+        },
+        { status: 403 },
       )
     }
 

@@ -56,7 +56,7 @@ const EditProjectClient = () => {
       <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
         <Header />
         <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
-          <p className='font-bold text-gray-500'>Project not found.</p>
+          <p className='font-bold text-gray-600'>Project not found.</p>
         </main>
         <Footer />
       </div>
@@ -68,7 +68,7 @@ const EditProjectClient = () => {
       <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
         <Header />
         <main className='flex-1 max-w-6xl mx-auto px-4 py-12 w-full'>
-          <p className='font-bold text-gray-500'>
+          <p className='font-bold text-gray-600'>
             You don&apos;t have permission to edit this project.
           </p>
         </main>

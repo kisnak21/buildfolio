@@ -20,7 +20,7 @@ const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardPr
       <p className='text-base font-black text-dark'>
         {name}
       </p>
-      <p className='text-xs font-bold text-gray-500 mt-1'>{count} projects</p>
+      <p className='text-xs font-bold text-gray-600 mt-1'>{count} projects</p>
     </button>
   )
 }
