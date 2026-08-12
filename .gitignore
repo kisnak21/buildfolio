@@ -49,5 +49,10 @@ next-env.d.ts
 .windsurf/
 skills-lock.json
 
+# local documentation (only README.md from the Next.js template is tracked)
+AGENTS.md
+CLAUDE.md
+SECURITY.md
+
 # database migrations
 /migrations/
