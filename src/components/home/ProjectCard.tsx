@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
-import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid'
+import { HeartIcon as HeartSolid, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
 
 interface Project {
   id: string
@@ -37,17 +37,17 @@ const getCategoryColor = (category: string) => {
   return map[category] || 'bg-secondary'
 }
 
-// Generate consistent emoji based on category if no thumbnail
-const getCategoryEmoji = (category: string) => {
-  const map: Record<string, string> = {
-    'SaaS': '🚀',
-    'AI': '🤖',
-    'Web App': '🌐',
-    'Mobile App': '📱',
-    'Open Source': '🔓',
-    'Game': '🎮',
+// Generate consistent icon based on category if no thumbnail
+const getCategoryIcon = (category: string) => {
+  const map: Record<string, React.ReactNode> = {
+    'SaaS': <RocketLaunchIcon />,
+    'AI': <CpuChipIcon />,
+    'Web App': <GlobeAltIcon />,
+    'Mobile App': <DevicePhoneMobileIcon />,
+    'Open Source': <LockOpenIcon />,
+    'Game': <PuzzlePieceIcon />,
   }
-  return map[category] || '✨'
+  return map[category] || <CodeBracketIcon />
 }
 
 const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => {
@@ -73,9 +73,9 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
       className='card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal cursor-pointer'
     >
       <div className='aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group flex items-center justify-center'>
-        {/* Thumbnail fallback to emoji */}
-        <div className={`w-full h-full flex items-center justify-center text-5xl ${catColor.split(' ')[0]} opacity-50`}>
-          {getCategoryEmoji(category)}
+        {/* Thumbnail fallback to icon */}
+        <div className={`w-full h-full flex items-center justify-center ${catColor.split(' ')[0]} opacity-50`}>
+          <span className='text-dark w-16 h-16'>{getCategoryIcon(category)}</span>
         </div>
         
         {/* Category Tag */}

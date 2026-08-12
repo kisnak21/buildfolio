@@ -1,12 +1,3 @@
-export const categories = [
-  { icon: '🚀', name: 'SaaS', count: 142 },
-  { icon: '🤖', name: 'AI', count: 98 },
-  { icon: '🌐', name: 'Web App', count: 214 },
-  { icon: '📱', name: 'Mobile App', count: 76 },
-  { icon: '🔓', name: 'Open Source', count: 189 },
-  { icon: '🎮', name: 'Game', count: 53 },
-]
-
 export const technologies = [
   { name: 'Next.js', count: 312 },
   { name: 'React', count: 287 },

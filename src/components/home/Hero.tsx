@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { ArrowRightIcon } from '@heroicons/react/24/solid'
+import { ArrowRightIcon, SparklesIcon } from '@heroicons/react/24/solid'
 
 interface HeroProps {
   currentUser: { id: string; name: string } | null
@@ -11,9 +11,6 @@ const Hero = ({ currentUser }: HeroProps) => {
       <div className='max-w-6xl mx-auto px-4'>
         <div className='grid md:grid-cols-2 gap-12 items-center'>
           <div className='space-y-6'>
-            <div className='inline-block bg-white border-2 border-dark px-3 py-1 rounded-full text-sm font-bold shadow-brutal-sm transform -rotate-2'>
-              🚀 The Developer Playground
-            </div>
             <h1 className='text-5xl md:text-7xl font-black leading-[1.1] tracking-tight'>
               Discover.<br />
               Share.<br />
@@ -56,8 +53,8 @@ const Hero = ({ currentUser }: HeroProps) => {
                 </div>
               </div>
             </div>
-            <div className='absolute -bottom-6 -left-6 w-16 h-16 bg-secondary border-4 border-dark rounded-full shadow-brutal z-10 flex items-center justify-center font-bold text-xl'>
-              ✨
+            <div className='absolute -bottom-6 -left-6 w-16 h-16 bg-secondary border-4 border-dark rounded-full shadow-brutal z-10 flex items-center justify-center'>
+              <SparklesIcon className='w-8 h-8 text-dark' />
             </div>
           </div>
         </div>

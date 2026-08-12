@@ -1,5 +1,5 @@
 interface CategoryCardProps {
-  icon: string
+  icon: React.ReactNode
   name: string
   count: number
   onClick: () => void
@@ -16,7 +16,7 @@ const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardPr
           : 'bg-white hover:bg-yellow-50'
       }`}
     >
-      <div className='text-3xl mb-2'>{icon}</div>
+      <div className='w-10 h-10 mx-auto mb-2 text-dark'>{icon}</div>
       <p className='text-base font-black text-dark'>
         {name}
       </p>

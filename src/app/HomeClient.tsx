@@ -13,15 +13,15 @@ import CategoryCard from '@/components/home/CategoryCard'
 import TechPill from '@/components/home/TechPill'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import { technologies } from '@/lib/data/project'
-import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
+import { MagnifyingGlassIcon, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon } from '@heroicons/react/24/solid'
 
 const categoryList = [
-  { icon: '🚀', name: 'SaaS' },
-  { icon: '🤖', name: 'AI' },
-  { icon: '🌐', name: 'Web App' },
-  { icon: '📱', name: 'Mobile App' },
-  { icon: '🔓', name: 'Open Source' },
-  { icon: '🎮', name: 'Game' },
+  { icon: <RocketLaunchIcon />, name: 'SaaS' },
+  { icon: <CpuChipIcon />, name: 'AI' },
+  { icon: <GlobeAltIcon />, name: 'Web App' },
+  { icon: <DevicePhoneMobileIcon />, name: 'Mobile App' },
+  { icon: <LockOpenIcon />, name: 'Open Source' },
+  { icon: <PuzzlePieceIcon />, name: 'Game' },
 ]
 
 const HomeClient = () => {

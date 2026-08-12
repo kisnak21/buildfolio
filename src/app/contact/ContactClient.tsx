@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import realApiClient from '@/lib/api/realApiClient'
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 
 const ContactClient = () => {
   const [name, setName] = useState('')
@@ -60,7 +61,7 @@ const ContactClient = () => {
         </div>
         {submitted ? (
           <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-6xl mb-4'>✅</p>
+            <CheckCircleIcon className='w-20 h-20 text-green-500 mx-auto mb-4' />
             <h2 className='text-2xl font-black text-dark mb-2'>
               Message sent!
             </h2>

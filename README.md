@@ -2,11 +2,11 @@
 
 A full-stack developer platform to discover projects, share ideas, and build a portfolio. Inspired by GitHub Explore, Product Hunt, and Dev.to — focused entirely on developer project showcases.
 
-> ⚠️ **This project is still ongoing.** Features and architecture are actively being developed and improved.
+> **This project is still ongoing.** Features and architecture are actively being developed and improved.
 
-> 📚 This project was created as part of the **Fullstack Developer Bootcamp** program at [harisenin.com](https://harisenin.com).
+> This project was created as part of the **Fullstack Developer Bootcamp** program at [harisenin.com](https://harisenin.com).
 
-> 🔄 **This is the Next.js migration** of the original React (Vite) version. See the related repositories below.
+> **This is the Next.js migration** of the original React (Vite) version. See the related repositories below.
 
 ---
 
@@ -194,7 +194,7 @@ NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 ```
 
-> 💡 Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
+> Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
 
 ### Database Setup
 
@@ -227,21 +227,21 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/users/login`               | —    | Login                                 |
 | GET    | `/api/users/verify-email?token=` | —    | Verify email                          |
 | GET    | `/api/users/:id`                 | —    | Get user by ID                        |
-| PATCH  | `/api/users/:id`                 | ✅   | Update user                           |
-| DELETE | `/api/users/:id`                 | ✅   | Delete user                           |
+| PATCH  | `/api/users/:id`                 | Yes | Update user                           |
+| DELETE | `/api/users/:id`                 | Yes | Delete user                           |
 | GET    | `/api/projects`                  | —    | Get all projects (filter/sort/search) |
-| POST   | `/api/projects`                  | ✅   | Create project                        |
+| POST   | `/api/projects`                  | Yes | Create project                        |
 | GET    | `/api/projects/:id`              | —    | Get project by ID                     |
-| PATCH  | `/api/projects/:id`              | ✅   | Update project                        |
-| DELETE | `/api/projects/:id`              | ✅   | Delete project                        |
-| POST   | `/api/projects/:id/like`         | ✅   | Toggle like on a project              |
-| GET    | `/api/projects/liked`            | ✅   | Get liked projects for user           |
+| PATCH  | `/api/projects/:id`              | Yes | Update project                        |
+| DELETE | `/api/projects/:id`              | Yes | Delete project                        |
+| POST   | `/api/projects/:id/like`         | Yes | Toggle like on a project              |
+| GET    | `/api/projects/liked`            | Yes | Get liked projects for user           |
 | GET    | `/api/bookmarks?userId=`         | —    | Get bookmarks by user                 |
-| POST   | `/api/bookmarks`                 | ✅   | Add bookmark                          |
-| DELETE | `/api/bookmarks/:id`             | ✅   | Remove bookmark                       |
+| POST   | `/api/bookmarks`                 | Yes | Add bookmark                          |
+| DELETE | `/api/bookmarks/:id`             | Yes | Remove bookmark                       |
 | GET    | `/api/comments?projectId=`       | —    | Get comments by project               |
-| POST   | `/api/comments`                  | ✅   | Add comment                           |
-| DELETE | `/api/comments/:id`              | ✅   | Delete comment                        |
+| POST   | `/api/comments`                  | Yes | Add comment                           |
+| DELETE | `/api/comments/:id`              | Yes | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
 | GET    | `/api/auth/[...nextauth]`        | —    | NextAuth Google OAuth handler         |
 | POST   | `/api/auth/exchange`             | —    | Exchange NextAuth session → app JWT cookie |

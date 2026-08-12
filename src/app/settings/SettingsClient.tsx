@@ -9,6 +9,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import { CheckIcon } from '@heroicons/react/24/solid'
 
 type Tab = 'profile' | 'security'
 
@@ -178,7 +179,7 @@ const SettingsClient = () => {
                   {profileSaving ? 'Saving...' : 'Save changes'}
                 </Button>
                 {profileSaved && (
-                  <p className='font-bold text-green-600 whitespace-nowrap bg-green-100 px-3 py-1.5 rounded-lg border-2 border-green-600'>Saved ✓</p>
+                  <p className='font-bold text-green-600 whitespace-nowrap bg-green-100 px-3 py-1.5 rounded-lg border-2 border-green-600 flex items-center gap-1'>Saved <CheckIcon className='w-4 h-4' /></p>
                 )}
               </div>
             </form>
@@ -244,7 +245,7 @@ const SettingsClient = () => {
                   {pwSaving ? 'Updating...' : 'Update password'}
                 </Button>
                 {pwSaved && (
-                  <p className='font-bold text-green-600 whitespace-nowrap bg-green-100 px-3 py-1.5 rounded-lg border-2 border-green-600'>Updated ✓</p>
+                  <p className='font-bold text-green-600 whitespace-nowrap bg-green-100 px-3 py-1.5 rounded-lg border-2 border-green-600 flex items-center gap-1'>Updated <CheckIcon className='w-4 h-4' /></p>
                 )}
               </div>
             </form>
