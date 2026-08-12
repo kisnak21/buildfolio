@@ -54,10 +54,18 @@ export const addComment = async ({
   }
 }
 
-export const deleteComment = async (id: string) => {
-  const comment = await prisma.comment.delete({
+export const getCommentById = async (id: string) => {
+  const comment = await prisma.comment.findUnique({
     where: { id },
     select: { id: true, userId: true },
   })
-  return { id: comment.id, user_id: comment.userId }
+  return comment ? { id: comment.id, user_id: comment.userId } : null
+}
+
+export const deleteComment = async (id: string) => {
+  const comment = await prisma.comment.delete({
+    where: { id },
+    select: { id: true },
+  })
+  return { id: comment.id }
 }

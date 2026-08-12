@@ -17,6 +17,14 @@ import { signIn } from 'next-auth/react'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const getSafeRedirect = (raw: string | null): string => {
+  if (!raw) return '/'
+  if (raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/\\')) {
+    return raw
+  }
+  return '/'
+}
+
 const LoginClient = () => {
   const dispatch = useDispatch()
   const router = useRouter()
@@ -57,10 +65,9 @@ const LoginClient = () => {
           name: result.user.name,
           email: result.user.email,
           bio: result.user.bio,
-          token: result.token,
         }),
       )
-      const redirectTo = searchParams.get('redirect') || '/'
+      const redirectTo = getSafeRedirect(searchParams.get('redirect'))
       dispatch(showToast({ message: 'Welcome back!', type: 'success' }))
       router.push(redirectTo)
     } catch (err: any) {

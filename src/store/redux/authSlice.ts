@@ -5,7 +5,6 @@ interface User {
   name: string
   email: string
   bio?: string
-  token?: string
   [key: string]: unknown
 }
 
@@ -34,8 +33,9 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginUser: (state, action: PayloadAction<User>) => {
-      state.currentUser = action.payload
-      localStorage.setItem('buildfolio_user', JSON.stringify(action.payload))
+      const { token, ...safeUser } = action.payload as User & { token?: string }
+      state.currentUser = safeUser
+      localStorage.setItem('buildfolio_user', JSON.stringify(safeUser))
     },
     logoutUser: (state) => {
       state.currentUser = null

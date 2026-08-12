@@ -19,7 +19,6 @@ export async function POST(req: NextRequest) {
 
   const response = NextResponse.json({
     success: true,
-    token: appToken,
     user: {
       id: nextAuthToken.localId,
       email: nextAuthToken.email,

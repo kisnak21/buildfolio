@@ -8,22 +8,4 @@ const realApiClient = axios.create({
   withCredentials: true, // Send httpOnly cookie with every request
 })
 
-// Keep Authorization header fallback for backward compatibility
-realApiClient.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const stored = localStorage.getItem('buildfolio_user')
-    if (stored) {
-      try {
-        const user = JSON.parse(stored)
-        if (user?.token) {
-          config.headers.Authorization = `Bearer ${user.token}`
-        }
-      } catch {
-        // ignore parse errors
-      }
-    }
-  }
-  return config
-})
-
 export default realApiClient

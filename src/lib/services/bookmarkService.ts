@@ -56,12 +56,20 @@ export const addBookmark = async ({
   }
 }
 
-export const removeBookmark = async (id: string) => {
-  const bookmark = await prisma.bookmark.delete({
+export const getBookmarkById = async (id: string) => {
+  const bookmark = await prisma.bookmark.findUnique({
     where: { id },
     select: { id: true, userId: true },
   })
-  return { id: bookmark.id, user_id: bookmark.userId }
+  return bookmark ? { id: bookmark.id, user_id: bookmark.userId } : null
+}
+
+export const removeBookmark = async (id: string) => {
+  const bookmark = await prisma.bookmark.delete({
+    where: { id },
+    select: { id: true },
+  })
+  return { id: bookmark.id }
 }
 
 export const getBookmark = async ({

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteComment } from '@/lib/services/commentService'
+import { deleteComment, getCommentById } from '@/lib/services/commentService'
 import { authenticate } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
 
@@ -12,20 +12,21 @@ export async function DELETE(
 
   const { id } = await params
   try {
-    const comment = await deleteComment(id)
+    // Ownership check FIRST: only comment author can delete
+    const comment = await getCommentById(id)
     if (!comment) {
       return NextResponse.json(
         { success: false, message: 'Comment not found' },
         { status: 404 },
       )
     }
-    // Ownership check: only comment author can delete
     if (comment.user_id !== user!.id) {
       return NextResponse.json(
         { success: false, message: 'Forbidden: you can only delete your own comment' },
         { status: 403 },
       )
     }
+    await deleteComment(id)
     return NextResponse.json({ success: true, message: 'Comment deleted' })
   } catch (err: any) {
     return NextResponse.json(

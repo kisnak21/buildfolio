@@ -69,7 +69,6 @@ const RegisterClient = () => {
           name: result.user.name,
           email: result.user.email,
           bio: result.user.bio,
-          token: result.token,
         }),
       )
       dispatch(showToast({ message: 'Account created! Welcome aboard.', type: 'success' }))
