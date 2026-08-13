@@ -158,7 +158,7 @@ const ProjectsClient = () => {
           {sorted.length} project{sorted.length !== 1 ? 's' : ''} found
         </p>
 
-        {error && <p className='text-sm font-bold text-red-500'>{error}</p>}
+        {error && <p className='text-sm font-bold text-red-600'>{error}</p>}
         {!error && (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
             {loading ? (

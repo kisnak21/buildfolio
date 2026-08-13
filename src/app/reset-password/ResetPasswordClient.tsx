@@ -70,7 +70,7 @@ const ResetPasswordClient = () => {
             Missing reset token. The link may be invalid or expired.
           </div>
           <p className='text-center text-sm font-bold text-dark'>
-            <Link href='/forgot-password' className='text-primary hover:underline transition-colors'>
+            <Link href='/forgot-password' className='text-primaryDark hover:underline transition-colors'>
               Request a new reset link
             </Link>
           </p>
@@ -128,7 +128,7 @@ const ResetPasswordClient = () => {
         <p className='text-center text-sm font-bold text-dark'>
           <Link
             href='/login'
-            className='text-primary hover:underline transition-colors'
+            className='text-primaryDark hover:underline transition-colors'
           >
             Back to login
           </Link>

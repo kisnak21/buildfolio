@@ -91,7 +91,7 @@ export default function TermsPage() {
               If you have questions about these Terms, please contact us via the{' '}
               <a
                 href='/contact'
-                className='text-primary hover:underline font-bold'
+                className='text-primaryDark hover:underline font-bold'
               >
                 Contact page
               </a>

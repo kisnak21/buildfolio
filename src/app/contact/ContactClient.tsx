@@ -78,7 +78,7 @@ const ContactClient = () => {
         ) : (
           <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal'>
             {serverError && (
-              <p className='text-sm font-bold text-red-500 mb-6'>{serverError}</p>
+              <p className='text-sm font-bold text-red-600 mb-6'>{serverError}</p>
             )}
             <form onSubmit={handleSubmit} noValidate>
               <Input
@@ -118,7 +118,7 @@ const ContactClient = () => {
                   }`}
                 />
                 {errors.message && (
-                  <p className='text-sm font-bold text-red-500 mt-2'>
+                  <p className='text-sm font-bold text-red-600 mt-2'>
                     {errors.message}
                   </p>
                 )}

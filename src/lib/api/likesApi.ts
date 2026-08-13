@@ -1,7 +1,7 @@
 import realApiClient from './realApiClient'
-import type { NormalizedProject } from './projectsApi'
+import { normalizeProject, type NormalizedProject, type RawProject } from './projectsApi'
 
 export const getUserLikedProjects = async (): Promise<NormalizedProject[]> => {
   const response = await realApiClient.get('/projects/liked')
-  return response.data.data
+  return (response.data.data as RawProject[]).map(normalizeProject)
 }

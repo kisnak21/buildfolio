@@ -9,6 +9,7 @@ import Input from '@/components/ui/Input'
 import Checkbox from '@/components/ui/Checkbox'
 import Button from '@/components/ui/Button'
 import GoogleButton from '@/components/ui/GoogleButton'
+import { signIn } from 'next-auth/react'
 import Divider from '@/components/ui/Divider'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -32,6 +33,12 @@ const RegisterClient = () => {
   const [agreed, setAgreed] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
+  const [googleSubmitting, setGoogleSubmitting] = useState(false)
+
+  const handleGoogle = async () => {
+    setGoogleSubmitting(true)
+    await signIn('google', { callbackUrl: '/auth/google-callback' })
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -125,14 +132,14 @@ const RegisterClient = () => {
                   I agree to the{' '}
                   <Link
                     href='/privacy'
-                    className='text-primary hover:underline font-bold'
+                    className='text-primaryDark hover:underline font-bold'
                   >
                     Privacy Policy
                   </Link>{' '}
                   and{' '}
                   <Link
                     href='/terms'
-                    className='text-primary hover:underline font-bold'
+                    className='text-primaryDark hover:underline font-bold'
                   >
                     Terms of Service
                   </Link>
@@ -150,14 +157,16 @@ const RegisterClient = () => {
         <Divider text="or" />
 
         <div className='mb-6'>
-          <GoogleButton>Google</GoogleButton>
+          <GoogleButton onClick={handleGoogle} disabled={googleSubmitting}>
+            {googleSubmitting ? 'Connecting...' : 'Google'}
+          </GoogleButton>
         </div>
 
         <p className='text-center text-sm font-bold text-dark'>
           Already have an account?{' '}
           <Link
             href='/login'
-            className='text-primary hover:underline transition-colors'
+            className='text-primaryDark hover:underline transition-colors'
           >
             Log in
           </Link>

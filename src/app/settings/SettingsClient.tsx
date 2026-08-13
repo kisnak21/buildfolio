@@ -238,7 +238,7 @@ const SettingsClient = () => {
                 />
               </div>
 
-              {pwError && <p className='text-sm font-bold text-red-500 mt-2 mb-4'>{pwError}</p>}
+              {pwError && <p className='text-sm font-bold text-red-600 mt-2 mb-4'>{pwError}</p>}
 
               <div className='flex items-center gap-4 mt-8'>
                 <Button type='submit' fullWidth disabled={pwSaving} variant='primary'>

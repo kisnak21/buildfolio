@@ -89,7 +89,7 @@ const EditProjectClient = () => {
           Update your project details
         </p>
         {submitError && (
-          <p className='text-sm font-bold text-red-500 mb-4'>{submitError}</p>
+          <p className='text-sm font-bold text-red-600 mb-4'>{submitError}</p>
         )}
         <ProjectForm
           initialValues={project}

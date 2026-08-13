@@ -100,7 +100,7 @@ const LoginClient = () => {
               Please verify your email address before logging in.{' '}
               <Link
                 href={`/verify-email?email=${encodeURIComponent(needsVerification)}`}
-                className='text-primary hover:underline underline-offset-2'
+                className='text-primaryDark hover:underline underline-offset-2'
               >
                 Resend verification email
               </Link>
@@ -126,7 +126,7 @@ const LoginClient = () => {
             rightElement={
               <Link
                 href='/forgot-password'
-                className='text-xs text-primary hover:text-primary-hover transition-colors'
+                className='text-xs text-primaryDark hover:text-primary transition-colors'
               >
                 Forgot password?
               </Link>
@@ -159,7 +159,7 @@ const LoginClient = () => {
           Don&apos;t have an account?{' '}
           <Link
             href='/register'
-            className='text-primary hover:underline transition-colors'
+            className='text-primaryDark hover:underline transition-colors'
           >
             Register
           </Link>

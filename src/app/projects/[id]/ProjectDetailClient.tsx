@@ -101,14 +101,18 @@ const ProjectDetailClient = () => {
     }
   }
 
-  const handleBookmark = () => {
+  const handleBookmark = async () => {
     if (!currentUser) return router.push('/login')
     if (isBookmarked) {
-      dispatch(removeBookmark({ bookmarkId: existingBookmark.id }) as any)
-      dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
+      const result = await dispatch(removeBookmark({ bookmarkId: existingBookmark.id }) as any)
+      if (removeBookmark.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
+      }
     } else {
-      dispatch(addBookmark({ project_id: id }) as any)
-      dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
+      const result = await dispatch(addBookmark({ project_id: id }) as any)
+      if (addBookmark.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
+      }
     }
   }
 
@@ -116,19 +120,23 @@ const ProjectDetailClient = () => {
     e.preventDefault()
     if (!comment.trim()) return
     if (!currentUser) return router.push('/login')
-    await dispatch(
+    const result = await dispatch(
       addComment({
         content: comment.trim(),
         project_id: id,
       }) as any,
     )
-    dispatch(showToast({ message: 'Comment posted!', type: 'success' }))
-    setComment('')
+    if (addComment.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Comment posted!', type: 'success' }))
+      setComment('')
+    }
   }
 
-  const handleDeleteComment = (commentId: string) => {
-    dispatch(deleteComment(commentId) as any)
-    dispatch(showToast({ message: 'Comment deleted.', type: 'info' }))
+  const handleDeleteComment = async (commentId: string) => {
+    const result = await dispatch(deleteComment(commentId) as any)
+    if (deleteComment.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Comment deleted.', type: 'info' }))
+    }
   }
 
   const catColor = project ? getCategoryColor(project.category) : ''
@@ -312,7 +320,7 @@ const ProjectDetailClient = () => {
                 </form>
               ) : (
                 <p className='font-bold text-dark mb-8 border-b-2 border-dark border-dashed pb-8 text-center bg-yellow-50 py-4 border-2 rounded-xl'>
-                  <Link href='/login' className='text-primary hover:underline'>
+                  <Link href='/login' className='text-primaryDark hover:underline'>
                     Log in
                   </Link>{' '}
                   to leave a comment.
@@ -359,7 +367,7 @@ const ProjectDetailClient = () => {
                           {currentUser?.id === c.user_id && (
                             <button
                               onClick={() => handleDeleteComment(c.id)}
-                              className='text-xs font-bold text-red-500 hover:underline'
+                              className='text-xs font-bold text-red-600 hover:underline'
                             >
                               Delete
                             </button>

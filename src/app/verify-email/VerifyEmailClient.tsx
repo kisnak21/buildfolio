@@ -144,7 +144,7 @@ const VerifyEmailClient = () => {
           Already verified?{' '}
           <Link
             href='/login'
-            className='text-primary hover:underline transition-colors'
+            className='text-primaryDark hover:underline transition-colors'
           >
             Log in
           </Link>

@@ -85,7 +85,7 @@ const ForgotPasswordClient = () => {
           Remembered your password?{' '}
           <Link
             href='/login'
-            className='text-primary hover:underline transition-colors'
+            className='text-primaryDark hover:underline transition-colors'
           >
             Log in
           </Link>

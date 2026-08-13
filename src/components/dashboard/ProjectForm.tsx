@@ -134,7 +134,7 @@ const ProjectForm = ({
           }`}
         />
         {errors.description && (
-          <p className='text-sm font-bold text-red-500 mt-2'>{errors.description}</p>
+          <p className='text-sm font-bold text-red-600 mt-2'>{errors.description}</p>
         )}
       </div>
 
@@ -212,13 +212,13 @@ const ProjectForm = ({
           <button
             type='button'
             onClick={() => setThumbnail('')}
-            className='text-sm font-bold text-red-500 hover:underline mt-2'
+            className='text-sm font-bold text-red-600 hover:underline mt-2'
           >
             Remove thumbnail
           </button>
         )}
         {uploadError && (
-          <p className='text-sm font-bold text-red-500 mt-2'>{uploadError}</p>
+          <p className='text-sm font-bold text-red-600 mt-2'>{uploadError}</p>
         )}
       </div>
 

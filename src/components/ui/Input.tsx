@@ -42,7 +42,7 @@ const Input = ({
           error ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]' : ''
         }`}
       />
-      {error && <p className='text-sm font-bold text-red-500 mt-2'>{error}</p>}
+      {error && <p className='text-sm font-bold text-red-600 mt-2'>{error}</p>}
     </div>
   )
 }

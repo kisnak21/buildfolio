@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, deleteProject } from '@/store/redux/projectsSlice'
+import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -22,6 +23,7 @@ const DashboardClient = () => {
     currentUser: state.auth.currentUser,
     bookmarks: state.bookmarks.items,
   }))
+  const bookmarkLoading = useAppSelector((state) => state.bookmarks.loading)
 
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const [deleteError, setDeleteError] = useState('')
@@ -30,7 +32,10 @@ const DashboardClient = () => {
     if (projects.length === 0) {
       dispatch(fetchProjects() as any)
     }
-  }, [dispatch, projects.length])
+    if (currentUser?.id && bookmarks.length === 0 && !bookmarkLoading) {
+      dispatch(fetchBookmarks())
+    }
+  }, [dispatch, projects.length, currentUser?.id, bookmarks.length, bookmarkLoading])
 
   const userProjects = projects.filter(
     (p: any) => p.user_id === currentUser?.id,
@@ -42,12 +47,12 @@ const DashboardClient = () => {
   const totalBookmarks = bookmarks.length
 
   const handleConfirmDelete = async () => {
-    try {
-      await dispatch(deleteProject(deleteTarget.id) as any)
+    const result = await dispatch(deleteProject(deleteTarget.id) as any)
+    if (deleteProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project deleted successfully.', type: 'success' }))
       setDeleteTarget(null)
-    } catch {
-      setDeleteError('Failed to delete project. Please try again.')
+    } else {
+      setDeleteError(result.payload || 'Failed to delete project. Please try again.')
     }
   }
 
@@ -99,9 +104,9 @@ const DashboardClient = () => {
             ))}
           </div>
         )}
-        {error && <p className='text-sm font-bold text-red-500 mb-4'>{error}</p>}
+        {error && <p className='text-sm font-bold text-red-600 mb-4'>{error}</p>}
         {deleteError && (
-          <p className='text-sm font-bold text-red-500 mb-4'>{deleteError}</p>
+          <p className='text-sm font-bold text-red-600 mb-4'>{deleteError}</p>
         )}
 
         {!loading && !error && (

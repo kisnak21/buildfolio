@@ -26,7 +26,7 @@ const Checkbox = ({ id, label, checked, onChange, error }: CheckboxProps) => {
           {label}
         </label>
       </div>
-      {error && <p className='text-sm font-bold text-red-500 mt-2'>{error}</p>}
+      {error && <p className='text-sm font-bold text-red-600 mt-2'>{error}</p>}
     </div>
   )
 }

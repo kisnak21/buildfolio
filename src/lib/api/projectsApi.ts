@@ -1,6 +1,6 @@
 import realApiClient from './realApiClient'
 
-interface RawProject {
+export interface RawProject {
   id: string | number
   title: string
   slug: string
@@ -68,7 +68,7 @@ interface UpdateProjectFields {
   likes?: number
 }
 
-const normalizeProject = (p: RawProject): NormalizedProject => ({
+export const normalizeProject = (p: RawProject): NormalizedProject => ({
   id: p.id,
   title: p.title,
   slug: p.slug,

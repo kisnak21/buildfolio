@@ -83,7 +83,7 @@ export default function PrivacyPage() {
               via the{' '}
               <a
                 href='/contact'
-                className='text-primary hover:underline font-bold'
+                className='text-primaryDark hover:underline font-bold'
               >
                 Contact page
               </a>

@@ -56,7 +56,7 @@ const NewProjectClient = () => {
           Add a project to your portfolio
         </p>
         {submitError && (
-          <p className='text-sm font-bold text-red-500 mb-4'>{submitError}</p>
+          <p className='text-sm font-bold text-red-600 mb-4'>{submitError}</p>
         )}
         <ProjectForm onSubmit={handleSubmit} submitLabel='Create Project' />
       </main>

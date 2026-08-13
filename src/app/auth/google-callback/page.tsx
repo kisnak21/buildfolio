@@ -36,7 +36,7 @@ export default function GoogleCallback() {
         {status === 'loading' ? (
           <p className='text-sm text-gray-600'>Signing you in with Google...</p>
         ) : (
-          <p className='text-sm text-red-500'>
+          <p className='text-sm text-red-600'>
             Something went wrong. <a href='/login' className='underline'>Back to login</a>
           </p>
         )}
