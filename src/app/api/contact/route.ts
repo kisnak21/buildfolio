@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const safeEmail = stripHeaderInjection(cleanEmail)
 
     await sendEmail({
-      to: 'admin@buildfolio.my.id',
+      to: process.env.CONTACT_RECIPIENT_EMAIL || 'krisnastya21@gmail.com',
       subject: 'Contact Form: Message from ' + safeName.slice(0, 50),
       html: `
         <h3>New Contact Form Submission</h3>
