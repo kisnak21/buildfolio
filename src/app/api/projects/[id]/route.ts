@@ -6,8 +6,9 @@ import {
   updateProject,
   deleteProject,
 } from '@/lib/services/projectService'
-import { authenticate } from '@/lib/middleware/authMiddleware'
+import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(
   _req: NextRequest,
@@ -35,8 +36,25 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+  const { success, resetInMs } = await rateLimit(`update-project:${user!.id}:${ip}`, {
+    max: 30,
+    windowMs: 15 * 60 * 1000,
+  })
+  if (!success) {
+    return NextResponse.json(
+      { success: false, message: 'Too many project updates. Try again later.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) },
+      },
+    )
+  }
 
   const { id } = await params
   try {
@@ -82,8 +100,25 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
+  const { success, resetInMs } = await rateLimit(`delete-project:${user!.id}:${ip}`, {
+    max: 30,
+    windowMs: 15 * 60 * 1000,
+  })
+  if (!success) {
+    return NextResponse.json(
+      { success: false, message: 'Too many project deletions. Try again later.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) },
+      },
+    )
+  }
 
   const { id } = await params
   try {

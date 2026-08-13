@@ -1,8 +1,12 @@
 export const runtime = 'nodejs'
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
+
   const response = NextResponse.json({ success: true, message: 'Logged out' })
 
   // Clear httpOnly token cookie

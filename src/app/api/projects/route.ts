@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProjects, createProject } from '@/lib/services/projectService'
-import { authenticate } from '@/lib/middleware/authMiddleware'
+import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
 

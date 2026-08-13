@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserById, updateUser, deleteUser } from '@/lib/services/userService'
-import { authenticate } from '@/lib/middleware/authMiddleware'
+import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 
 export async function GET(
   _req: NextRequest,
@@ -30,6 +30,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
 
@@ -65,6 +67,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
 

@@ -6,20 +6,15 @@ import {
   addBookmark,
   getBookmark,
 } from '@/lib/services/bookmarkService'
-import { authenticate } from '@/lib/middleware/authMiddleware'
+import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
+  const { user, error } = authenticate(req)
+  if (error) return error
+
   try {
-    const { searchParams } = new URL(req.url)
-    const userId = searchParams.get('userId')
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, message: 'userId query param is required' },
-        { status: 400 },
-      )
-    }
-    const bookmarks = await getBookmarksByUser(userId)
+    const bookmarks = await getBookmarksByUser(user!.id)
     return NextResponse.json({ success: true, data: bookmarks })
   } catch (err: any) {
     return NextResponse.json(
@@ -30,6 +25,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
 

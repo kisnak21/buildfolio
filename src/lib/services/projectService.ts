@@ -110,6 +110,19 @@ export const getLikedProjectsByUser = async (userId: string) => {
   return likes.map((l) => normalizeProject(l.project))
 }
 
+const assertSafeUrl = (url: string | undefined, field: string) => {
+  if (!url) return
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw Object.assign(new Error(`${field} must be a valid http(s) URL`), { statusCode: 400 })
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw Object.assign(new Error(`${field} must be a valid http(s) URL`), { statusCode: 400 })
+  }
+}
+
 export const createProject = async ({
   title,
   slug,
@@ -142,6 +155,8 @@ export const createProject = async ({
   if (!description || description.length > 10000) {
     throw Object.assign(new Error('Description must be 1-10000 characters'), { statusCode: 400 })
   }
+  assertSafeUrl(github_url, 'Github URL')
+  assertSafeUrl(live_url, 'Live URL')
 
   const techConnects = technologies?.length
     ? await resolveTechnologies(technologies)
@@ -209,6 +224,8 @@ export const updateProject = async (
   if (description !== undefined && description.length > 10000) {
     throw Object.assign(new Error('Description must be at most 10000 characters'), { statusCode: 400 })
   }
+  assertSafeUrl(github_url, 'Github URL')
+  assertSafeUrl(live_url, 'Live URL')
   const techUpdate =
     technologies !== undefined
       ? {

@@ -26,7 +26,7 @@ const BookmarksClient = () => {
       dispatch(fetchProjects() as any)
     }
     if (currentUser?.id) {
-      dispatch(fetchBookmarks(currentUser.id) as any)
+      dispatch(fetchBookmarks() as any)
       dispatch(fetchLikedProjects() as any)
     }
   }, [dispatch, allProjects.length, currentUser?.id])

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticate } from '@/lib/middleware/authMiddleware'
+import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { getProjectById, toggleLikeProject } from '@/lib/services/projectService'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
@@ -8,6 +8,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { user, error } = authenticate(req)
   if (error) return error
 

@@ -38,3 +38,33 @@ export const authenticate = (req: NextRequest) => {
     }
   }
 }
+
+export const assertSameOrigin = (req: NextRequest) => {
+  const origin = req.headers.get('origin')
+  const referer = req.headers.get('referer')
+  if (!origin && !referer) {
+    return null
+  }
+  const source = origin ?? new URL(referer!).origin
+  const host =
+    req.headers.get('host') || req.headers.get('x-forwarded-host')
+  if (!host) {
+    return null
+  }
+  let sourceHost: string
+  try {
+    sourceHost = new URL(source).host
+  } catch {
+    return NextResponse.json(
+      { success: false, message: 'Invalid origin header' },
+      { status: 400 },
+    )
+  }
+  if (sourceHost !== host) {
+    return NextResponse.json(
+      { success: false, message: 'Cross-origin request rejected' },
+      { status: 403 },
+    )
+  }
+  return null
+}

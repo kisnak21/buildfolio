@@ -1,7 +1,7 @@
 import realApiClient from './realApiClient'
 
-export const getUserBookmarks = async (userId: string) => {
-  const response = await realApiClient.get(`/bookmarks?userId=${userId}`)
+export const getUserBookmarks = async () => {
+  const response = await realApiClient.get('/bookmarks')
   return response.data.data
 }
 

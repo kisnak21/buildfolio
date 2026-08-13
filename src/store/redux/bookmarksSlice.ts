@@ -12,11 +12,11 @@ interface Bookmark {
   [key: string]: unknown
 }
 
-export const fetchBookmarks = createAsyncThunk<Bookmark[], string, { rejectValue: string }>(
+export const fetchBookmarks = createAsyncThunk<Bookmark[], void, { rejectValue: string }>(
   'bookmarks/fetchAll',
-  async (userId, { rejectWithValue }) => {
+  async (_, { rejectWithValue }) => {
     try {
-      return await getUserBookmarks(userId)
+      return await getUserBookmarks()
     } catch (err) {
       return rejectWithValue('Failed to load bookmarks.')
     }

@@ -3,11 +3,14 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail } from '@/lib/email'
 import { rateLimit } from '@/lib/rateLimit'
+import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
 
 const stripHeaderInjection = (value: string) =>
   value.replace(/[\r\n\x00-\x1f]/g, '').trim()
 
 export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   try {
     const ip =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||

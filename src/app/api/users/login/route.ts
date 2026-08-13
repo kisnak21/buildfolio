@@ -4,8 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { loginUserService } from '@/lib/services/userService'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
+import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
 
 export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   try {
     // Rate limit: 10 attempts per 15 minutes per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
