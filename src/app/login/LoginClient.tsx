@@ -124,12 +124,12 @@ const LoginClient = () => {
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
             rightElement={
-              <a
-                href='#'
+              <Link
+                href='/forgot-password'
                 className='text-xs text-primary hover:text-primary-hover transition-colors'
               >
                 Forgot password?
-              </a>
+              </Link>
             }
           />
           <div className='mb-6'>

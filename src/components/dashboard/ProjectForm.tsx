@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import { UploadButton } from '@/lib/uploadthing-client'
+import Image from 'next/image'
 
 const categoryOptions = [
   'SaaS',
@@ -22,6 +24,7 @@ interface ProjectFormProps {
     author?: string
     github?: string
     live?: string
+    thumbnail?: string | null
   }
   onSubmit: (data: any) => Promise<void>
   submitLabel: string
@@ -45,6 +48,8 @@ const ProjectForm = ({
   const [author, setAuthor] = useState(initialValues?.author || '')
   const [github, setGithub] = useState(initialValues?.github || '')
   const [live, setLive] = useState(initialValues?.live || '')
+  const [thumbnail, setThumbnail] = useState(initialValues?.thumbnail || '')
+  const [uploadError, setUploadError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +74,7 @@ const ProjectForm = ({
       author: author.trim(),
       github: github.trim() || '#',
       live: live.trim() || '#',
+      thumbnail,
     })
   }
 
@@ -165,6 +171,56 @@ const ProjectForm = ({
         value={live}
         onChange={(e) => setLive(e.target.value)}
       />
+
+      <div className='mb-5'>
+        <label className='block font-bold text-dark mb-2'>
+          Thumbnail
+        </label>
+        {thumbnail && (
+          <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-3 shadow-brutal-sm'>
+            <Image
+              src={thumbnail}
+              alt='Project thumbnail'
+              fill
+              sizes='(max-width: 672px) 100vw, 672px'
+              className='object-cover'
+            />
+          </div>
+        )}
+        <UploadButton
+          endpoint='imageUploader'
+          onClientUploadComplete={(res) => {
+            if (res?.[0]?.url) {
+              setThumbnail(res[0].url)
+              setUploadError('')
+            }
+          }}
+          onUploadError={(error: Error) => {
+            setUploadError(error.message)
+          }}
+          appearance={{
+            container: 'w-full',
+            button:
+              'w-full bg-white border-2 border-dark rounded-xl font-bold shadow-brutal-sm hover:bg-yellow-100 transition-colors',
+            allowedContent: 'text-xs text-gray-600 font-bold',
+          }}
+          content={{
+            button: thumbnail ? 'Replace thumbnail' : 'Upload thumbnail',
+          }}
+        />
+        {thumbnail && (
+          <button
+            type='button'
+            onClick={() => setThumbnail('')}
+            className='text-sm font-bold text-red-500 hover:underline mt-2'
+          >
+            Remove thumbnail
+          </button>
+        )}
+        {uploadError && (
+          <p className='text-sm font-bold text-red-500 mt-2'>{uploadError}</p>
+        )}
+      </div>
 
       <div className='pt-6'>
         <Button type='submit' fullWidth variant='primary'>

@@ -159,6 +159,17 @@ const ProjectDetailClient = () => {
         ) : (
           <>
             <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-8 shadow-brutal relative'>
+              {project.thumbnail && (
+                <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-6 shadow-brutal-sm'>
+                  <Image
+                    src={project.thumbnail}
+                    alt={project.title}
+                    fill
+                    sizes='(max-width: 1024px) 100vw, 896px'
+                    className='object-cover'
+                  />
+                </div>
+              )}
               {/* Category Tag */}
               <div
                 className={`inline-block border-2 border-dark px-3 py-1 rounded-md text-sm font-bold shadow-brutal-sm ${catColor} ${isLightText} mb-6`}

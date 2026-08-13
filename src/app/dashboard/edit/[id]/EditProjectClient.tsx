@@ -40,6 +40,7 @@ const EditProjectClient = () => {
           live: projectData.live,
           technologies: projectData.technologies,
           category: projectData.category,
+          thumbnail: projectData.thumbnail,
         },
       }) as any,
     )

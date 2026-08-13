@@ -16,6 +16,7 @@ interface Project {
   likes: number
   github: string
   live: string
+  thumbnail?: string | null
 }
 
 interface ProjectCardProps {
@@ -61,6 +62,7 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
     likes,
     github,
     live,
+    thumbnail,
   } = project
 
   const router = useRouter()
@@ -74,9 +76,19 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
     >
       <div className='aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group flex items-center justify-center'>
         {/* Thumbnail fallback to icon */}
-        <div className={`w-full h-full flex items-center justify-center ${catColor.split(' ')[0]} opacity-50`}>
-          <span className='text-dark w-16 h-16'>{getCategoryIcon(category)}</span>
-        </div>
+        {thumbnail ? (
+          <Image
+            src={thumbnail}
+            alt={title}
+            fill
+            sizes='(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw'
+            className='object-cover group-hover:scale-105 transition-transform duration-300'
+          />
+        ) : (
+          <div className={`w-full h-full flex items-center justify-center ${catColor.split(' ')[0]} opacity-50`}>
+            <span className='text-dark w-16 h-16'>{getCategoryIcon(category)}</span>
+          </div>
+        )}
         
         {/* Category Tag */}
         <div className={`absolute top-3 left-3 border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm ${catColor} ${isLightText}`}>

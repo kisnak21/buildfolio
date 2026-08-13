@@ -229,6 +229,8 @@ Open `http://localhost:3000` in your browser.
 | GET    | `/api/users`                     | Yes | Get current user profile              |
 | POST   | `/api/users`                     | —    | Register                              |
 | POST   | `/api/users/login`               | —    | Login (unverified users get 403)      |
+| POST   | `/api/users/forgot-password`     | —    | Request password reset email          |
+| POST   | `/api/users/reset-password`      | —    | Reset password with token             |
 | POST   | `/api/users/resend-verification` | —    | Resend verification email             |
 | GET    | `/api/users/verify-email?token=` | —    | Verify email                          |
 | GET    | `/api/users/:id`                 | —    | Get user by ID                        |

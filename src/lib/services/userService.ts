@@ -159,6 +159,64 @@ export const resendVerificationEmail = async (email: string) => {
   return user
 }
 
+export const requestPasswordReset = async (email: string) => {
+  const user = await prisma.user.findUnique({ where: { email } })
+  if (!user) return null
+
+  const token = crypto.randomUUID()
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      resetPasswordToken: token,
+      resetPasswordExpires: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  })
+
+  await sendEmail({
+    to: user.email,
+    subject: 'Reset your Buildfolio password',
+    html: `
+      <h2>Hi ${user.name}!</h2>
+      <p>Click the link below to reset your password. The link expires in 1 hour.</p>
+      <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${token}">
+        Reset Password
+      </a>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    `,
+  })
+
+  return user
+}
+
+export const resetPassword = async (token: string, newPassword: string) => {
+  if (newPassword.length < 8) {
+    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
+  }
+  if (!/[A-Z]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
+  }
+  if (!/[a-z]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
+  }
+  if (!/[0-9]/.test(newPassword)) {
+    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { resetPasswordToken: token },
+  })
+  if (!user) return null
+  if (!user.resetPasswordExpires || user.resetPasswordExpires < new Date()) return null
+
+  const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS)
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashedPassword, resetPasswordToken: null, resetPasswordExpires: null },
+  })
+
+  return { success: true }
+}
+
 export const verifyEmailService = async (token: string) => {
   const user = await prisma.user.findFirst({ where: { verificationToken: token } })
   if (!user) return null
