@@ -28,8 +28,8 @@ const Toast = () => {
 
   useEffect(() => {
     if (!visible) return
-    const leaveTimer = setTimeout(() => setLeaving(true), 3200)
-    const hideTimer = setTimeout(() => dispatch(hideToast()), 3500)
+    const leaveTimer = setTimeout(() => setLeaving(true), 4600)
+    const hideTimer = setTimeout(() => dispatch(hideToast()), 5000)
     return () => {
       clearTimeout(leaveTimer)
       clearTimeout(hideTimer)
