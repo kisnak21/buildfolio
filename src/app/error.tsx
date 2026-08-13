@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
+import Button from '@/components/ui/Button'
+import { buttonClass } from '@/components/ui/buttonClass'
 
 export default function GlobalError({
   error,
@@ -22,16 +24,10 @@ export default function GlobalError({
           An unexpected error occurred. Please try again.
         </p>
         <div className='flex flex-col gap-3'>
-          <button
-            onClick={reset}
-            className='btn-brutal bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl shadow-brutal font-bold hover:bg-pink-400'
-          >
+          <Button onClick={reset} fullWidth>
             Try again
-          </button>
-          <Link
-            href='/'
-            className='btn-brutal bg-white text-dark border-2 border-dark px-6 py-3 rounded-xl shadow-brutal font-bold hover:bg-yellow-100'
-          >
+          </Button>
+          <Link href='/' className={buttonClass('secondary')}>
             Back to home
           </Link>
         </div>

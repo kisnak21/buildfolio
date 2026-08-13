@@ -5,6 +5,7 @@ import { getCommentsByProject, addComment } from '@/lib/services/commentService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
+import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
       )
     }
     const comments = await getCommentsByProject(projectId)
-    return NextResponse.json({ success: true, data: comments })
+    return NextResponse.json({ success: true, data: comments }, { headers: publicCacheHeaders })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },

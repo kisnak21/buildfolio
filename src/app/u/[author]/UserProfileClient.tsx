@@ -1,47 +1,54 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
-import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { likeProject } from '@/store/redux/projectsSlice'
+import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
+import EmptyState from '@/components/ui/EmptyState'
+import { buttonClass } from '@/components/ui/buttonClass'
+import type { ClientProject } from '@/lib/shapes'
 
-const UserProfileClient = () => {
-  const { author } = useParams<{ author: string }>()
+interface UserProfileClientProps {
+  author: string
+  initialProjects: ClientProject[]
+}
+
+const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) => {
   const dispatch = useAppDispatch()
+  const [userProjects, setUserProjects] = useState<ClientProject[]>(initialProjects)
 
-  const allProjects = useAppSelector((state) => state.projects.items)
   const { currentUser } = useAppSelector((state) => state.auth)
-  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
+  const likedProjectIds = useAppSelector(selectLikedProjectIds)
 
   const decodedAuthor = decodeURIComponent(author)
 
   useEffect(() => {
-    if (allProjects.length === 0) {
-      dispatch(fetchProjects() as any)
-    }
     if (currentUser?.id) dispatch(fetchLikedProjects() as any)
-  }, [dispatch, allProjects.length, currentUser?.id])
+  }, [currentUser?.id, dispatch])
 
-  const userProjects = allProjects.filter(
-    (p: any) => p.author === decodedAuthor,
-  )
   const totalLikes = userProjects.reduce(
-    (sum: number, p: any) => sum + (p.likes || 0),
+    (sum, p) => sum + (p.likes || 0),
     0,
   )
   const isOwnProfile = currentUser?.name === decodedAuthor
 
   const handleLike = async (id: string, currentLikes: number) => {
     const result = await dispatch(likeProject(id) as any)
-    if (likeProject.fulfilled.match(result)) {
-      dispatch(syncLike({ project: allProjects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
-    }
+    if (!likeProject.fulfilled.match(result)) return
+    setUserProjects((prev) =>
+      prev.map((p) =>
+        String(p.id) === id
+          ? { ...p, likes: result.payload.liked ? currentLikes + 1 : currentLikes - 1 }
+          : p,
+      ),
+    )
+    const likedProject = userProjects.find((p) => String(p.id) === id)
+    if (likedProject) dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
   }
 
   return (
@@ -102,20 +109,22 @@ const UserProfileClient = () => {
         </div>
 
         {userProjects.length === 0 ? (
-          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-600 mb-4'>No projects yet.</p>
-            {isOwnProfile && (
-              <Link
-                href='/dashboard/new'
-                className='btn-brutal inline-block bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
-              >
-                Create your first project
-              </Link>
-            )}
-          </div>
+          <EmptyState
+            title='No projects yet.'
+            action={
+              isOwnProfile ? (
+                <Link
+                  href='/dashboard/new'
+                  className={buttonClass('primary', 'md', 'inline-block')}
+                >
+                  Create your first project
+                </Link>
+              ) : undefined
+            }
+          />
         ) : (
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-            {userProjects.map((project: any) => (
+            {userProjects.map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}

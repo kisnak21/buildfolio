@@ -12,7 +12,7 @@ const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardPr
       onClick={onClick}
       className={`card-brutal group w-full border-4 border-dark rounded-2xl p-4 text-center transition-all shadow-brutal-sm ${
         isSelected
-          ? 'bg-[#c4f0ff] shadow-[4px_4px_0px_0px_#111111] transform -translate-y-1 -translate-x-1'
+          ? 'bg-accentSoft shadow-brutal transform -translate-y-1 -translate-x-1'
           : 'bg-white hover:bg-yellow-50'
       }`}
     >

@@ -82,7 +82,7 @@ const ProjectForm = ({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className='bg-[#c4f0ff] border-4 border-dark rounded-2xl p-8 max-w-2xl shadow-brutal-lg'
+      className='bg-accentSoft border-4 border-dark rounded-2xl p-8 max-w-2xl shadow-brutal-lg'
     >
       <Input
         label='Project Title'
@@ -129,7 +129,7 @@ const ProjectForm = ({
           onChange={(e) => setDescription(e.target.value)}
           className={`input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none ${
             errors.description
-              ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]'
+              ? 'border-red-500 shadow-brutal-danger'
               : ''
           }`}
         />

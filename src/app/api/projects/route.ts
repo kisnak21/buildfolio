@@ -5,6 +5,7 @@ import { getAllProjects, createProject } from '@/lib/services/projectService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
+import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10)
     const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
     const result = await getAllProjects({ search, category, sort, page, limit })
-    return NextResponse.json({ success: true, data: result.data, pagination: result.pagination })
+    return NextResponse.json({ success: true, data: result.data, pagination: result.pagination }, { headers: publicCacheHeaders })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },

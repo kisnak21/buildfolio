@@ -1,15 +1,16 @@
 import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import { buttonClass } from '@/components/ui/buttonClass'
 
 export default function NotFound() {
   return (
     <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
       <main className='flex-1 flex flex-col items-center justify-center px-4 text-center'>
-        <div className='bg-[#c4f0ff] border-4 border-dark rounded-2xl p-12 shadow-brutal-lg max-w-md w-full'>
-          <p className='text-8xl font-black text-dark mb-4 drop-shadow-[4px_4px_0_#FF90E8]'>404</p>
-          <h1 className='text-3xl font-black text-dark mb-4'>
+        <div className='bg-accentSoft border-4 border-dark rounded-2xl p-12 shadow-brutal-lg max-w-md w-full'>
+          <p className='text-8xl font-black text-dark mb-4 drop-shadow-[4px_4px_0_var(--color-primary)]'>404</p>
+          <h1 className='text-4xl font-black text-dark mb-4'>
             Page not found
           </h1>
           <p className='font-bold text-gray-700 mb-8'>
@@ -17,7 +18,7 @@ export default function NotFound() {
           </p>
           <Link
             href='/'
-            className='btn-brutal inline-block bg-primary text-dark border-2 border-dark px-8 py-4 rounded-xl font-black shadow-brutal hover:bg-pink-400'
+            className={`${buttonClass('primary', 'lg')} inline-block font-black`}
           >
             Back to homepage
           </Link>

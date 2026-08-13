@@ -1,4 +1,4 @@
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice, createSelector } from '@reduxjs/toolkit'
 import { getUserLikedProjects } from '@/lib/api/likesApi'
 import type { NormalizedProject } from '@/lib/api/projectsApi'
 
@@ -41,3 +41,16 @@ const likesSlice = createSlice({
 
 export const { syncLike } = likesSlice.actions
 export default likesSlice.reducer
+
+const selectLikesItems = (state: { likes: LikesState }) => state.likes.items
+
+export const selectLikedProjectIds = createSelector(
+  [selectLikesItems],
+  (items) => items.map((i) => String(i.id)),
+)
+
+export const selectIsLiked = (id: string | number) =>
+  createSelector(
+    [selectLikesItems],
+    (items) => items.some((i) => String(i.id) === String(id)),
+  )

@@ -4,11 +4,13 @@ import { useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import EmptyState from '@/components/ui/EmptyState'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { HeartIcon } from '@heroicons/react/24/solid'
 
 const LikedClient = () => {
@@ -19,16 +21,15 @@ const LikedClient = () => {
     (state) => state.likes,
   )
   const allProjects = useAppSelector((state) => state.projects.items)
-  const likedProjectIds = useAppSelector((state) =>
-    state.likes.items.map((i) => String(i.id)),
-  )
+  const likedProjectIds = useAppSelector(selectLikedProjectIds)
+  const { currentUser } = useAppSelector((state) => state.auth)
 
   useEffect(() => {
     if (allProjects.length === 0) {
       dispatch(fetchProjects() as any)
     }
-    dispatch(fetchLikedProjects() as any)
-  }, [dispatch, allProjects.length])
+    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+  }, [dispatch, allProjects.length, currentUser?.id])
 
   const handleLike = async (id: string, currentLikes: number) => {
     const result = await dispatch(likeProject(id) as any)
@@ -67,17 +68,17 @@ const LikedClient = () => {
             ))}
           </div>
         ) : likedProjects.length === 0 ? (
-          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-600 mb-6'>
-              No liked projects yet.
-            </p>
-            <button
-              onClick={() => router.push('/projects')}
-              className='btn-brutal bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
-            >
-              Explore projects
-            </button>
-          </div>
+          <EmptyState
+            title='No liked projects yet.'
+            action={
+              <button
+                onClick={() => router.push('/projects')}
+                className={buttonClass()}
+              >
+                Explore projects
+              </button>
+            }
+          />
         ) : (
           <>
             <p className='text-sm font-bold text-gray-600 mb-6'>

@@ -28,7 +28,7 @@ const TechPill = ({ name, count, onClick, isSelected }: TechPillProps) => {
       onClick={onClick}
       className={`card-brutal px-6 py-3 rounded-xl border-2 border-dark font-bold flex items-center gap-2 shadow-brutal-sm transition-all ${
         isSelected
-          ? 'bg-primary text-dark shadow-[2px_2px_0px_0px_#111111] transform -translate-y-0.5 -translate-x-0.5'
+          ? 'bg-primary text-dark shadow-brutal-sm transform -translate-y-0.5 -translate-x-0.5'
           : 'bg-white text-dark hover:bg-pink-50'
       }`}
     >

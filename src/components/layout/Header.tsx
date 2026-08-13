@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { useAppSelector } from '@/store/redux/hooks'
 import AvatarDropdown from './AvatarDropdown'
+import { buttonClass } from '@/components/ui/buttonClass'
 import { Bars3Icon, XMarkIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
 
 const navLinks = [
@@ -64,7 +65,7 @@ const Header = () => {
               </Link>
               <Link
                 href='/register'
-                className='btn-brutal bg-primary text-dark border-2 border-dark px-5 py-2.5 rounded-xl shadow-brutal hover:bg-pink-400'
+                className={buttonClass('primary', 'sm', 'px-5 py-2.5 shadow-brutal')}
               >
                 Sign Up
               </Link>

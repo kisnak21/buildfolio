@@ -8,6 +8,7 @@ import { updateUserApi, changePasswordApi } from '@/lib/api/authApi'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import Button from '@/components/ui/Button'
 import { CheckIcon } from '@heroicons/react/24/solid'
 
@@ -115,7 +116,7 @@ const SettingsClient = () => {
             onClick={() => setTab('profile')}
             className={`btn-brutal px-6 py-3 font-bold rounded-xl border-2 border-dark transition-colors ${
               tab === 'profile'
-                ? 'bg-primary text-dark shadow-[2px_2px_0px_0px_#111111] transform -translate-y-0.5'
+                ? 'bg-primary text-dark shadow-brutal-sm transform -translate-y-0.5'
                 : 'bg-white text-dark hover:bg-yellow-50 shadow-brutal-sm'
             }`}
           >
@@ -125,7 +126,7 @@ const SettingsClient = () => {
             onClick={() => setTab('security')}
             className={`btn-brutal px-6 py-3 font-bold rounded-xl border-2 border-dark transition-colors ${
               tab === 'security'
-                ? 'bg-primary text-dark shadow-[2px_2px_0px_0px_#111111] transform -translate-y-0.5'
+                ? 'bg-primary text-dark shadow-brutal-sm transform -translate-y-0.5'
                 : 'bg-white text-dark hover:bg-yellow-50 shadow-brutal-sm'
             }`}
           >
@@ -162,16 +163,13 @@ const SettingsClient = () => {
                 error={profileError}
               />
               <div className='mb-6'>
-                <label htmlFor='bio' className='block font-bold text-dark mb-2'>
-                  Bio
-                </label>
-                <textarea
+                <Textarea
                   id='bio'
+                  label='Bio'
                   rows={3}
                   placeholder='Tell others about yourself...'
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className='input-brutal w-full bg-[#f3f4f6] border-2 border-dark rounded-xl px-4 py-3 font-medium transition-shadow resize-none'
                 />
               </div>
               <div className='flex items-center gap-4 pt-2'>
@@ -187,7 +185,7 @@ const SettingsClient = () => {
         )}
 
         {tab === 'security' && (
-          <div className='bg-[#c4f0ff] border-4 border-dark rounded-2xl p-8 max-w-lg shadow-brutal'>
+          <div className='bg-accentSoft border-4 border-dark rounded-2xl p-8 max-w-lg shadow-brutal'>
             <div className='mb-8 pb-8 border-b-2 border-dark border-dashed'>
               <h2 className='text-2xl font-black text-dark mb-2'>
                 Change password

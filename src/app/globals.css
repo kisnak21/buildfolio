@@ -32,12 +32,22 @@
   --color-dark: #111111;
   --color-cardBg: #FFFFFF;
   --color-borderBlack: #111111;
+  --color-inputBg: #F3F4F6;
+  --color-accentSoft: #C4F0FF;
+  --color-successSoft: #BBF7D0;
+  --color-dangerSoft: #FECACA;
+  --color-warningSoft: #FDE047;
+  --color-orangeSoft: #FED7AA;
+  --color-purpleSoft: #A78BFA;
+  --color-greenMid: #4ADE80;
+  --color-danger: #EF4444;
 
   --shadow-brutal-sm: 2px 2px 0px 0px rgba(17,17,17,1);
   --shadow-brutal: 4px 4px 0px 0px rgba(17,17,17,1);
   --shadow-brutal-lg: 8px 8px 0px 0px rgba(17,17,17,1);
   --shadow-brutal-hover: 2px 2px 0px 0px rgba(17,17,17,1);
   --shadow-brutal-active: 0px 0px 0px 0px rgba(17,17,17,1);
+  --shadow-brutal-danger: 4px 4px 0px 0px var(--color-danger);
 }
 
 @layer utilities {

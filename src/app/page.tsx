@@ -3,7 +3,9 @@ import HomeClient from './HomeClient'
 import { getTechnologyStats } from '@/lib/services/projectService'
 
 export const metadata: Metadata = {
-  title: 'Buildfolio — Discover Projects. Share Ideas. Build Your Portfolio.',
+  title: {
+    absolute: 'Buildfolio — Discover Projects. Share Ideas. Build Your Portfolio.',
+  },
   description:
     'Discover projects, share ideas, and build your portfolio. The platform for developers to showcase their work.',
 }

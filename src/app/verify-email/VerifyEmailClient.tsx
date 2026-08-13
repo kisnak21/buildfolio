@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import AuthCard from '@/components/layout/AuthCard'
 import Button from '@/components/ui/Button'
+import Alert from '@/components/ui/Alert'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -89,12 +90,9 @@ const VerifyEmailClient = () => {
         )}
 
         {status === 'verified' && (
-          <div
-            role='status'
-            className='mb-6 px-4 py-3 border-2 border-green-600 bg-green-100 rounded-xl text-sm font-bold text-green-800'
-          >
+          <Alert variant='success' className='mb-6'>
             {message} Redirecting to login...
-          </div>
+          </Alert>
         )}
 
         {status !== 'verified' && status !== 'verifying' && (
@@ -105,20 +103,14 @@ const VerifyEmailClient = () => {
             </div>
 
             {status === 'sent' && (
-              <div
-                role='status'
-                className='mb-6 px-4 py-3 border-2 border-green-600 bg-green-100 rounded-xl text-sm font-bold text-green-800'
-              >
+              <Alert variant='success' className='mb-6'>
                 {message}
-              </div>
+              </Alert>
             )}
             {status === 'error' && (
-              <div
-                role='alert'
-                className='mb-6 px-4 py-3 border-2 border-red-600 bg-red-100 rounded-xl text-sm font-bold text-red-800'
-              >
+              <Alert variant='error' className='mb-6'>
                 {message}
-              </div>
+              </Alert>
             )}
 
             <form onSubmit={handleResend} noValidate className='mb-6'>

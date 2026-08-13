@@ -1,8 +1,13 @@
 import type { Metadata } from 'next'
+
+const noIndex: Metadata = {
+  robots: { index: false, follow: false },
+}
 import { Suspense } from 'react'
 import VerifyEmailClient from './VerifyEmailClient'
 
 export const metadata: Metadata = {
+  ...noIndex,
   title: 'Verify Email | Buildfolio',
 }
 

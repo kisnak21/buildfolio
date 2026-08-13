@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
+import Textarea from '@/components/ui/Textarea'
 import Button from '@/components/ui/Button'
 import realApiClient from '@/lib/api/realApiClient'
 import { CheckCircleIcon } from '@heroicons/react/24/solid'
@@ -70,7 +71,7 @@ const ContactClient = () => {
             </p>
             <button
               onClick={() => setSubmitted(false)}
-              className='mt-8 btn-brutal inline-block bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
+              className='mt-8 btn-brutal inline-block bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-primaryDark hover:text-white'
             >
               Send another message
             </button>
@@ -99,29 +100,15 @@ const ContactClient = () => {
                 error={errors.email}
               />
               <div className='mb-8'>
-                <label
-                  htmlFor='message'
-                  className='block font-bold text-dark mb-2'
-                >
-                  Message
-                </label>
-                <textarea
+                <Textarea
                   id='message'
+                  label='Message'
                   rows={5}
                   placeholder='Write your message here...'
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  className={`input-brutal w-full bg-[#f3f4f6] border-2 border-dark rounded-xl px-4 py-3 font-medium transition-shadow resize-none ${
-                    errors.message
-                      ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]'
-                      : ''
-                  }`}
+                  error={errors.message}
                 />
-                {errors.message && (
-                  <p className='text-sm font-bold text-red-600 mt-2'>
-                    {errors.message}
-                  </p>
-                )}
               </div>
               <Button type='submit' fullWidth disabled={submitting} variant='primary'>
                 {submitting ? 'Sending...' : 'Send message'}

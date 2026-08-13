@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getUserById, updateUser, deleteUser } from '@/lib/services/userService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
 export async function GET(
   _req: NextRequest,
@@ -18,7 +19,7 @@ export async function GET(
         { status: 404 },
       )
     }
-    return NextResponse.json({ success: true, data: user })
+    return NextResponse.json({ success: true, data: user }, { headers: publicCacheHeaders })
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },

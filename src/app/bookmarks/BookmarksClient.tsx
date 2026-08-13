@@ -5,10 +5,12 @@ import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
+import EmptyState from '@/components/ui/EmptyState'
+import { buttonClass } from '@/components/ui/buttonClass'
 
 const BookmarksClient = () => {
   const dispatch = useAppDispatch()
@@ -19,7 +21,7 @@ const BookmarksClient = () => {
   )
   const allProjects = useAppSelector((state) => state.projects.items)
   const currentUser = useAppSelector((state) => state.auth.currentUser)
-  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
+  const likedProjectIds = useAppSelector(selectLikedProjectIds)
 
   useEffect(() => {
     if (allProjects.length === 0) {
@@ -55,15 +57,17 @@ const BookmarksClient = () => {
         {loading && <p className='text-sm font-bold text-gray-600'>Loading bookmarks...</p>}
 
         {!loading && bookmarkedProjects.length === 0 && (
-          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-600 mb-6'>No bookmarks yet.</p>
-            <button
-              onClick={() => router.push('/projects')}
-              className='btn-brutal bg-primary text-dark border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal-sm hover:bg-pink-400'
-            >
-              Explore projects
-            </button>
-          </div>
+          <EmptyState
+            title='No bookmarks yet.'
+            action={
+              <button
+                onClick={() => router.push('/projects')}
+                className={buttonClass()}
+              >
+                Explore projects
+              </button>
+            }
+          />
         )}
 
         {!loading && bookmarkedProjects.length > 0 && (

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { fetchLikedProjects, syncLike, selectIsLiked } from '@/store/redux/likesSlice'
 import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
 import {
   fetchComments,
@@ -15,11 +15,14 @@ import {
   clearComments,
 } from '@/store/redux/commentsSlice'
 import { getProjectById } from '@/lib/api/projectsApi'
+import type { NormalizedProject } from '@/lib/api/projectsApi'
+import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import ProjectDetailSkeleton from '@/components/ui/ProjectDetailSkeleton'
+import EmptyState from '@/components/ui/EmptyState'
 import {
   HeartIcon as HeartOutline,
   BookmarkIcon as BookmarkOutline,
@@ -30,35 +33,25 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/solid'
 
-// Generate consistent background color based on category
-const getCategoryColor = (category: string) => {
-  const map: Record<string, string> = {
-    SaaS: 'bg-secondary',
-    AI: 'bg-[#a78bfa] text-white',
-    'Web App': 'bg-[#c4f0ff]',
-    'Mobile App': 'bg-[#fecaca]',
-    'Open Source': 'bg-[#fde047]',
-    Game: 'bg-[#4ade80]',
-  }
-  return map[category] || 'bg-secondary'
+
+interface ProjectDetailClientProps {
+  initialProject: NormalizedProject | null
 }
 
-const ProjectDetailClient = () => {
+const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   const { id } = useParams<{ id: string }>()
   const dispatch = useAppDispatch()
   const router = useRouter()
 
-  const [project, setProject] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [project, setProject] = useState<NormalizedProject | null>(initialProject)
+  const [loading, setLoading] = useState(!initialProject)
 
   const { currentUser } = useAppSelector((state) => state.auth)
   const { items: bookmarks } = useAppSelector((state) => state.bookmarks)
-  const likedProjects = useAppSelector((state) => state.likes.items)
+  const isLiked = useAppSelector(selectIsLiked(id))
   const { items: comments, loading: commentsLoading } = useAppSelector(
     (state) => state.comments,
   )
-
-  const isLiked = likedProjects.some((p: any) => String(p.id) === id)
 
   const existingBookmark = bookmarks.find(
     (b: any) => String(b.project_id) === id,
@@ -91,7 +84,7 @@ const ProjectDetailClient = () => {
     const result = await dispatch(likeProjectThunk(id) as any)
     if (likeProjectThunk.fulfilled.match(result)) {
       const liked = result.payload?.liked
-      dispatch(syncLike({ project: project, liked }))
+      if (project) dispatch(syncLike({ project, liked }))
       dispatch(
         showToast({
           message: liked ? 'You liked this project!' : 'You removed your like.',
@@ -140,7 +133,7 @@ const ProjectDetailClient = () => {
   }
 
   const catColor = project ? getCategoryColor(project.category) : ''
-  const isLightText = catColor.includes('text-white')
+  const isLightText = isCategoryLightText(project?.category ?? '')
     ? 'text-white'
     : 'text-dark'
 
@@ -159,11 +152,7 @@ const ProjectDetailClient = () => {
         {loading ? (
           <ProjectDetailSkeleton />
         ) : !project ? (
-          <div className='bg-white border-4 border-dark rounded-2xl p-12 text-center shadow-brutal'>
-            <p className='text-lg font-bold text-gray-600'>
-              Project not found.
-            </p>
-          </div>
+          <EmptyState title='Project not found.' />
         ) : (
           <>
             <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-8 shadow-brutal relative'>
@@ -306,7 +295,7 @@ const ProjectDetailClient = () => {
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
                         placeholder='Write a feedback...'
-                        className='input-brutal w-full bg-[#f3f4f6] border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none'
+                        className='input-brutal w-full bg-inputBg border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none'
                       />
                       <Button
                         type='submit'
@@ -354,7 +343,7 @@ const ProjectDetailClient = () => {
                         height={40}
                         unoptimized
                       />
-                      <div className='flex-1 bg-[#fdfcf7] border-2 border-dark rounded-xl px-4 py-3 shadow-brutal-sm'>
+                      <div className='flex-1 bg-bgMain border-2 border-dark rounded-xl px-4 py-3 shadow-brutal-sm'>
                         <div className='flex items-center justify-between mb-2'>
                           <div className='flex items-center gap-2'>
                             <span className='font-bold text-dark'>

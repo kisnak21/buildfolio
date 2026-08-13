@@ -7,15 +7,15 @@ import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from '
 
 const toastStyles: Record<ToastType, { box: string; icon: React.ReactNode }> = {
   success: {
-    box: 'bg-[#bbf7d0] border-dark',
+    box: 'bg-successSoft border-dark',
     icon: <CheckCircleIcon className='w-6 h-6 text-dark shrink-0' />,
   },
   error: {
-    box: 'bg-[#fecaca] border-dark',
+    box: 'bg-dangerSoft border-dark',
     icon: <XCircleIcon className='w-6 h-6 text-dark shrink-0' />,
   },
   info: {
-    box: 'bg-[#c4f0ff] border-dark',
+    box: 'bg-accentSoft border-dark',
     icon: <InformationCircleIcon className='w-6 h-6 text-dark shrink-0' />,
   },
 }

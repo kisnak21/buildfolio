@@ -83,7 +83,7 @@ const DashboardClient = () => {
             <p className='font-bold text-dark mb-1'>Total Projects</p>
             <p className='text-5xl font-black'>{userProjects.length}</p>
           </div>
-          <div className='bg-[#a78bfa] text-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+          <div className='bg-purpleSoft text-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
             <p className='font-bold text-white mb-1'>Likes Received</p>
             <p className='text-5xl font-black'>{totalLikes}</p>
           </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useDeferredValue } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Hero from '@/components/home/Hero'
@@ -35,7 +35,7 @@ const HomeClient = ({ techCounts }: HomeClientProps) => {
     error,
   } = useAppSelector((state) => state.projects)
   const { currentUser } = useAppSelector((state) => state.auth)
-  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
+  const likedProjectIds = useAppSelector(selectLikedProjectIds)
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -189,7 +189,7 @@ const HomeClient = ({ techCounts }: HomeClientProps) => {
           id='categories'
           title='Browse by Category'
           subtitle='Find projects that match your interests'
-          className='bg-[#fed7aa] border-t-4 border-b-4 border-dark'
+          className='bg-orangeSoft border-t-4 border-b-4 border-dark'
         >
           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4'>
             {derivedCategories.map((category) => (
@@ -214,7 +214,7 @@ const HomeClient = ({ techCounts }: HomeClientProps) => {
           id='technologies'
           title='Trending Technologies'
           subtitle='What developers are building with right now'
-          className='bg-[#bbf7d0] border-b-4 border-dark'
+          className='bg-successSoft border-b-4 border-dark'
         >
           <div className='flex flex-wrap gap-4'>
             {techCounts.map((tech) => (

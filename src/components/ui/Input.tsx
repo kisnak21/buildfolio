@@ -38,8 +38,8 @@ const Input = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className={`input-brutal w-full px-4 py-3 bg-[#f3f4f6] border-2 border-dark rounded-xl font-medium transition-shadow ${
-          error ? 'border-red-500 shadow-[4px_4px_0px_0px_#ef4444]' : ''
+        className={`input-brutal w-full px-4 py-3 bg-inputBg border-2 border-dark rounded-xl font-medium transition-shadow ${
+          error ? 'border-red-500 shadow-brutal-danger' : ''
         }`}
       />
       {error && <p className='text-sm font-bold text-red-600 mt-2'>{error}</p>}

@@ -7,7 +7,7 @@ interface HeroProps {
 
 const Hero = ({ currentUser }: HeroProps) => {
   return (
-    <section className='py-16 md:py-24 border-b-4 border-dark bg-[#c4f0ff]'>
+    <section className='py-16 md:py-24 border-b-4 border-dark bg-accentSoft'>
       <div className='max-w-6xl mx-auto px-4'>
         <div className='grid md:grid-cols-2 gap-12 items-center'>
           <div className='space-y-6'>

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Alert from '@/components/ui/Alert'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -47,20 +48,14 @@ const ForgotPasswordClient = () => {
     <div className='min-h-screen flex items-center justify-center px-4 py-10 bg-bgMain'>
       <AuthCard title='Forgot Password' subtitle='We will email you a link to reset your password.'>
         {status === 'sent' && (
-          <div
-            role='status'
-            className='mb-6 px-4 py-3 border-2 border-green-600 bg-green-100 rounded-xl text-sm font-bold text-green-800'
-          >
+          <Alert variant='success' className='mb-6'>
             {message}
-          </div>
+          </Alert>
         )}
         {status === 'error' && (
-          <div
-            role='alert'
-            className='mb-6 px-4 py-3 border-2 border-red-600 bg-red-100 rounded-xl text-sm font-bold text-red-800'
-          >
+          <Alert variant='error' className='mb-6'>
             {message}
-          </div>
+          </Alert>
         )}
 
         {status !== 'sent' && (

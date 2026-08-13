@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
 import { HeartIcon as HeartSolid, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
 
 interface Project {
-  id: string
+  id: string | number
   title: string
   description: string
   category: string
@@ -25,18 +26,6 @@ interface ProjectCardProps {
   isLiked?: boolean
 }
 
-// Generate consistent background color based on category
-const getCategoryColor = (category: string) => {
-  const map: Record<string, string> = {
-    'SaaS': 'bg-secondary',
-    'AI': 'bg-[#a78bfa] text-white',
-    'Web App': 'bg-[#c4f0ff]',
-    'Mobile App': 'bg-[#fecaca]',
-    'Open Source': 'bg-[#fde047]',
-    'Game': 'bg-[#4ade80]',
-  }
-  return map[category] || 'bg-secondary'
-}
 
 // Generate consistent icon based on category if no thumbnail
 const getCategoryIcon = (category: string) => {
@@ -67,7 +56,7 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
 
   const router = useRouter()
   const catColor = getCategoryColor(category)
-  const isLightText = catColor.includes('text-white') ? 'text-white' : 'text-dark'
+  const isLightText = isCategoryLightText(category) ? 'text-white' : 'text-dark'
 
   return (
     <article
@@ -99,7 +88,7 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
         <button
           onClick={(e) => {
             e.stopPropagation()
-            onLike(id, likes)
+            onLike(String(id), likes)
           }}
           aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
           aria-pressed={isLiked}

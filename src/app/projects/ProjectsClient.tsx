@@ -3,7 +3,7 @@
 import { useState, useEffect, useDeferredValue } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
-import { fetchLikedProjects, syncLike } from '@/store/redux/likesSlice'
+import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
@@ -30,7 +30,7 @@ const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
   const [selectedTech, setSelectedTech] = useState('')
   const [sortBy, setSortBy] = useState('newest')
   const currentUser = useAppSelector((state) => state.auth.currentUser)
-  const likedProjectIds = useAppSelector((state) => state.likes.items.map((i) => String(i.id)))
+  const likedProjectIds = useAppSelector(selectLikedProjectIds)
 
   const [page, setPage] = useState(1)
 
@@ -93,7 +93,7 @@ const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
         </div>
 
         {/* Filters */}
-        <div className='flex flex-col md:flex-row gap-4 mb-8 bg-[#c4f0ff] p-4 border-4 border-dark rounded-2xl shadow-brutal-sm'>
+        <div className='flex flex-col md:flex-row gap-4 mb-8 bg-accentSoft p-4 border-4 border-dark rounded-2xl shadow-brutal-sm'>
           <div className='flex-1 relative'>
             <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
               <MagnifyingGlassIcon className='w-6 h-6 text-dark' />
@@ -203,7 +203,7 @@ const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
                 onClick={() => goToPage(p)}
                 className={`btn-brutal w-12 h-12 flex items-center justify-center font-bold rounded-xl border-2 border-dark shadow-brutal-sm ${
                   p === page
-                    ? 'bg-primary text-dark shadow-[2px_2px_0px_0px_#111111] transform -translate-y-0.5'
+                    ? 'bg-primary text-dark shadow-brutal-sm transform -translate-y-0.5'
                     : 'bg-white text-dark hover:bg-yellow-50'
                 }`}
               >
