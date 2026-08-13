@@ -7,7 +7,7 @@ import {
   deleteProject,
 } from '@/lib/services/projectService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(
@@ -27,7 +27,7 @@ export async function GET(
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -91,7 +91,7 @@ export async function PATCH(
     }
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -151,7 +151,7 @@ export async function DELETE(
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }

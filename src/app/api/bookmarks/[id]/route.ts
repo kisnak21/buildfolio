@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { removeBookmark, getBookmarkById } from '@/lib/services/bookmarkService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 
 export async function DELETE(
   req: NextRequest,
@@ -33,7 +33,7 @@ export async function DELETE(
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }

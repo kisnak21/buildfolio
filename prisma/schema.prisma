@@ -25,6 +25,8 @@ model User {
   comments           Comment[]
   projectLikes       ProjectLike[]
 
+  @@index([verificationToken])
+  @@index([resetPasswordToken])
   @@map("users")
 }
 
@@ -66,6 +68,8 @@ model Project {
   comments             Comment[]
   projectLikes         ProjectLike[]
 
+  @@index([userId])
+  @@index([categoryId])
   @@map("projects")
 }
 
@@ -112,5 +116,7 @@ model Comment {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
+  @@index([userId])
+  @@index([projectId])
   @@map("comments")
 }

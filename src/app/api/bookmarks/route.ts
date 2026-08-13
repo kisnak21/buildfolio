@@ -7,6 +7,7 @@ import {
   getBookmark,
 } from '@/lib/services/bookmarkService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
@@ -18,8 +19,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: bookmarks })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -65,8 +66,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data: bookmark }, { status: 201 })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }

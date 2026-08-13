@@ -32,6 +32,18 @@ const normalizeProject = (p: any) => ({
   technologies: p.technologies?.map((pt: any) => pt.technology.name) ?? [],
 })
 
+export const getTechnologyStats = async (): Promise<{ name: string; count: number }[]> => {
+  const grouped = await prisma.technology.findMany({
+    select: {
+      name: true,
+      _count: { select: { projectTechnologies: true } },
+    },
+    orderBy: { projectTechnologies: { _count: 'desc' } },
+    take: 10,
+  })
+  return grouped.map((t) => ({ name: t.name, count: t._count.projectTechnologies }))
+}
+
 export const getAllProjects = async ({
   search,
   category,
@@ -169,24 +181,26 @@ export const createProject = async ({
     if (cat) finalCategoryId = cat.id
   }
 
-  const project = await prisma.project.create({
-    data: {
-      title,
-      slug,
-      description,
-      thumbnail: thumbnail ?? null,
-      githubUrl: github_url ?? null,
-      liveUrl: live_url ?? null,
-      userId: user_id,
-      categoryId: finalCategoryId ?? null,
-      technologies: {
-        create: techConnects.map((techId) => ({
-          technology: { connect: { id: techId } },
-        })),
+  const project = await prisma.$transaction(async (tx) =>
+    tx.project.create({
+      data: {
+        title,
+        slug,
+        description,
+        thumbnail: thumbnail ?? null,
+        githubUrl: github_url ?? null,
+        liveUrl: live_url ?? null,
+        userId: user_id,
+        categoryId: finalCategoryId ?? null,
+        technologies: {
+          create: techConnects.map((techId) => ({
+            technology: { connect: { id: techId } },
+          })),
+        },
       },
-    },
-    select: projectSelect,
-  })
+      select: projectSelect,
+    }),
+  )
 
   return normalizeProject(project)
 }
@@ -243,20 +257,22 @@ export const updateProject = async (
     if (cat) finalCategoryId = cat.id
   }
 
-  const project = await prisma.project.update({
-    where: { id },
-    data: {
-      ...(title !== undefined && { title }),
-      ...(slug !== undefined && { slug }),
-      ...(description !== undefined && { description }),
-      ...(thumbnail !== undefined && { thumbnail }),
-      ...(github_url !== undefined && { githubUrl: github_url }),
-      ...(live_url !== undefined && { liveUrl: live_url }),
-      ...(finalCategoryId !== undefined && { categoryId: finalCategoryId }),
-      ...(techUpdate && { technologies: techUpdate }),
-    },
-    select: projectSelect,
-  })
+  const project = await prisma.$transaction(async (tx) =>
+    tx.project.update({
+      where: { id },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(slug !== undefined && { slug }),
+        ...(description !== undefined && { description }),
+        ...(thumbnail !== undefined && { thumbnail }),
+        ...(github_url !== undefined && { githubUrl: github_url }),
+        ...(live_url !== undefined && { liveUrl: live_url }),
+        ...(finalCategoryId !== undefined && { categoryId: finalCategoryId }),
+        ...(techUpdate && { technologies: techUpdate }),
+      },
+      select: projectSelect,
+    }),
+  )
 
   return normalizeProject(project)
 }
@@ -266,41 +282,46 @@ export const deleteProject = async (id: string) => {
 }
 
 export const toggleLikeProject = async (projectId: string, userId: string) => {
-  const existing = await prisma.projectLike.findUnique({
-    where: { userId_projectId: { userId, projectId } },
-  })
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.projectLike.findUnique({
+      where: { userId_projectId: { userId, projectId } },
+    })
 
-  if (existing) {
-    await prisma.$transaction([
-      prisma.projectLike.delete({ where: { id: existing.id } }),
-      prisma.project.update({
+    if (existing) {
+      const project = await tx.project.update({
         where: { id: projectId },
         data: { likes: { decrement: 1 } },
-      }),
-    ])
-    return { liked: false, likes: (await getProjectById(projectId))?.likes ?? 0 }
-  }
+        select: { likes: true },
+      })
+      await tx.projectLike.delete({ where: { id: existing.id } })
+      return { liked: false, likes: project.likes }
+    }
 
-  await prisma.$transaction([
-    prisma.projectLike.create({ data: { userId, projectId } }),
-    prisma.project.update({
+    try {
+      await tx.projectLike.create({ data: { userId, projectId } })
+    } catch (err) {
+      if ((err as { code?: string }).code !== 'P2002') throw err
+    }
+    const project = await tx.project.update({
       where: { id: projectId },
       data: { likes: { increment: 1 } },
-    }),
-  ])
-  return { liked: true, likes: (await getProjectById(projectId))?.likes ?? 0 }
+      select: { likes: true },
+    })
+    return { liked: true, likes: project.likes }
+  })
 }
 
 async function resolveTechnologies(names: string[]): Promise<string[]> {
-  const ids: string[] = []
-  for (const name of names) {
-    if (!name.trim()) continue
-    const tech = await prisma.technology.upsert({
-      where: { name: name.trim() },
+  const uniqueNames = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)))
+  if (uniqueNames.length === 0) return []
+  const upserts = uniqueNames.map((name) =>
+    prisma.technology.upsert({
+      where: { name },
       update: {},
-      create: { name: name.trim() },
-    })
-    ids.push(tech.id)
-  }
-  return ids
+      create: { name },
+      select: { id: true },
+    }),
+  )
+  const results = await prisma.$transaction(upserts)
+  return results.map((t) => t.id)
 }

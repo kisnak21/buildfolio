@@ -82,8 +82,14 @@ export async function POST(req: NextRequest) {
       )
     }
     if (err.code === '23505' || err.code === 'P2002') {
+      const target = Array.isArray(err?.meta?.target)
+        ? err.meta.target.join(',')
+        : (err?.meta?.target as string) || ''
+      const message = target.includes('username')
+        ? 'Username already exists'
+        : 'Email already exists'
       return NextResponse.json(
-        { success: false, message: 'Email already exists' },
+        { success: false, message },
         { status: 409 },
       )
     }

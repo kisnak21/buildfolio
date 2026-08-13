@@ -12,8 +12,11 @@ import ProjectCard from '@/components/home/ProjectCard'
 import CategoryCard from '@/components/home/CategoryCard'
 import TechPill from '@/components/home/TechPill'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
-import { technologies } from '@/lib/data/project'
 import { MagnifyingGlassIcon, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon } from '@heroicons/react/24/solid'
+
+interface HomeClientProps {
+  techCounts: { name: string; count: number }[]
+}
 
 const categoryList = [
   { icon: <RocketLaunchIcon />, name: 'SaaS' },
@@ -24,7 +27,7 @@ const categoryList = [
   { icon: <PuzzlePieceIcon />, name: 'Game' },
 ]
 
-const HomeClient = () => {
+const HomeClient = ({ techCounts }: HomeClientProps) => {
   const dispatch = useAppDispatch()
   const {
     items: projects,
@@ -69,17 +72,6 @@ const HomeClient = () => {
   const derivedCategories = categoryList.map((cat) => ({
     ...cat,
     count: projects.filter((p: any) => p.category === cat.name).length,
-  }))
-
-  const techCounts = technologies.map((tech) => ({
-    ...tech,
-    count: projects.filter(
-      (p: any) =>
-        Array.isArray(p.technologies) &&
-        p.technologies.some((t: string) =>
-          t.toLowerCase().includes(tech.name.toLowerCase()),
-        ),
-    ).length,
   }))
 
   const handleLike = async (id: string) => {
@@ -136,11 +128,11 @@ const HomeClient = () => {
                 className='input-brutal bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none pr-10 cursor-pointer'
               >
                 <option value=''>All Technologies</option>
-                {technologies.map((tech) => (
-                  <option key={tech.name} value={tech.name}>
-                    {tech.name}
-                  </option>
-                ))}
+{techCounts.map((tech) => (
+                <option key={tech.name} value={tech.name}>
+                  {tech.name}
+                </option>
+              ))}
               </select>
             </div>
 

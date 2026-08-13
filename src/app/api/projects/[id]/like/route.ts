@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { getProjectById, toggleLikeProject } from '@/lib/services/projectService'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { toggleLikeProject } from '@/lib/services/projectService'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(
@@ -30,14 +30,6 @@ export async function POST(
       )
     }
 
-    const existingProject = await getProjectById(id)
-    if (!existingProject) {
-      return NextResponse.json(
-        { success: false, message: 'Project not found' },
-        { status: 404 },
-      )
-    }
-
     const result = await toggleLikeProject(id, user!.id)
     return NextResponse.json({
       success: true,
@@ -46,7 +38,7 @@ export async function POST(
   } catch (err: any) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }

@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCommentsByProject, addComment } from '@/lib/services/commentService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
@@ -20,8 +20,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, data: comments })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
-      { status: 500 },
+      { status: errorStatus(err) },
     )
   }
 }

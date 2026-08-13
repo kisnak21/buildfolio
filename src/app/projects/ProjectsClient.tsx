@@ -8,14 +8,17 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
-import { technologies } from '@/lib/data/project'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
 
 const categoryList = ['SaaS', 'AI', 'Web App', 'Mobile App', 'Open Source', 'Game']
 
 const PAGE_SIZE = 6
 
-const ProjectsClient = () => {
+interface ProjectsClientProps {
+  techCounts: { name: string; count: number }[]
+}
+
+const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
   const dispatch = useAppDispatch()
   const { items: projects, loading, error, pagination } = useAppSelector(
     (state) => state.projects,
@@ -123,7 +126,7 @@ const ProjectsClient = () => {
               className='input-brutal flex-1 md:flex-none bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none cursor-pointer'
             >
               <option value=''>All Technologies</option>
-              {technologies.map((tech) => (
+              {techCounts.map((tech) => (
                 <option key={tech.name} value={tech.name}>
                   {tech.name}
                 </option>

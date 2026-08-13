@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { changePassword } from '@/lib/services/userService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { rateLimit } from '@/lib/rateLimit'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 
 export async function PATCH(
   req: NextRequest,
@@ -64,8 +65,8 @@ export async function PATCH(
     return NextResponse.json({ success: true, message: 'Password changed successfully' })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: err.statusCode || 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }

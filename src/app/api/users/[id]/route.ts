@@ -3,6 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserById, updateUser, deleteUser } from '@/lib/services/userService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 
 export async function GET(
   _req: NextRequest,
@@ -20,8 +21,8 @@ export async function GET(
     return NextResponse.json({ success: true, data: user })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -57,8 +58,8 @@ export async function PATCH(
     return NextResponse.json({ success: true, data: updatedUser })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }
@@ -96,8 +97,8 @@ export async function DELETE(
     })
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, message: err.message },
-      { status: 500 },
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
     )
   }
 }
