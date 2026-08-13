@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { hideToast, type ToastType } from '@/store/redux/toastSlice'
 import { CheckCircleIcon, XCircleIcon, InformationCircleIcon, XMarkIcon } from '@heroicons/react/24/solid'
@@ -24,11 +24,16 @@ const Toast = () => {
   const dispatch = useAppDispatch()
   const { message, type, visible } = useAppSelector((state) => state.toast)
   const toastType = type as ToastType
+  const [leaving, setLeaving] = useState(false)
 
   useEffect(() => {
     if (!visible) return
-    const timer = setTimeout(() => dispatch(hideToast()), 3500)
-    return () => clearTimeout(timer)
+    const leaveTimer = setTimeout(() => setLeaving(true), 3200)
+    const hideTimer = setTimeout(() => dispatch(hideToast()), 3500)
+    return () => {
+      clearTimeout(leaveTimer)
+      clearTimeout(hideTimer)
+    }
   }, [visible, dispatch])
 
   if (!visible) return null
@@ -36,7 +41,13 @@ const Toast = () => {
   const style = toastStyles[toastType]
 
   return (
-    <div className='fixed bottom-6 right-6 z-[100] animate-[fadeInUp_0.2s_ease-out]'>
+    <div
+      className={`fixed bottom-6 right-6 z-[100] ${
+        leaving
+          ? 'animate-[fadeOutDown_0.3s_ease-in_forwards]'
+          : 'animate-[fadeInUp_0.2s_ease-out]'
+      }`}
+    >
       <div
         className={`flex items-center gap-4 border-4 border-dark rounded-2xl px-5 py-4 shadow-brutal max-w-sm ${style.box}`}
       >

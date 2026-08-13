@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
-* {
-  scroll-behavior: smooth;
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
 }
 
 *:focus-visible {
@@ -9,12 +11,24 @@
   outline-offset: 2px;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @theme {
   --color-bgMain: #Fdfcf7;
   --color-primary: #FF90E8;
+  --color-primaryDark: #D81B60;
   --color-secondary: #FFC900;
-  --color-accent: #23A094;
-  --color-accentDark: #1a7a71;
+  --color-accent: #1A7A71;
+  --color-accentDark: #13544e;
   --color-dark: #111111;
   --color-cardBg: #FFFFFF;
   --color-borderBlack: #111111;
@@ -61,5 +75,16 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes fadeOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(16px);
   }
 }

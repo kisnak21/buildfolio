@@ -79,7 +79,7 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
       </button>
 
       {open && (
-        <div role='menu' className='absolute right-0 mt-3 w-56 bg-white border-4 border-dark rounded-xl shadow-brutal py-2 z-50 overflow-hidden'>
+        <div role='menu' className='absolute right-0 mt-3 w-56 bg-white border-4 border-dark rounded-xl shadow-brutal py-2 z-50 overflow-hidden animate-[fadeInUp_0.15s_ease-out]'>
           <div className='px-4 py-3 border-b-2 border-dark border-dashed'>
             <p className='font-black text-dark truncate'>
               {user.name}
@@ -116,7 +116,7 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
           </Link>
           <button
             onClick={handleLogout}
-            className='block w-full text-left px-4 py-3 font-bold text-red-500 hover:bg-red-50 transition-colors'
+            className='block w-full text-left px-4 py-3 font-bold text-red-600 hover:bg-red-50 transition-colors'
           >
             Log out
           </button>
