@@ -18,6 +18,7 @@ interface CreateProjectInput {
   live_url?: string
   user_id: string | number
   category_id?: string | number | null
+  category?: string
   technologies?: string[]
   likes?: number
 }
@@ -32,6 +33,7 @@ interface UpdateProjectFields {
   live?: string
   live_url?: string
   category_id?: string | number | null
+  category?: string
   technologies?: string[]
   likes?: number
 }
@@ -65,6 +67,7 @@ export const createProject = async (project: CreateProjectInput): Promise<Normal
     live_url: project.live || project.live_url || null,
     user_id: project.user_id,
     category_id: project.category_id || null,
+    category: project.category,
     technologies: project.technologies || [],
   })
   return normalizeProject(response.data.data)
@@ -79,6 +82,7 @@ export const updateProject = async (id: string | number, updatedFields: UpdatePr
     github_url: updatedFields.github || updatedFields.github_url,
     live_url: updatedFields.live || updatedFields.live_url,
     category_id: updatedFields.category_id,
+    category: updatedFields.category,
     technologies: updatedFields.technologies,
     likes: updatedFields.likes,
   })
