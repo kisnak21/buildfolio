@@ -70,7 +70,7 @@ export const addProject = createAsyncThunk<Project, NewProjectInput, { rejectVal
     try {
       return await createProject({ ...project, likes: 0 })
     } catch (err) {
-      return rejectWithValue('Failed to create project. Please try again.')
+      return rejectWithValue((err as Error)?.message || 'Failed to create project. Please try again.')
     }
   },
 )

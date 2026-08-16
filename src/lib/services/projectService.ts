@@ -132,7 +132,7 @@ export const getLikedProjectsByUser = async (userId: string) => {
 }
 
 const assertSafeUrl = (url: string | undefined, field: string) => {
-  if (!url) return
+  if (!url || url === '#') return
   let parsed: URL
   try {
     parsed = new URL(url)
