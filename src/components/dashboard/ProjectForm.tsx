@@ -72,8 +72,8 @@ const ProjectForm = ({
         .map((t) => t.trim())
         .filter(Boolean),
       author: author.trim(),
-      github: github.trim() || '#',
-      live: live.trim() || '#',
+      github: github.trim(),
+      live: live.trim(),
       thumbnail,
     })
   }

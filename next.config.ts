@@ -29,8 +29,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' blob: data: https://api.dicebear.com https://images.unsplash.com https://lh3.googleusercontent.com",
-      "connect-src 'self' https://uploadthing.com",
+      "img-src 'self' blob: data: https://api.dicebear.com https://images.unsplash.com https://lh3.googleusercontent.com https://utfs.io https://*.utfs.io",
+      "connect-src 'self' https://uploadthing.com https://*.ingest.uploadthing.com",
       "frame-src 'self' https://vercel.live",
       "object-src 'none'",
       "base-uri 'self'",
@@ -51,6 +51,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
       },
     ],
   },
