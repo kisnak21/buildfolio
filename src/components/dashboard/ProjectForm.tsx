@@ -51,9 +51,11 @@ const ProjectForm = ({
   const [thumbnail, setThumbnail] = useState(initialValues?.thumbnail || '')
   const [uploadError, setUploadError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitting) return
     const newErrors: Record<string, string> = {}
 
     if (!title.trim()) newErrors.title = 'Title is required.'
@@ -63,19 +65,24 @@ const ProjectForm = ({
     setErrors(newErrors)
     if (Object.keys(newErrors).length > 0) return
 
-    await onSubmit({
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      technologies: technologies
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      author: author.trim(),
-      github: github.trim(),
-      live: live.trim(),
-      thumbnail,
-    })
+    setSubmitting(true)
+    try {
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        technologies: technologies
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+        author: author.trim(),
+        github: github.trim(),
+        live: live.trim(),
+        thumbnail,
+      })
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -84,6 +91,7 @@ const ProjectForm = ({
       noValidate
       className='bg-accentSoft border-4 border-dark rounded-2xl p-8 max-w-2xl shadow-brutal-lg'
     >
+      <fieldset disabled={submitting} className='contents'>
       <Input
         label='Project Title'
         id='title'
@@ -223,10 +231,21 @@ const ProjectForm = ({
       </div>
 
       <div className='pt-6'>
-        <Button type='submit' fullWidth variant='primary'>
-          {submitLabel}
+        <Button type='submit' fullWidth variant='primary' disabled={submitting}>
+          {submitting ? (
+            <>
+              <span
+                aria-hidden
+                className='inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2 align-middle'
+              />
+              {submitLabel.startsWith('Create') ? 'Creating…' : 'Saving…'}
+            </>
+          ) : (
+            submitLabel
+          )}
         </Button>
       </div>
+      </fieldset>
     </form>
   )
 }
