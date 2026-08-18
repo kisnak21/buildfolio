@@ -6,6 +6,7 @@ export interface EdgeJwtPayload {
   id: string
   email: string
   name: string
+  role?: string
 }
 
 /**
@@ -24,6 +25,7 @@ export const verifyJwtEdge = async (
       id: String(payload.id),
       email: String(payload.email),
       name: String(payload.name),
+      role: payload.role ? String(payload.role) : undefined,
     }
   } catch {
     return null

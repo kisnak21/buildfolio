@@ -1,20 +1,75 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Image from 'next/image'
 import { useAppDispatch } from '@/store/redux/hooks'
 import { showToast } from '@/store/redux/toastSlice'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { buttonClass } from '@/components/ui/buttonClass'
-import { adminComments, type AdminComment } from '@/lib/adminMockData'
+import {
+  getAdminComments,
+  deleteAdminComment,
+  type AdminComment,
+} from '@/lib/api/adminApi'
+
+const formatRelativeTime = (iso: string) => {
+  const diff = Date.now() - new Date(iso).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  })
+}
 
 const CommentsClient = () => {
   const dispatch = useAppDispatch()
-  const [comments, setComments] = useState(adminComments)
+  const [comments, setComments] = useState<AdminComment[]>([])
+  const [total, setTotal] = useState(0)
   const [query, setQuery] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [confirmComment, setConfirmComment] = useState<AdminComment | null>(
     null,
   )
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const load = async () => {
+    try {
+      const result = await getAdminComments()
+      setComments(result.data)
+      setTotal(result.pagination.total)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load comments')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    getAdminComments()
+      .then((result) => {
+        if (cancelled) return
+        setComments(result.data)
+        setTotal(result.pagination.total)
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load comments')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -27,16 +82,30 @@ const CommentsClient = () => {
     )
   }, [comments, query])
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirmComment) return
-    setComments(comments.filter((c) => c.id !== confirmComment.id))
-    dispatch(
-      showToast({
-        message: `Comment from ${confirmComment.author} deleted`,
-        type: 'success',
-      }),
-    )
-    setConfirmComment(null)
+    setBusyId(confirmComment.id)
+    try {
+      await deleteAdminComment(confirmComment.id)
+      setComments(comments.filter((c) => c.id !== confirmComment.id))
+      setTotal((t) => t - 1)
+      dispatch(
+        showToast({
+          message: `Comment from ${confirmComment.author} deleted`,
+          type: 'success',
+        }),
+      )
+    } catch (err: unknown) {
+      dispatch(
+        showToast({
+          message: err instanceof Error ? err.message : 'Delete failed',
+          type: 'error',
+        }),
+      )
+    } finally {
+      setBusyId(null)
+      setConfirmComment(null)
+    }
   }
 
   const actionBtn = (variant: 'white' | 'danger') =>
@@ -64,13 +133,38 @@ const CommentsClient = () => {
         />
       </div>
 
+      {error && !loading && (
+        <div className='bg-dangerSoft border-4 border-dark rounded-2xl p-5 shadow-brutal mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+          <p className='font-bold text-sm'>{error}</p>
+          <button
+            onClick={() => {
+              setError('')
+              setLoading(true)
+              void load()
+            }}
+            className={`${buttonClass('primary', 'sm', '')} shrink-0`}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
       <div className='space-y-4'>
+        {loading && (
+          <div className='bg-white border-4 border-dark rounded-2xl p-5 shadow-brutal animate-pulse'>
+            <div className='h-6 w-2/3 bg-gray-200 rounded mb-4' />
+            <div className='h-4 w-1/2 bg-gray-200 rounded' />
+          </div>
+        )}
+        {!loading && filtered.length === 0 && (
+          <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal text-center font-bold text-gray-500'>
+            No comments found
+          </div>
+        )}
         {filtered.map((comment) => (
           <div
             key={comment.id}
-            className={`bg-white border-4 border-dark rounded-2xl p-5 shadow-brutal ${
-              comment.flagged ? 'border-dangerSoft' : ''
-            }`}
+            className='bg-white border-4 border-dark rounded-2xl p-5 shadow-brutal'
           >
             <div className='flex items-center gap-3 mb-3 flex-wrap'>
               <div className='w-9 h-9 rounded-full border-2 border-dark bg-successSoft overflow-hidden shrink-0'>
@@ -90,33 +184,16 @@ const CommentsClient = () => {
                   {comment.project}
                 </p>
                 <p className='text-xs font-bold text-gray-500'>
-                  {comment.time}
+                  {formatRelativeTime(comment.createdAt)}
                 </p>
               </div>
-              <div className='ml-auto flex items-center gap-2 flex-wrap'>
-                {comment.flagged && (
-                  <span className='text-xs font-black bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm'>
-                    Flagged
-                  </span>
-                )}
-                {!comment.flagged && (
-                  <button
-                    onClick={() =>
-                      dispatch(
-                        showToast({
-                          message: 'Konteks proyek menyusul di fase backend',
-                          type: 'info',
-                        }),
-                      )
-                    }
-                    className={actionBtn('white')}
-                  >
-                    View context
-                  </button>
-                )}
+              <div className='ml-auto flex items-center gap-2'>
                 <button
+                  disabled={busyId === comment.id}
                   onClick={() => setConfirmComment(comment)}
-                  className={actionBtn('danger')}
+                  className={`${actionBtn('danger')} ${
+                    busyId === comment.id ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   Delete
                 </button>
@@ -129,29 +206,8 @@ const CommentsClient = () => {
 
       <div className='p-4 flex items-center justify-between'>
         <p className='text-sm font-bold text-gray-500'>
-          Showing {filtered.length} of {comments.length} comments
+          Showing {filtered.length} of {total} comments
         </p>
-        <div className='flex gap-2'>
-          <button
-            disabled
-            className='bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm opacity-50 cursor-not-allowed'
-          >
-            Prev
-          </button>
-          <button
-            onClick={() =>
-              dispatch(
-                showToast({
-                  message: 'Pagination backend menyusul',
-                  type: 'info',
-                }),
-              )
-            }
-            className='bg-secondary border-2 border-dark px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm hover:bg-warningSoft transition-colors'
-          >
-            Next
-          </button>
-        </div>
       </div>
 
       <ConfirmDialog

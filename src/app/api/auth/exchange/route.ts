@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { signToken } from '@/lib/auth'
+import prisma from '@/lib/db'
 
 export const runtime = 'nodejs'
 
@@ -11,10 +12,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, message: 'Not authenticated' }, { status: 401 })
   }
 
+  const dbUser = await prisma.user.findUnique({
+    where: { id: nextAuthToken.localId as string },
+    select: { role: true },
+  })
+
   const appToken = signToken({
     id: nextAuthToken.localId as string,
     email: nextAuthToken.email as string,
     name: nextAuthToken.name as string,
+    role: dbUser?.role,
   })
 
   const response = NextResponse.json({

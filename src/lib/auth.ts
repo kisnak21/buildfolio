@@ -10,6 +10,7 @@ export const signToken = (payload: {
   id: string
   email: string
   name: string
+  role?: string
 }) => {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' })
 }
@@ -19,6 +20,7 @@ export const verifyToken = (token: string) => {
     id: string
     email: string
     name: string
+    role?: string
   }
 }
 

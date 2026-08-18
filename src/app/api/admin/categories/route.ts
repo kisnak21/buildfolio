@@ -1,0 +1,48 @@
+export const runtime = 'nodejs'
+
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import {
+  listAdminCategories,
+  createAdminCategory,
+} from '@/lib/services/adminService'
+import { dbErrorMessage, errorStatus, httpError } from '@/lib/apiErrors'
+
+export async function GET(req: NextRequest) {
+  const { error } = await requireAdmin(req)
+  if (error) return error
+
+  try {
+    const data = await listAdminCategories()
+    return NextResponse.json({ success: true, data })
+  } catch (err: unknown) {
+    return NextResponse.json(
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
+    )
+  }
+}
+
+export async function POST(req: NextRequest) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
+  const { error } = await requireAdmin(req)
+  if (error) return error
+
+  try {
+    const { name, icon } = await req.json()
+    const category = await createAdminCategory(name, icon)
+    return NextResponse.json({ success: true, data: category }, { status: 201 })
+  } catch (err: unknown) {
+    if (httpError(err).statusCode === 400) {
+      return NextResponse.json(
+        { success: false, message: httpError(err).message ?? "Request failed" },
+        { status: 400 },
+      )
+    }
+    return NextResponse.json(
+      { success: false, message: dbErrorMessage(err) },
+      { status: errorStatus(err) },
+    )
+  }
+}

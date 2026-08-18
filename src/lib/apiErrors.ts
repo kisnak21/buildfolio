@@ -41,3 +41,6 @@ export function errorStatus(err: unknown): number {
     500
   )
 }
+
+export const httpError = (err: unknown): { statusCode?: number; message?: string } =>
+  (err ?? {}) as { statusCode?: number; message?: string }

@@ -28,6 +28,11 @@ export async function middleware(req: NextRequest) {
     // Full cryptographic verification on the edge
     const payload = await verifyJwtEdge(token)
     if (!payload) return redirectToLogin()
+
+    // Frontend gate for /admin (fast claim check; DB check stays authoritative)
+    if (pathname.startsWith('/admin') && payload.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', req.url))
+    }
   }
 
   // Redirect already-logged-in users away from guest pages

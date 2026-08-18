@@ -19,6 +19,7 @@ model User {
   resetPasswordToken String?   @map("reset_password_token") @db.VarChar(255)
   resetPasswordExpires DateTime? @map("reset_password_expires") @db.Timestamptz(6)
   isVerified         Boolean   @default(false) @map("is_verified")
+  role               String    @default("user") @db.VarChar(20)
   createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   projects           Project[]
   bookmarks          Bookmark[]

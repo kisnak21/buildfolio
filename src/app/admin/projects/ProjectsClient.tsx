@@ -1,25 +1,68 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAppDispatch } from '@/store/redux/hooks'
 import { showToast } from '@/store/redux/toastSlice'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import { buttonClass } from '@/components/ui/buttonClass'
 import {
-  adminProjects,
-  adminCategories,
+  getAdminProjects,
+  getAdminCategories,
+  deleteAdminProject,
   type AdminProject,
-} from '@/lib/adminMockData'
+} from '@/lib/api/adminApi'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
 
 const ProjectsClient = () => {
   const dispatch = useAppDispatch()
-  const [projects, setProjects] = useState(adminProjects)
+  const [projects, setProjects] = useState<AdminProject[]>([])
+  const [total, setTotal] = useState(0)
+  const [categories, setCategories] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('All categories')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [confirmProject, setConfirmProject] = useState<AdminProject | null>(
     null,
   )
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const load = async () => {
+    try {
+      const [projectsResult, categoryRows] = await Promise.all([
+        getAdminProjects(),
+        getAdminCategories(),
+      ])
+      setProjects(projectsResult.data)
+      setTotal(projectsResult.pagination.total)
+      setCategories(categoryRows.map((c) => c.name))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load projects')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    Promise.all([getAdminProjects(), getAdminCategories()])
+      .then(([projectsResult, categoryRows]) => {
+        if (cancelled) return
+        setProjects(projectsResult.data)
+        setTotal(projectsResult.pagination.total)
+        setCategories(categoryRows.map((c) => c.name))
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof Error ? err.message : 'Failed to load projects')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -34,16 +77,30 @@ const ProjectsClient = () => {
     })
   }, [projects, query, category])
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirmProject) return
-    setProjects(projects.filter((p) => p.id !== confirmProject.id))
-    dispatch(
-      showToast({
-        message: `${confirmProject.title} deleted`,
-        type: 'success',
-      }),
-    )
-    setConfirmProject(null)
+    setBusyId(confirmProject.id)
+    try {
+      await deleteAdminProject(confirmProject.id)
+      setProjects(projects.filter((p) => p.id !== confirmProject.id))
+      setTotal((t) => t - 1)
+      dispatch(
+        showToast({
+          message: `${confirmProject.title} deleted`,
+          type: 'success',
+        }),
+      )
+    } catch (err: unknown) {
+      dispatch(
+        showToast({
+          message: err instanceof Error ? err.message : 'Delete failed',
+          type: 'error',
+        }),
+      )
+    } finally {
+      setBusyId(null)
+      setConfirmProject(null)
+    }
   }
 
   const actionBtn = (variant: 'white' | 'danger') =>
@@ -76,12 +133,28 @@ const ProjectsClient = () => {
             className='bg-white border-2 border-dark px-4 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary'
           >
             <option>All categories</option>
-            {adminCategories.map((c) => (
-              <option key={c.id}>{c.name}</option>
+            {categories.map((name) => (
+              <option key={name}>{name}</option>
             ))}
           </select>
         </div>
       </div>
+
+      {error && !loading && (
+        <div className='bg-dangerSoft border-4 border-dark rounded-2xl p-5 shadow-brutal mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+          <p className='font-bold text-sm'>{error}</p>
+          <button
+            onClick={() => {
+              setError('')
+              setLoading(true)
+              void load()
+            }}
+            className={`${buttonClass('primary', 'sm', '')} shrink-0`}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       <div className='bg-white border-4 border-dark rounded-2xl shadow-brutal overflow-hidden'>
         <div className='overflow-x-auto'>
@@ -97,77 +170,63 @@ const ProjectsClient = () => {
               </tr>
             </thead>
             <tbody className='text-sm'>
-              {filtered.map((project) => (
-                <tr
-                  key={project.id}
-                  className='border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors'
-                >
-                  <td className='p-4 font-black'>{project.title}</td>
-                  <td className='p-4 font-bold'>{project.author}</td>
-                  <td className='p-4'>
-                    <span
-                      className={`${getCategoryColor(project.category)} ${
-                        isCategoryLightText(project.category) ? 'text-white' : ''
-                      } border-2 border-dark px-2 py-0.5 rounded-md text-xs font-black shadow-brutal-sm`}
-                    >
-                      {project.category}
-                    </span>
-                  </td>
-                  <td className='p-4 font-bold text-center'>{project.likes}</td>
-                  <td className='p-4 font-bold text-gray-500'>
-                    {project.createdAt}
-                  </td>
-                  <td className='p-4 text-right whitespace-nowrap'>
-                    <button
-                      onClick={() =>
-                        dispatch(
-                          showToast({
-                            message: 'Detail proyek menyusul di fase backend',
-                            type: 'info',
-                          }),
-                        )
-                      }
-                      className={actionBtn('white')}
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => setConfirmProject(project)}
-                      className={`${actionBtn('danger')} ml-2`}
-                    >
-                      Delete
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className='p-8 text-center font-bold text-gray-500'>
+                    Loading projects...
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className='p-8 text-center font-bold text-gray-500'>
+                    No projects found
+                  </td>
+                </tr>
+              ) : (
+                filtered.map((project) => (
+                  <tr
+                    key={project.id}
+                    className='border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors'
+                  >
+                    <td className='p-4 font-black'>{project.title}</td>
+                    <td className='p-4 font-bold'>{project.author}</td>
+                    <td className='p-4'>
+                      <span
+                        className={`${getCategoryColor(project.category)} ${
+                          isCategoryLightText(project.category) ? 'text-white' : ''
+                        } border-2 border-dark px-2 py-0.5 rounded-md text-xs font-black shadow-brutal-sm`}
+                      >
+                        {project.category}
+                      </span>
+                    </td>
+                    <td className='p-4 font-bold text-center'>{project.likes}</td>
+                    <td className='p-4 font-bold text-gray-500'>
+                      {new Date(project.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </td>
+                    <td className='p-4 text-right whitespace-nowrap'>
+                      <button
+                        disabled={busyId === project.id}
+                        onClick={() => setConfirmProject(project)}
+                        className={`${actionBtn('danger')} ${
+                          busyId === project.id ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
         <div className='p-4 border-t-4 border-dark flex items-center justify-between'>
           <p className='text-sm font-bold text-gray-500'>
-            Showing {filtered.length} of {projects.length} projects
+            Showing {filtered.length} of {total} projects
           </p>
-          <div className='flex gap-2'>
-            <button
-              disabled
-              className='bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm opacity-50 cursor-not-allowed'
-            >
-              Prev
-            </button>
-            <button
-              onClick={() =>
-                dispatch(
-                  showToast({
-                    message: 'Pagination backend menyusul',
-                    type: 'info',
-                  }),
-                )
-              }
-              className='bg-secondary border-2 border-dark px-3 py-1.5 rounded-lg text-xs font-bold shadow-brutal-sm hover:bg-warningSoft transition-colors'
-            >
-              Next
-            </button>
-          </div>
         </div>
       </div>
 
