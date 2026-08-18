@@ -65,13 +65,10 @@ const LoginClient = () => {
           id: result.user.id,
           name: result.user.name,
           email: result.user.email,
-          bio: result.user.bio ?? undefined,
+          bio: result.user.bio,
         }),
       )
-      const redirectTo =
-        result.user.role === 'admin'
-          ? '/dashboard'
-          : getSafeRedirect(searchParams.get('redirect'))
+      const redirectTo = getSafeRedirect(searchParams.get('redirect'))
       dispatch(showToast({ message: 'Welcome back!', type: 'success' }))
       router.push(redirectTo)
     } catch (err: any) {
