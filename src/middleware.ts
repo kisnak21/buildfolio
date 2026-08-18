@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { verifyJwtEdge } from '@/lib/middleware/verifyJwtEdge'
 
 // Routes that require authentication (server-side check via JWT cookie)
-const protectedRoutes = ['/dashboard', '/bookmarks', '/settings', '/liked']
+const protectedRoutes = ['/dashboard', '/bookmarks', '/settings', '/liked', '/admin']
 
 // Routes that should redirect to home if already authenticated
 const guestOnlyRoutes = ['/login', '/register']
@@ -48,6 +48,7 @@ export const config = {
     '/bookmarks/:path*',
     '/settings/:path*',
     '/liked/:path*',
+    '/admin/:path*',
     '/login',
     '/register',
   ],
