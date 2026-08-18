@@ -148,6 +148,7 @@ export const loginUserService = async ({
       image: user.image,
       bio: user.bio,
       is_verified: user.isVerified,
+      role: user.role,
     },
   }
 }

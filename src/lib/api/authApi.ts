@@ -6,7 +6,19 @@ export const registerUser = async ({ name, email, password }: { name: string; em
 }
 
 export const loginUserApi = async ({ email, password }: { email: string; password: string }) => {
-  const response = await realApiClient.post('/users/login', { email, password })
+  const response = await realApiClient.post<{
+    success: boolean
+    data: {
+      token: string
+      user: {
+        id: string
+        name: string
+        email: string
+        bio: string | null
+        role?: string
+      }
+    }
+  }>('/users/login', { email, password })
   return response.data.data
 }
 
