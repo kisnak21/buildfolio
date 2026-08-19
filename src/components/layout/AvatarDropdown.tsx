@@ -17,17 +17,13 @@ interface AvatarDropdownProps {
 
 const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
   const [open, setOpen] = useState(false)
-  const [imgSrc, setImgSrc] = useState<string | null>(null)
+  const [imgSrc] = useState<string | null>(
+    () => `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.email}`,
+  )
   const ref = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const dispatch = useDispatch()
   const router = useRouter()
-
-  useEffect(() => {
-    setImgSrc(
-      `https://api.dicebear.com/9.x/pixel-art/svg?seed=${user.email}`,
-    )
-  }, [user.email])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {

@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     })
 
     return response
-  } catch (err: any) {
+  } catch (err) {
     console.error('LOGIN ERROR:', err)
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },

@@ -30,7 +30,7 @@ export async function DELETE(
     }
     await removeBookmark(id)
     return NextResponse.json({ success: true, message: 'Bookmark removed' })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

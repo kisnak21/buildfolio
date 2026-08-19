@@ -10,7 +10,7 @@ export const fetchComments = createAsyncThunk<Comment[], string, { rejectValue: 
   async (projectId, { rejectWithValue }) => {
     try {
       return await getProjectComments(projectId)
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to load comments.')
     }
   },
@@ -22,8 +22,8 @@ export const addComment = createAsyncThunk<
 >('comments/add', async ({ content, project_id }, { rejectWithValue }) => {
   try {
     return await addCommentApi({ content, project_id })
-  } catch (err) {
-    return rejectWithValue('Failed to post comment.')
+  } catch {
+      return rejectWithValue('Failed to post comment.')
   }
 })
 
@@ -33,7 +33,7 @@ export const deleteComment = createAsyncThunk<string, string>(
     try {
       await deleteCommentApi(id.toString())
       return id
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to delete comment.')
     }
   },
@@ -44,7 +44,8 @@ interface Comment {
   content: string
   user_id: string
   project_id: string
-  [key: string]: any
+  author_name?: string | null
+  created_at?: string | null
 }
 
 interface CommentsState {

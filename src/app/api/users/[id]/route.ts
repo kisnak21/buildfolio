@@ -20,7 +20,7 @@ export async function GET(
       )
     }
     return NextResponse.json({ success: true, data: user }, { headers: publicCacheHeaders })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },
@@ -57,7 +57,7 @@ export async function PATCH(
       )
     }
     return NextResponse.json({ success: true, data: updatedUser })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },
@@ -96,7 +96,7 @@ export async function DELETE(
       success: true,
       message: 'User deleted successfully',
     })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

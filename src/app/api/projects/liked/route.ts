@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const projects = await getLikedProjectsByUser(user!.id)
     return NextResponse.json({ success: true, data: projects })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json({ success: false, message: dbErrorMessage(err) }, { status: 500 })
   }
 }

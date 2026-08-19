@@ -40,9 +40,20 @@ interface UpdateProjectFields {
 
 export const normalizeProject = (p: RawProject): NormalizedProject => toClientProject(p)
 
+export interface Pagination {
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+interface ApiError {
+  response?: { status: number }
+}
+
 export const getProjects = async (
   params: { page?: number; limit?: number; search?: string; category?: string; sort?: string } = {},
-): Promise<{ items: NormalizedProject[]; pagination: any }> => {
+): Promise<{ items: NormalizedProject[]; pagination: Pagination }> => {
   const queryParams = new URLSearchParams()
   if (params.page) queryParams.set('page', String(params.page))
   if (params.limit) queryParams.set('limit', String(params.limit))
@@ -98,8 +109,8 @@ export const getProjectById = async (id: string | number): Promise<NormalizedPro
   try {
     const response = await realApiClient.get(`/projects/${id}`)
     return normalizeProject(response.data.data)
-  } catch (err: any) {
-    if (err.response?.status === 404) return null
+  } catch (err) {
+    if ((err as ApiError).response?.status === 404) return null
     throw err
   }
 }

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
       success: true,
       message: 'Email Verified Successfully',
     })
-  } catch (err: any) {
+  } catch (err) {
     console.error('VERIFY EMAIL ERROR:', err)
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },

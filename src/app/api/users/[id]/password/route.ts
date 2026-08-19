@@ -63,7 +63,7 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true, message: 'Password changed successfully' })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

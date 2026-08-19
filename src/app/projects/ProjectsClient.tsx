@@ -34,11 +34,11 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    dispatch(fetchProjects({ page, limit: PAGE_SIZE, sort: sortBy }) as any)
-    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+    dispatch(fetchProjects({ page, limit: PAGE_SIZE, sort: sortBy }))
+    if (currentUser?.id) dispatch(fetchLikedProjects())
   }, [dispatch, page, sortBy, currentUser?.id])
 
-  const filtered = projects.filter((p: any) => {
+  const filtered = projects.filter((p) => {
     const matchesSearch =
       deferredSearch === '' ||
       p.title.toLowerCase().includes(deferredSearch.toLowerCase()) ||
@@ -54,20 +54,22 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
     return matchesSearch && matchesCategory && matchesTech
   })
 
-  const sorted = [...filtered].sort((a: any, b: any) => {
+  const sorted = [...filtered].sort((a, b) => {
+    const aTs = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const bTs = b.createdAt ? new Date(b.createdAt).getTime() : 0
     if (sortBy === 'likes') return b.likes - a.likes
-    if (sortBy === 'oldest')
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    if (sortBy === 'oldest') return aTs - bTs
     if (sortBy === 'title') return a.title.localeCompare(b.title)
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return bTs - aTs
   })
 
   const totalPages = pagination?.totalPages || 1
-  const handleLike = async (id: string, currentLikes: number) => {
+  const handleLike = async (id: string) => {
     if (!currentUser) return
-    const result = await dispatch(likeProject(id) as any)
-    if (likeProject.fulfilled.match(result)) {
-      dispatch(syncLike({ project: projects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    const result = await dispatch(likeProject(id))
+    const likedProject = projects.find((p) => p.id === id)
+    if (likeProject.fulfilled.match(result) && likedProject) {
+      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
     }
   }
 
@@ -174,7 +176,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
                 </p>
               </div>
             ) : (
-              sorted.map((project: any) => (
+              sorted.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}

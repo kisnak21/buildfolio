@@ -71,11 +71,12 @@ const LoginClient = () => {
       const redirectTo = getSafeRedirect(searchParams.get('redirect'))
       dispatch(showToast({ message: 'Welcome back!', type: 'success' }))
       router.push(redirectTo)
-    } catch (err: any) {
-      if (err.response?.status === 401) {
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: { needsVerification?: boolean; email?: string; message?: string } } }
+      if (e.response?.status === 401) {
         setErrors({ password: 'Invalid email or password.' })
-      } else if (err.response?.status === 403 && err.response?.data?.needsVerification) {
-        setNeedsVerification(err.response?.data?.email || null)
+      } else if (e.response?.status === 403 && e.response?.data?.needsVerification) {
+        setNeedsVerification(e.response?.data?.email || null)
         setErrors({})
       } else {
         setErrors({ password: 'Something went wrong. Please try again.' })

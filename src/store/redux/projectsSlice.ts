@@ -5,7 +5,6 @@ import {
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
   likeProject as likeProjectApi,
-  type NormalizedProject,
   type LikeResult,
 } from '../../lib/api/projectsApi'
 
@@ -59,7 +58,7 @@ export const fetchProjects = createAsyncThunk<
   try {
     const result = await getProjects(params || {})
     return { items: result.items, pagination: result.pagination }
-  } catch (err) {
+  } catch {
     return rejectWithValue('Failed to load projects. Please try again.')
   }
 })
@@ -80,7 +79,7 @@ export const updateProject = createAsyncThunk<Project, { id: string | number; up
   async ({ id, updatedFields }, { rejectWithValue }) => {
     try {
       return await updateProjectApi(id, updatedFields)
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to update project. Please try again.')
     }
   },
@@ -92,7 +91,7 @@ export const deleteProject = createAsyncThunk<string | number, string | number, 
     try {
       await deleteProjectApi(id)
       return id
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to delete project. Please try again.')
     }
   },
@@ -106,7 +105,7 @@ export const likeProject = createAsyncThunk<
   try {
     const result: LikeResult = await likeProjectApi(id)
     return { id, liked: result.liked, likes: result.likes }
-  } catch (err) {
+  } catch {
     return rejectWithValue('Failed to like project.')
   }
 })

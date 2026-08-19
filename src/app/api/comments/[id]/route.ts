@@ -30,7 +30,7 @@ export async function DELETE(
     }
     await deleteComment(id)
     return NextResponse.json({ success: true, message: 'Comment deleted' })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

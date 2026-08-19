@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProjects, createProject } from '@/lib/services/projectService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { dbErrorMessage, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
     const result = await getAllProjects({ search, category, sort, page, limit })
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination }, { headers: publicCacheHeaders })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: 500 },
@@ -84,20 +84,21 @@ export async function POST(req: NextRequest) {
       technologies,
     })
     return NextResponse.json({ success: true, data: project }, { status: 201 })
-  } catch (err: any) {
-    if (err.statusCode === 400) {
+  } catch (err) {
+    const e = err as ErrorLike
+    if (e.statusCode === 400) {
       return NextResponse.json(
-        { success: false, message: err.message },
+        { success: false, message: e.message },
         { status: 400 },
       )
     }
-    if (err.code === '23505' || err.code === 'P2002') {
+    if (e.code === '23505' || e.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Slug already exists' },
         { status: 409 },
       )
     }
-    if (err.code === '23503' || err.code === 'P2003') {
+    if (e.code === '23503' || e.code === 'P2003') {
       return NextResponse.json(
         { success: false, message: 'Invalid category_id' },
         { status: 400 },

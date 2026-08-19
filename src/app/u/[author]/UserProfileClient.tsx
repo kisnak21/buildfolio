@@ -28,7 +28,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
   const decodedAuthor = decodeURIComponent(author)
 
   useEffect(() => {
-    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+    if (currentUser?.id) dispatch(fetchLikedProjects())
   }, [currentUser?.id, dispatch])
 
   const totalLikes = userProjects.reduce(
@@ -38,7 +38,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
   const isOwnProfile = currentUser?.name === decodedAuthor
 
   const handleLike = async (id: string, currentLikes: number) => {
-    const result = await dispatch(likeProject(id) as any)
+    const result = await dispatch(likeProject(id))
     if (!likeProject.fulfilled.match(result)) return
     setUserProjects((prev) =>
       prev.map((p) =>

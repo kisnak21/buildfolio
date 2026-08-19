@@ -35,7 +35,7 @@ export async function POST(
       success: true,
       data: { liked: result.liked, likes: result.likes },
     })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

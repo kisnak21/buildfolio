@@ -37,7 +37,7 @@ export default function TermsPage() {
             <p className='font-medium text-gray-700 leading-relaxed'>
               You are responsible for maintaining the security of your account
               credentials. You must not share your password with others or use
-              another user's account. You are responsible for all activity that
+              another user&apos;s account. You are responsible for all activity that
               occurs under your account.
             </p>
           </section>

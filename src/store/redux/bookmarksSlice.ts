@@ -17,7 +17,7 @@ export const fetchBookmarks = createAsyncThunk<Bookmark[], void, { rejectValue: 
   async (_, { rejectWithValue }) => {
     try {
       return await getUserBookmarks()
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to load bookmarks.')
     }
   },
@@ -30,7 +30,7 @@ export const addBookmark = createAsyncThunk<Bookmark, { project_id: string | num
       return await addBookmarkApi({
         project_id: String(project_id),
       })
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to add bookmark.')
     }
   },
@@ -42,7 +42,7 @@ export const removeBookmark = createAsyncThunk<string, { bookmarkId: string }, {
     try {
       await removeBookmarkApi(bookmarkId)
       return bookmarkId
-    } catch (err) {
+    } catch {
       return rejectWithValue('Failed to remove bookmark.')
     }
   },

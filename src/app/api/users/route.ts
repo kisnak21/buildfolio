@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserById, createUser } from '@/lib/services/userService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage } from '@/lib/apiErrors'
+import { dbErrorMessage, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { logAudit, requestContext } from '@/lib/audit'
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true, data: profile })
-  } catch (err: any) {
+  } catch (err) {
     console.error('GET USER ERROR:', err)
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
@@ -82,18 +82,19 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     )
-  } catch (err: any) {
+  } catch (err) {
     console.error('REGISTER ERROR:', err)
-    if (err.statusCode === 400) {
+    const e = err as ErrorLike
+    if (e.statusCode === 400) {
       return NextResponse.json(
-        { success: false, message: err.message },
+        { success: false, message: e.message },
         { status: 400 },
       )
     }
-    if (err.code === '23505' || err.code === 'P2002') {
-      const target = Array.isArray(err?.meta?.target)
-        ? err.meta.target.join(',')
-        : (err?.meta?.target as string) || ''
+    if (e.code === '23505' || e.code === 'P2002') {
+      const target = Array.isArray(e?.meta?.target)
+        ? e.meta.target.join(',')
+        : (e?.meta?.target as string) || ''
       const message = target.includes('username')
         ? 'Username already exists'
         : 'Email already exists'

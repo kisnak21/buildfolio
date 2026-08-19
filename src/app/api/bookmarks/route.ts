@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
   try {
     const bookmarks = await getBookmarksByUser(user!.id)
     return NextResponse.json({ success: true, data: bookmarks })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     }
     const bookmark = await addBookmark({ user_id, project_id })
     return NextResponse.json({ success: true, data: bookmark }, { status: 201 })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

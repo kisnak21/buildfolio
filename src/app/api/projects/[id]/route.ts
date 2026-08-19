@@ -7,7 +7,7 @@ import {
   deleteProject,
 } from '@/lib/services/projectService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { dbErrorMessage, errorStatus, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
@@ -25,7 +25,7 @@ export async function GET(
       )
     }
     return NextResponse.json({ success: true, data: project }, { headers: publicCacheHeaders })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },
@@ -83,8 +83,9 @@ export async function PATCH(
       )
     }
     return NextResponse.json({ success: true, data: project })
-  } catch (err: any) {
-    if (err.code === '23505' || err.code === 'P2002') {
+  } catch (err) {
+    const e = err as ErrorLike
+    if (e.code === '23505' || e.code === 'P2002') {
       return NextResponse.json(
         { success: false, message: 'Slug already exists' },
         { status: 409 },
@@ -149,7 +150,7 @@ export async function DELETE(
       success: true,
       message: 'Project deleted successfully',
     })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },

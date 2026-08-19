@@ -33,7 +33,8 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginUser: (state, action: PayloadAction<User>) => {
-      const { token, ...safeUser } = action.payload as User & { token?: string }
+      const safeUser = { ...action.payload } as User & { token?: string }
+      delete safeUser.token
       state.currentUser = safeUser
       localStorage.setItem('buildfolio_user', JSON.stringify(safeUser))
     },

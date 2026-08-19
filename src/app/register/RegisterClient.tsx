@@ -66,8 +66,9 @@ const RegisterClient = () => {
     try {
       await registerUser({ name: name.trim(), email: email.trim(), password })
       router.push(`/verify-email?email=${encodeURIComponent(email.trim())}`)
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err) {
+      const e = err as { response?: { status?: number } }
+      if (e.response?.status === 409) {
         setErrors({ email: 'An account with this email already exists.' })
       } else {
         setErrors({

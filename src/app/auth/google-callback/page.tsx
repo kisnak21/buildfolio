@@ -22,7 +22,7 @@ export default function GoogleCallback() {
         localStorage.setItem('buildfolio_user', JSON.stringify(data.user))
         dispatch(loginUser(data.user))
         router.push('/dashboard')
-      } catch (err) {
+      } catch {
         setStatus('error')
       }
     }

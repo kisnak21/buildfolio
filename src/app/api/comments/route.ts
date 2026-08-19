@@ -3,7 +3,7 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import { getCommentsByProject, addComment } from '@/lib/services/commentService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
-import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { dbErrorMessage, errorStatus, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     }
     const comments = await getCommentsByProject(projectId)
     return NextResponse.json({ success: true, data: comments }, { headers: publicCacheHeaders })
-  } catch (err: any) {
+  } catch (err) {
     return NextResponse.json(
       { success: false, message: dbErrorMessage(err) },
       { status: errorStatus(err) },
@@ -61,10 +61,11 @@ export async function POST(req: NextRequest) {
     }
     const comment = await addComment({ content, user_id: user!.id, project_id })
     return NextResponse.json({ success: true, data: comment }, { status: 201 })
-  } catch (err: any) {
-    if (err.statusCode === 400) {
+  } catch (err) {
+    const e = err as ErrorLike
+    if (e.statusCode === 400) {
       return NextResponse.json(
-        { success: false, message: err.message },
+        { success: false, message: e.message },
         { status: 400 },
       )
     }

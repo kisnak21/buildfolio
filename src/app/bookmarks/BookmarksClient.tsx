@@ -25,23 +25,24 @@ const BookmarksClient = () => {
 
   useEffect(() => {
     if (allProjects.length === 0) {
-      dispatch(fetchProjects() as any)
+      dispatch(fetchProjects())
     }
     if (currentUser?.id) {
-      dispatch(fetchBookmarks() as any)
-      dispatch(fetchLikedProjects() as any)
+      dispatch(fetchBookmarks())
+      dispatch(fetchLikedProjects())
     }
   }, [dispatch, allProjects.length, currentUser?.id])
 
-  const bookmarkedProjectIds = bookmarks.map((b: any) => b.project_id)
-  const bookmarkedProjects = allProjects.filter((p: any) =>
-    bookmarkedProjectIds.includes(p.id),
+  const bookmarkedProjectIds = bookmarks.map((b) => b.project_id)
+  const bookmarkedProjects = allProjects.filter((p) =>
+    bookmarkedProjectIds.includes(String(p.id)),
   )
 
   const handleLike = async (id: string) => {
-    const result = await dispatch(likeProject(id) as any)
-    if (likeProject.fulfilled.match(result)) {
-      dispatch(syncLike({ project: allProjects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    const result = await dispatch(likeProject(id))
+    const likedProject = allProjects.find((p) => p.id === id)
+    if (likeProject.fulfilled.match(result) && likedProject) {
+      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
     }
   }
 
@@ -76,7 +77,7 @@ const BookmarksClient = () => {
               {bookmarkedProjects.length} saved
             </p>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-              {bookmarkedProjects.map((project: any) => (
+              {bookmarkedProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}

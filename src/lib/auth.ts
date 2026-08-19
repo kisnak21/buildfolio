@@ -4,7 +4,6 @@ import prisma from '@/lib/db'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET!
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
 export const signToken = (payload: {
   id: string
@@ -71,7 +70,7 @@ export const authOptions: NextAuthOptions = {
             user.image || null,
           )
           // stash local DB id on the user object so jwt callback can read it
-          ;(user as any).localId = localId
+          ;(user as { localId?: string | null }).localId = localId
         }
         return true
       } catch (err) {
@@ -84,7 +83,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email
         token.name = user.name
         token.picture = user.image
-        token.localId = (user as any).localId
+        token.localId = (user as { localId?: string | null }).localId
       }
       return token
     },

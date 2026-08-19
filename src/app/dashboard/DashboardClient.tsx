@@ -25,12 +25,12 @@ const DashboardClient = () => {
   }))
   const bookmarkLoading = useAppSelector((state) => state.bookmarks.loading)
 
-  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string | number; title?: string } | null>(null)
   const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
     if (projects.length === 0) {
-      dispatch(fetchProjects() as any)
+      dispatch(fetchProjects())
     }
     if (currentUser?.id && bookmarks.length === 0 && !bookmarkLoading) {
       dispatch(fetchBookmarks())
@@ -38,16 +38,14 @@ const DashboardClient = () => {
   }, [dispatch, projects.length, currentUser?.id, bookmarks.length, bookmarkLoading])
 
   const userProjects = projects.filter(
-    (p: any) => p.user_id === currentUser?.id,
+    (p) => p.user_id === currentUser?.id,
   )
-  const totalLikes = userProjects.reduce(
-    (sum: number, p: any) => sum + (p.likes || 0),
-    0,
-  )
+  const totalLikes = userProjects.reduce((sum, p) => sum + (p.likes || 0), 0)
   const totalBookmarks = bookmarks.length
 
   const handleConfirmDelete = async () => {
-    const result = await dispatch(deleteProject(deleteTarget.id) as any)
+    if (!deleteTarget) return
+    const result = await dispatch(deleteProject(deleteTarget.id))
     if (deleteProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project deleted successfully.', type: 'success' }))
       setDeleteTarget(null)
@@ -122,7 +120,7 @@ const DashboardClient = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {userProjects.map((project: any) => (
+                  {userProjects.map((project) => (
                     <tr
                       key={project.id}
                       className='border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors last:border-b-0'

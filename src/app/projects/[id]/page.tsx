@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 import { getProjectById } from '@/lib/services/projectService'
+import { toClientProject } from '@/lib/shapes'
 import ProjectDetailClient from './ProjectDetailClient'
 
 const getProjectData = cache(async (id: string) => getProjectById(id))
@@ -43,5 +44,5 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound()
 
-  return <ProjectDetailClient initialProject={project} />
+  return <ProjectDetailClient initialProject={toClientProject(project)} />
 }

@@ -57,7 +57,7 @@ const Header = () => {
         {/* Auth Actions Desktop */}
         <div className='hidden md:flex items-center gap-4 font-bold'>
           {currentUser && currentUser.id ? (
-            <AvatarDropdown user={currentUser as any} />
+            <AvatarDropdown user={currentUser} />
           ) : (
             <>
               <Link href='/login' className='text-dark hover:underline decoration-2 underline-offset-4'>

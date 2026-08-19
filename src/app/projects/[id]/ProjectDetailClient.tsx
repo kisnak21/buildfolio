@@ -54,16 +54,15 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   )
 
   const existingBookmark = bookmarks.find(
-    (b: any) => String(b.project_id) === id,
+    (b) => String(b.project_id) === id,
   )
   const isBookmarked = !!existingBookmark
   const [comment, setComment] = useState('')
 
   useEffect(() => {
     let mounted = true
-    setLoading(true)
 
-    Promise.all([getProjectById(id), dispatch(fetchComments(id) as any)])
+    Promise.all([getProjectById(id), dispatch(fetchComments(id))])
       .then(([projectData]) => {
         if (mounted) setProject(projectData)
       })
@@ -71,17 +70,17 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
         if (mounted) setLoading(false)
       })
 
-    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+    if (currentUser?.id) dispatch(fetchLikedProjects())
 
     return () => {
       mounted = false
       dispatch(clearComments())
     }
-  }, [id, dispatch])
+  }, [id, dispatch, currentUser?.id])
 
   const handleLike = async () => {
     if (!currentUser) return router.push('/login')
-    const result = await dispatch(likeProjectThunk(id) as any)
+    const result = await dispatch(likeProjectThunk(id))
     if (likeProjectThunk.fulfilled.match(result)) {
       const liked = result.payload?.liked
       if (project) dispatch(syncLike({ project, liked }))
@@ -97,12 +96,12 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   const handleBookmark = async () => {
     if (!currentUser) return router.push('/login')
     if (isBookmarked) {
-      const result = await dispatch(removeBookmark({ bookmarkId: existingBookmark.id }) as any)
+      const result = await dispatch(removeBookmark({ bookmarkId: existingBookmark.id }))
       if (removeBookmark.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
       }
     } else {
-      const result = await dispatch(addBookmark({ project_id: id }) as any)
+      const result = await dispatch(addBookmark({ project_id: id }))
       if (addBookmark.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
       }
@@ -117,7 +116,7 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
       addComment({
         content: comment.trim(),
         project_id: id,
-      }) as any,
+      }),
     )
     if (addComment.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Comment posted!', type: 'success' }))
@@ -126,7 +125,7 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    const result = await dispatch(deleteComment(commentId) as any)
+    const result = await dispatch(deleteComment(commentId))
     if (deleteComment.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Comment deleted.', type: 'info' }))
     }
@@ -330,15 +329,15 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
 
               {!commentsLoading && comments.length > 0 && (
                 <div className='flex flex-col gap-6'>
-                  {comments.map((c: any) => (
+                  {comments.map((c) => (
                     <div
                       key={c.id}
                       className='flex items-start gap-4 border-b-2 border-dark border-dashed pb-6 last:border-b-0 last:pb-0'
                     >
                       <Image
-                        src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${c.author_name}`}
+                        src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${c.author_name ?? 'anon'}`}
                         className='w-10 h-10 rounded-full border-2 border-dark bg-blue-50 shrink-0'
-                        alt={c.author_name}
+                        alt={c.author_name ?? 'anonymous'}
                         width={40}
                         height={40}
                         unoptimized
@@ -347,15 +346,17 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
                         <div className='flex items-center justify-between mb-2'>
                           <div className='flex items-center gap-2'>
                             <span className='font-bold text-dark'>
-                              {c.author_name}
+                              {c.author_name ?? 'anonymous'}
                             </span>
                             <span className='text-xs font-bold text-gray-600'>
-                              {new Date(c.created_at).toLocaleDateString()}
+                              {c.created_at
+                                ? new Date(c.created_at).toLocaleDateString()
+                                : ''}
                             </span>
                           </div>
                           {currentUser?.id === c.user_id && (
                             <button
-                              onClick={() => handleDeleteComment(c.id)}
+                              onClick={() => handleDeleteComment(String(c.id))}
                               className='text-xs font-bold text-red-600 hover:underline'
                             >
                               Delete

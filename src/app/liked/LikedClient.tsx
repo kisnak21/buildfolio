@@ -26,17 +26,18 @@ const LikedClient = () => {
 
   useEffect(() => {
     if (allProjects.length === 0) {
-      dispatch(fetchProjects() as any)
+      dispatch(fetchProjects())
     }
-    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+    if (currentUser?.id) dispatch(fetchLikedProjects())
   }, [dispatch, allProjects.length, currentUser?.id])
 
-  const handleLike = async (id: string, currentLikes: number) => {
-    const result = await dispatch(likeProject(id) as any)
-    if (likeProject.fulfilled.match(result)) {
+  const handleLike = async (id: string) => {
+    const result = await dispatch(likeProject(id))
+    const likedProject = allProjects.find((p) => p.id === id)
+    if (likeProject.fulfilled.match(result) && likedProject) {
       dispatch(
         syncLike({
-          project: allProjects.find((p: any) => p.id === id) as any,
+          project: likedProject,
           liked: result.payload.liked,
         }),
       )
@@ -85,7 +86,7 @@ const LikedClient = () => {
               {likedProjects.length} liked
             </p>
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-              {likedProjects.map((project: any) => (
+              {likedProjects.map((project) => (
                 <ProjectCard
                   key={project.id}
                   project={project}

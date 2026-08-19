@@ -1,4 +1,6 @@
 import prisma from '@/lib/db'
+import type { Prisma } from '@/generated/prisma/client'
+import type { RawProject } from '@/lib/shapes'
 
 const projectSelect = {
   id: true,
@@ -19,17 +21,25 @@ const projectSelect = {
   },
 }
 
-const normalizeProject = (p: any) => ({
-  ...p,
-  github_url: p.githubUrl,
-  live_url: p.liveUrl,
+type ProjectRow = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>
+
+const normalizeProject = (p: ProjectRow): RawProject => ({
+  id: p.id,
+  title: p.title,
+  slug: p.slug,
+  description: p.description,
+  thumbnail: p.thumbnail,
+  github_url: p.githubUrl ?? undefined,
+  live_url: p.liveUrl ?? undefined,
+  category_name: p.category?.name ?? undefined,
+  category: p.category?.name ?? undefined,
+  technologies: p.technologies?.map((pt) => pt.technology.name) ?? [],
+  author_name: p.user?.name ?? undefined,
+  likes: p.likes,
   user_id: p.userId,
   category_id: p.categoryId,
-  created_at: p.createdAt,
-  author_name: p.user?.name ?? null,
-  category_name: p.category?.name ?? null,
-  category: p.category?.name ?? null, // client expects category to be the category name
-  technologies: p.technologies?.map((pt: any) => pt.technology.name) ?? [],
+  created_at: p.createdAt.toISOString(),
+  createdAt: p.createdAt.toISOString(),
 })
 
 export const getTechnologyStats = async (): Promise<{ name: string; count: number }[]> => {
@@ -56,7 +66,7 @@ export const getAllProjects = async ({
   page?: number
   limit?: number
 } = {}) => {
-  const where: any = {}
+  const where: Prisma.ProjectWhereInput = {}
 
   if (search) {
     where.OR = [

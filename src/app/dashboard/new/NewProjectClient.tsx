@@ -7,7 +7,7 @@ import { addProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import ProjectForm from '@/components/dashboard/ProjectForm'
+import ProjectForm, { type ProjectFormData } from '@/components/dashboard/ProjectForm'
 
 const NewProjectClient = () => {
   const dispatch = useAppDispatch()
@@ -15,7 +15,7 @@ const NewProjectClient = () => {
   const { currentUser } = useAppSelector((state) => state.auth)
   const [submitError, setSubmitError] = useState('')
 
-  const handleSubmit = async (projectData: any) => {
+  const handleSubmit = async (projectData: ProjectFormData) => {
     setSubmitError('')
     if (!currentUser?.id) {
       setSubmitError('You must be logged in to create a project.')
@@ -32,10 +32,10 @@ const NewProjectClient = () => {
       addProject({
         ...projectData,
         slug,
-        github_url: projectData.github,
-        live_url: projectData.live,
+        github: projectData.github,
+        live: projectData.live,
         user_id: currentUser.id,
-      }) as any,
+      }),
     )
     if (addProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project created successfully!', type: 'success' }))

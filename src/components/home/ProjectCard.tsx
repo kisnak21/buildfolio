@@ -49,8 +49,6 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
     technologies,
     author,
     likes,
-    github,
-    live,
     thumbnail,
   } = project
 

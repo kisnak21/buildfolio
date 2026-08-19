@@ -36,11 +36,11 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
-    dispatch(fetchProjects() as any)
-    if (currentUser?.id) dispatch(fetchLikedProjects() as any)
+    dispatch(fetchProjects())
+    if (currentUser?.id) dispatch(fetchLikedProjects())
   }, [dispatch, currentUser?.id])
 
-  const filtered = projects.filter((p: any) => {
+  const filtered = projects.filter((p) => {
     const matchesSearch =
       deferredSearch === '' ||
       p.title.toLowerCase().includes(deferredSearch.toLowerCase()) ||
@@ -56,9 +56,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
     return matchesSearch && matchesCategory && matchesTech
   })
 
-  const sortedByLikes = [...filtered].sort(
-    (a: any, b: any) => b.likes - a.likes,
-  )
+  const sortedByLikes = [...filtered].sort((a, b) => b.likes - a.likes)
   const featuredProjects = sortedByLikes.slice(0, 3)
   const favoriteProjects = sortedByLikes.slice(3, 6)
 
@@ -67,7 +65,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
     return {
       icon: <Icon />,
       name: cat.name,
-      count: projects.filter((p: any) => p.category === cat.name).length,
+      count: projects.filter((p) => p.category === cat.name).length,
     }
   })
 
@@ -76,9 +74,10 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
       window.location.href = '/login'
       return
     }
-    const result = await dispatch(likeProject(id) as any)
-    if (likeProject.fulfilled.match(result)) {
-      dispatch(syncLike({ project: projects.find((p: any) => p.id === id) as any, liked: result.payload.liked }))
+    const result = await dispatch(likeProject(id))
+    const likedProject = projects.find((p) => p.id === id)
+    if (likeProject.fulfilled.match(result) && likedProject) {
+      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
     }
   }
 
@@ -169,7 +168,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />
                   ))
-                : featuredProjects.map((project: any) => (
+                : featuredProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
                       project={project}
@@ -242,7 +241,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />
                   ))
-                : favoriteProjects.map((project: any) => (
+                : favoriteProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
                       project={project}

@@ -15,6 +15,17 @@ const categoryOptions = [
   'Game',
 ]
 
+export interface ProjectFormData {
+  title: string
+  description: string
+  category: string
+  technologies: string[]
+  author?: string
+  github?: string
+  live?: string
+  thumbnail?: string | null
+}
+
 interface ProjectFormProps {
   initialValues?: {
     title?: string
@@ -26,7 +37,7 @@ interface ProjectFormProps {
     live?: string
     thumbnail?: string | null
   }
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: ProjectFormData) => Promise<void>
   submitLabel: string
 }
 

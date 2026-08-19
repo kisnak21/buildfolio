@@ -7,7 +7,7 @@ import { fetchProjects, updateProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
-import ProjectForm from '@/components/dashboard/ProjectForm'
+import ProjectForm, { type ProjectFormData } from '@/components/dashboard/ProjectForm'
 
 const EditProjectClient = () => {
   const { id } = useParams<{ id: string }>()
@@ -17,17 +17,17 @@ const EditProjectClient = () => {
 
   const { currentUser } = useAppSelector((state) => state.auth)
   const project = useAppSelector((state) =>
-    state.projects.items.find((p: any) => String(p.id) === id),
+    state.projects.items.find((p) => String(p.id) === id),
   )
 
   useEffect(() => {
     if (project) return
-    dispatch(fetchProjects() as any)
+    dispatch(fetchProjects())
   }, [dispatch, project])
 
   const isOwner = String(project?.user_id) === String(currentUser?.id)
 
-  const handleSubmit = async (projectData: any) => {
+  const handleSubmit = async (projectData: ProjectFormData) => {
     setSubmitError('')
     if (!project) return
     const result = await dispatch(
@@ -42,7 +42,7 @@ const EditProjectClient = () => {
           category: projectData.category,
           thumbnail: projectData.thumbnail,
         },
-      }) as any,
+      }),
     )
     if (updateProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project updated successfully!', type: 'success' }))

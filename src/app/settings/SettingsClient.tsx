@@ -90,9 +90,10 @@ const SettingsClient = () => {
       setNewPassword('')
       setConfirmPassword('')
       setTimeout(() => setPwSaved(false), 3000)
-    } catch (err: any) {
+    } catch (err) {
+      const e = err as { response?: { data?: { message?: string } } }
       setPwError(
-        err?.response?.data?.message || 'Failed to change password. Please try again.',
+        e?.response?.data?.message || 'Failed to change password. Please try again.',
       )
     } finally {
       setPwSaving(false)
