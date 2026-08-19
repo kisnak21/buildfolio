@@ -35,8 +35,17 @@
   - API `GET /api/admin/audit-logs` (requireAdmin): filter action/search/from/to + pagination server-side (max 100/baris)
   - Halaman `/admin/audit-logs`: tabel + filter + pagination + export CSV/JSON (max 5000 baris)
   - Keputusan: tanpa retensi otomatis (log tersimpan permanen) — bisa ditambah cron nanti
-- Grafik lanjutan (growth kumulatif, distribusi kategori)
-- Flag/report konten oleh user
+- Grafik lanjutan (growth kumulatif, distribusi kategori) — SELESAI (19 Aug 2026):
+  - `getAdminStats` + query `generate_series` untuk proyek 14 hari; `categoryDist` via `_count`
+  - `GrowthChart` (SVG inline 2 seri, tanpa dependency) — users & projects kumulatif
+  - Kartu distribusi kategori (bar horizontal) + tombol manage categories
+- Flag/report konten oleh user — SELESAI (19 Aug 2026):
+  - Model `ContentFlag` + migration `0002_content_flags` (applied di Neon)
+  - `POST /api/flags` (auth, rate limit 10/jam, guard duplikat pending, reason enum + details ≤1000)
+  - `GET /api/admin/flags` (filter status + pagination, snapshot nama target project/comment)
+  - `PATCH /api/admin/flags/[id]` resolve/dismiss + audit `flag.create/resolve/dismiss`
+  - Halaman `/admin/flags`: tab status, tabel, resolve/dismiss, link ke target
+  - UI user: tombol Report di detail project + tiap komentar (modal reason + details, sembunyi setelah dilaporkan)
 
 ## Aksi manual / prasyarat
 
