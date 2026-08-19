@@ -17,6 +17,9 @@ export type AuditAction =
   | 'auth.login_fail'
   | 'auth.register'
   | 'auth.password_reset'
+  | 'flag.create'
+  | 'flag.resolve'
+  | 'flag.dismiss'
 
 export interface AuditLogParams {
   actor?: {

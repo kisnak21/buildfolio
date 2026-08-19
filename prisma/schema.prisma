@@ -142,3 +142,21 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
+
+model ContentFlag {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  targetType   String    @map("target_type") @db.VarChar(20)
+  targetId     String    @map("target_id") @db.Uuid
+  reason       String    @db.VarChar(50)
+  details      String?   @db.VarChar(1000)
+  status       String    @default("pending") @db.VarChar(20)
+  reporterId   String?   @map("reporter_id") @db.Uuid
+  reporterName String?   @map("reporter_name") @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  resolvedAt   DateTime? @map("resolved_at") @db.Timestamptz(6)
+  resolvedById String?   @map("resolved_by_id") @db.Uuid
+
+  @@index([targetType, targetId])
+  @@index([status, createdAt])
+  @@map("content_flags")
+}

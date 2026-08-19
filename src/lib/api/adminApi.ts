@@ -86,6 +86,21 @@ export interface AdminStats {
   categoryDist: { name: string; count: number }[]
 }
 
+export interface AdminFlag {
+  id: string
+  targetType: string
+  targetId: string
+  reason: string
+  details: string | null
+  status: string
+  reporterId: string | null
+  reporterName: string | null
+  createdAt: string
+  resolvedAt: string | null
+  resolvedById: string | null
+  targetName: string | null
+}
+
 interface ListResponse<T> {
   data: T[]
   pagination: {
@@ -228,4 +243,31 @@ export const getAdminAuditLogs = async ({
     pagination: ListResponse<AdminAuditLog>['pagination']
   }>(`${RESOURCE}/audit-logs?${params.toString()}`)
   return response.data
+}
+
+export const getAdminFlags = async ({
+  status,
+  page = 1,
+  limit = 50,
+}: {
+  status?: string
+  page?: number
+  limit?: number
+} = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (status) params.set('status', status)
+
+  const response = await realApiClient.get<{
+    data: AdminFlag[]
+    pagination: ListResponse<AdminFlag>['pagination']
+  }>(`${RESOURCE}/flags?${params.toString()}`)
+  return response.data
+}
+
+export const updateAdminFlag = async (id: string, status: 'resolved' | 'dismissed') => {
+  const response = await realApiClient.patch<{ data: AdminFlag }>(
+    `${RESOURCE}/flags/${id}`,
+    { status },
+  )
+  return response.data.data
 }

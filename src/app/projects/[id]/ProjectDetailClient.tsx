@@ -23,9 +23,13 @@ import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import ProjectDetailSkeleton from '@/components/ui/ProjectDetailSkeleton'
 import EmptyState from '@/components/ui/EmptyState'
+import ReportModal, {
+  type ReportTarget,
+} from '@/components/ReportModal'
 import {
   HeartIcon as HeartOutline,
   BookmarkIcon as BookmarkOutline,
+  FlagIcon,
 } from '@heroicons/react/24/outline'
 import {
   HeartIcon as HeartSolid,
@@ -58,6 +62,21 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   )
   const isBookmarked = !!existingBookmark
   const [comment, setComment] = useState('')
+  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null)
+  const [reportedSet, setReportedSet] = useState<Set<string>>(new Set())
+
+  const openReport = (target: ReportTarget) => {
+    if (!currentUser) {
+      dispatch(
+        showToast({
+          message: 'Log in to report content',
+          type: 'error',
+        }),
+      )
+      return
+    }
+    setReportTarget(target)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -155,6 +174,15 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
         ) : (
           <>
             <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-8 shadow-brutal relative'>
+              <button
+                onClick={() => openReport({ type: 'project', id })}
+                disabled={reportedSet.has(id)}
+                className='absolute top-4 right-4 flex items-center gap-1.5 text-xs font-black border-2 border-dark bg-white px-3 py-1.5 rounded-lg hover:bg-warningSoft transition-colors disabled:opacity-40 disabled:hover:bg-white'
+                title='Report this project'
+              >
+                <FlagIcon className='w-4 h-4' />
+                {reportedSet.has(id) ? 'Reported' : 'Report'}
+              </button>
               {project.thumbnail && (
                 <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-6 shadow-brutal-sm'>
                   <Image
@@ -362,6 +390,16 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
                               Delete
                             </button>
                           )}
+                          <button
+                            onClick={() =>
+                              openReport({ type: 'comment', id: String(c.id) })
+                            }
+                            disabled={reportedSet.has(String(c.id))}
+                            className='text-xs font-bold text-gray-500 hover:text-accent hover:underline disabled:opacity-40 disabled:hover:no-underline'
+                            title='Report this comment'
+                          >
+                            {reportedSet.has(String(c.id)) ? 'Reported' : 'Report'}
+                          </button>
                         </div>
                         <p className='font-medium text-gray-800 leading-relaxed'>
                           {c.content}
@@ -372,9 +410,18 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
                 </div>
               )}
             </div>
-          </>
-        )}
+</>
+      )}
       </main>
+      {reportTarget && (
+        <ReportModal
+          target={reportTarget}
+          onClose={() => setReportTarget(null)}
+          onReported={() =>
+            setReportedSet((prev) => new Set(prev).add(reportTarget.id))
+          }
+        />
+      )}
       <Footer />
     </div>
   )

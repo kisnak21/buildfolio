@@ -11,6 +11,7 @@ import {
   ChatBubbleOvalLeftIcon,
   TagIcon,
   ClockIcon,
+  FlagIcon,
   ArrowRightStartOnRectangleIcon,
   Bars3Icon,
 } from '@heroicons/react/24/outline'
@@ -37,6 +38,7 @@ const NAV_ITEMS: Omit<NavItem, 'badge'>[] = [
   { href: '/admin/projects', label: 'Projects', icon: CodeBracketIcon },
   { href: '/admin/comments', label: 'Comments', icon: ChatBubbleOvalLeftIcon },
   { href: '/admin/categories', label: 'Categories & Tech', icon: TagIcon },
+  { href: '/admin/flags', label: 'Flags', icon: FlagIcon },
   { href: '/admin/audit-logs', label: 'Audit Logs', icon: ClockIcon },
 ]
 

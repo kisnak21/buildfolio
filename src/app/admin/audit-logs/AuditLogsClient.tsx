@@ -30,6 +30,10 @@ const ACTION_GROUPS: { label: string; actions: string[] }[] = [
     label: 'Auth',
     actions: ['auth.login_fail', 'auth.register', 'auth.password_reset'],
   },
+  {
+    label: 'Flags',
+    actions: ['flag.create', 'flag.resolve', 'flag.dismiss'],
+  },
 ]
 
 const ACTION_BADGE_CLASS: Record<string, string> = {
@@ -47,6 +51,9 @@ const ACTION_BADGE_CLASS: Record<string, string> = {
   'auth.login_fail': 'bg-dangerSoft',
   'auth.register': 'bg-orangeSoft',
   'auth.password_reset': 'bg-warningSoft',
+  'flag.create': 'bg-warningSoft',
+  'flag.resolve': 'bg-successSoft',
+  'flag.dismiss': 'bg-gray-200',
 }
 
 const actionBadgeClass = (action: string) =>
