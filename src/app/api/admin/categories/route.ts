@@ -7,6 +7,7 @@ import {
   createAdminCategory,
 } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus, httpError } from '@/lib/apiErrors'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
@@ -26,12 +27,21 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { error } = await requireAdmin(req)
+  const { admin, error } = await requireAdmin(req)
   if (error) return error
 
   try {
     const { name, icon } = await req.json()
     const category = await createAdminCategory(name, icon)
+    await logAudit({
+      actor: admin,
+      action: 'category.create',
+      targetType: 'category',
+      targetId: category.id,
+      targetName: category.name,
+      metadata: { icon: category.icon ?? undefined },
+      ...requestContext(req),
+    })
     return NextResponse.json({ success: true, data: category }, { status: 201 })
   } catch (err: unknown) {
     if (httpError(err).statusCode === 400) {

@@ -42,6 +42,21 @@ export interface AdminTech {
   used: boolean
 }
 
+export interface AdminAuditLog {
+  id: string
+  actorId: string | null
+  actorName: string | null
+  actorEmail: string | null
+  action: string
+  targetType: string
+  targetId: string | null
+  targetName: string | null
+  metadata: Record<string, unknown> | null
+  ip: string | null
+  userAgent: string | null
+  createdAt: string
+}
+
 export interface AdminSignup {
   id: string
   name: string
@@ -180,4 +195,35 @@ export const createAdminTech = async (name: string) => {
 
 export const deleteAdminTech = async (id: string) => {
   await realApiClient.delete(`${RESOURCE}/technologies/${id}`)
+}
+
+export const getAdminAuditLogs = async ({
+  page = 1,
+  limit = 20,
+  action,
+  search,
+  from,
+  to,
+}: {
+  page?: number
+  limit?: number
+  action?: string
+  search?: string
+  from?: string
+  to?: string
+} = {}) => {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  })
+  if (action) params.set('action', action)
+  if (search) params.set('search', search)
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+
+  const response = await realApiClient.get<{
+    data: AdminAuditLog[]
+    pagination: ListResponse<AdminAuditLog>['pagination']
+  }>(`${RESOURCE}/audit-logs?${params.toString()}`)
+  return response.data
 }

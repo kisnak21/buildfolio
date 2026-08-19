@@ -5,6 +5,7 @@ import { getUserById, createUser } from '@/lib/services/userService'
 import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
@@ -64,6 +65,14 @@ export async function POST(req: NextRequest) {
       )
     }
     const user = await createUser({ name, email, password, image, bio })
+    await logAudit({
+      action: 'auth.register',
+      targetType: 'user',
+      targetId: user.id,
+      targetName: email,
+      metadata: { provider: 'email' },
+      ...requestContext(req),
+    })
     return NextResponse.json(
       {
         success: true,

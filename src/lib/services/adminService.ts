@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import prisma from '@/lib/db'
+import type { Prisma } from '@/generated/prisma/client'
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -403,4 +404,63 @@ export const deleteAdminTech = async (id: string) => {
     )
   }
   return prisma.technology.delete({ where: { id } })
+}
+
+export const listAdminAuditLogs = async ({
+  page = 1,
+  limit = 20,
+  action,
+  search,
+  from,
+  to,
+}: {
+  page?: number
+  limit?: number
+  action?: string
+  search?: string
+  from?: string
+  to?: string
+} = {}) => {
+  const where: Prisma.AuditLogWhereInput = {}
+  if (action) {
+    where.action = action
+  }
+  if (from || to) {
+    where.createdAt = {}
+    if (from) {
+      const fromDate = new Date(from)
+      if (!Number.isNaN(fromDate.getTime())) {
+        where.createdAt.gte = fromDate
+      }
+    }
+    if (to) {
+      const toDate = new Date(to)
+      if (!Number.isNaN(toDate.getTime())) {
+        toDate.setUTCHours(23, 59, 59, 999)
+        where.createdAt.lte = toDate
+      }
+    }
+  }
+  if (search) {
+    where.OR = [
+      { actorName: { contains: search, mode: 'insensitive' } },
+      { actorEmail: { contains: search, mode: 'insensitive' } },
+      { targetName: { contains: search, mode: 'insensitive' } },
+    ]
+  }
+
+  const [total, rows] = await Promise.all([
+    prisma.auditLog.count({ where }),
+    prisma.auditLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+  ])
+
+  return {
+    data: rows,
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  }
 }

@@ -121,3 +121,24 @@ model Comment {
   @@index([projectId])
   @@map("comments")
 }
+
+model AuditLog {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actorId    String?   @map("actor_id") @db.Uuid
+  actorName  String?   @map("actor_name") @db.VarChar(255)
+  actorEmail String?   @map("actor_email") @db.VarChar(255)
+  action     String    @db.VarChar(50)
+  targetType String    @map("target_type") @db.VarChar(50)
+  targetId   String?   @map("target_id") @db.Uuid
+  targetName String?   @map("target_name") @db.VarChar(255)
+  metadata   Json?
+  ip         String?   @db.VarChar(64)
+  userAgent  String?   @map("user_agent") @db.VarChar(512)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@index([action])
+  @@index([actorId])
+  @@index([targetId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

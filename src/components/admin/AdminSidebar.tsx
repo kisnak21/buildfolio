@@ -37,6 +37,7 @@ const NAV_ITEMS: Omit<NavItem, 'badge'>[] = [
   { href: '/admin/projects', label: 'Projects', icon: CodeBracketIcon },
   { href: '/admin/comments', label: 'Comments', icon: ChatBubbleOvalLeftIcon },
   { href: '/admin/categories', label: 'Categories & Tech', icon: TagIcon },
+  { href: '/admin/audit-logs', label: 'Audit Logs', icon: ClockIcon },
 ]
 
 const BADGE_CLASS: Record<string, string> = {
@@ -110,17 +111,6 @@ const AdminSidebar = ({ user, counts }: AdminSidebarProps) => {
               </Link>
             )
           })}
-
-          <button
-            disabled
-            className='w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-gray-100 opacity-50 cursor-not-allowed mt-6'
-          >
-            <ClockIcon className='w-5 h-5' />
-            Audit Logs
-            <span className='ml-auto text-[10px] font-black bg-gray-200 border-2 border-dark px-1.5 py-0.5 rounded'>
-              SOON
-            </span>
-          </button>
         </nav>
 
         <div className='p-4 border-t-4 border-dark'>

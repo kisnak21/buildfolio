@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { listAdminUsers, updateAdminUser } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus, httpError } from '@/lib/apiErrors'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
@@ -48,6 +49,39 @@ export async function PATCH(req: NextRequest) {
     }
 
     const user = await updateAdminUser(id, { verified, role })
+    const ctx = requestContext(req)
+    if (role === 'admin') {
+      await logAudit({
+        actor: admin,
+        action: 'user.promote',
+        targetType: 'user',
+        targetId: id,
+        targetName: user.name,
+        metadata: { role: 'user -> admin' },
+        ...ctx,
+      })
+    } else if (role === 'user') {
+      await logAudit({
+        actor: admin,
+        action: 'user.demote',
+        targetType: 'user',
+        targetId: id,
+        targetName: user.name,
+        metadata: { role: 'admin -> user' },
+        ...ctx,
+      })
+    }
+    if (verified !== undefined) {
+      await logAudit({
+        actor: admin,
+        action: 'user.verify',
+        targetType: 'user',
+        targetId: id,
+        targetName: user.name,
+        metadata: { verified },
+        ...ctx,
+      })
+    }
     return NextResponse.json({ success: true, data: user })
   } catch (err: unknown) {
     if (httpError(err).statusCode === 400 || httpError(err).statusCode === 403) {

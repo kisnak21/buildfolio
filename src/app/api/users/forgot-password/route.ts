@@ -5,6 +5,7 @@ import { requestPasswordReset } from '@/lib/services/userService'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
@@ -33,6 +34,13 @@ export async function POST(req: NextRequest) {
 
     // Generic response to prevent account enumeration
     await requestPasswordReset(email)
+    await logAudit({
+      action: 'auth.password_reset',
+      targetType: 'user',
+      targetName: email,
+      metadata: { reason: 'token requested' },
+      ...requestContext(req),
+    })
     return NextResponse.json({
       success: true,
       message: 'If an account exists for this email, a reset link has been sent.',

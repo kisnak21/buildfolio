@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { deleteAdminUser } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus, httpError } from '@/lib/apiErrors'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function DELETE(
   req: NextRequest,
@@ -30,6 +31,15 @@ export async function DELETE(
         { status: 404 },
       )
     }
+    await logAudit({
+      actor: admin,
+      action: 'user.delete',
+      targetType: 'user',
+      targetId: id,
+      targetName: result.name,
+      metadata: { email: result.email },
+      ...requestContext(req),
+    })
     return NextResponse.json({ success: true, message: 'User deleted' })
   } catch (err: unknown) {
     if (httpError(err).statusCode === 403) {

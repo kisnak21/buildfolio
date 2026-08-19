@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Logs — Buildfolio (Mockup)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Public Sans"', 'sans-serif'] },
+          colors: {
+            bgMain: '#Fdfcf7',
+            primary: '#FF90E8',
+            primaryDark: '#D81B60',
+            secondary: '#FFC900',
+            accent: '#1A7A71',
+            accentDark: '#13544e',
+            dark: '#111111',
+            cardBg: '#FFFFFF',
+            inputBg: '#F3F4F6',
+            accentSoft: '#C4F0FF',
+            successSoft: '#BBF7D0',
+            dangerSoft: '#FECACA',
+            warningSoft: '#FDE047',
+            orangeSoft: '#FED7AA',
+            purpleSoft: '#A78BFA',
+            greenMid: '#4ADE80',
+            danger: '#EF4444',
+          },
+          boxShadow: {
+            'brutal-sm': '2px 2px 0px 0px rgba(17,17,17,1)',
+            'brutal': '4px 4px 0px 0px rgba(17,17,17,1)',
+            'brutal-lg': '8px 8px 0px 0px rgba(17,17,17,1)',
+            'brutal-danger': '4px 4px 0px 0px #EF4444',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #Fdfcf7; color: #111111; }
+    .btn-brutal { transition: all 0.15s ease-in-out; }
+    .btn-brutal:active { transform: translate(4px, 4px); box-shadow: 0px 0px 0px 0px rgba(17,17,17,1); }
+    .nav-item { transition: all 0.15s ease-in-out; }
+    .nav-item:hover { transform: translate(-2px, -2px); box-shadow: 2px 2px 0px 0px rgba(17,17,17,1); }
+    tr.row:hover { background-color: #F3F4F6; }
+  </style>
+</head>
+<body class="antialiased min-h-screen flex font-sans">
+
+  <!-- ======= SIDEBAR ======= -->
+  <aside id="sidebar" class="w-64 shrink-0 bg-white border-r-4 border-dark flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform">
+    <div class="p-5 border-b-4 border-dark flex items-center gap-2">
+      <div class="w-7 h-7 bg-secondary border-2 border-dark rounded-md shadow-brutal-sm"></div>
+      <span class="text-lg font-black tracking-tight">buildfolio</span>
+      <span class="ml-auto text-[10px] font-black bg-primary border-2 border-dark px-1.5 py-0.5 rounded shadow-brutal-sm uppercase">Admin</span>
+    </div>
+
+    <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-white hover:bg-inputBg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13l8-8 5 5 5-5M3 21h18M3 17h18v-4"></path></svg>
+        Overview
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-white hover:bg-inputBg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2m8-11a4 4 0 100-8 4 4 0 000 8zm6 2a3.5 3.5 0 100-7"></path></svg>
+        Users
+        <span class="ml-auto text-xs font-black bg-accentSoft border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm">23</span>
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-white hover:bg-inputBg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+        Projects
+        <span class="ml-auto text-xs font-black bg-successSoft border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm">37</span>
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-white hover:bg-inputBg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4-.83L3 21l1.2-4A8 8 0 1121 12z"></path></svg>
+        Comments
+        <span class="ml-auto text-xs font-black bg-warningSoft border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm">89</span>
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-white hover:bg-inputBg">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 012 2v1m-9 13v-5a2 2 0 012-2h1m9-4h3a2 2 0 012 2v6a2 2 0 01-2 2h-5a2 2 0 01-2-2v-3m0 0v-3a2 2 0 012-2h3"></path></svg>
+        Categories & Tech
+      </button>
+
+      <!-- Fase 2: Audit Logs (aktif) -->
+      <button class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold text-left bg-secondary shadow-brutal mt-6">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Audit Logs
+      </button>
+    </nav>
+
+    <div class="p-4 border-t-4 border-dark">
+      <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold bg-white hover:bg-inputBg transition-colors">
+        <div class="w-8 h-8 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden">
+          <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=kresna" alt="Admin" class="w-full h-full object-cover">
+        </div>
+        <div class="leading-tight text-left">
+          <p class="font-black text-sm">Kresna Admin</p>
+          <p class="text-xs font-bold text-gray-500">kresna@buildfolio.id</p>
+        </div>
+        <svg class="w-4 h-4 ml-auto text-gray-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile topbar -->
+  <div class="md:hidden fixed top-0 inset-x-0 z-50 bg-white border-b-4 border-dark px-4 py-3 flex items-center gap-3">
+    <button onclick="document.getElementById('sidebar').classList.toggle('-translate-x-full')" class="btn-brutal p-2 border-2 border-dark rounded-lg shadow-brutal-sm bg-white">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+    <span class="font-black">buildfolio <span class="text-xs bg-primary border-2 border-dark px-1.5 py-0.5 rounded shadow-brutal-sm uppercase ml-1">Admin</span></span>
+  </div>
+
+  <!-- ======= MAIN ======= -->
+  <main class="flex-1 md:ml-64 px-4 md:px-8 py-6 md:py-10 mt-14 md:mt-0 w-full">
+
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b-4 border-dark pb-6">
+      <div>
+        <h1 class="text-4xl font-black mb-2">Audit Logs</h1>
+        <p class="font-medium text-gray-600 text-lg">Every admin & sensitive action, immutably recorded.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <button class="btn-brutal bg-white border-2 border-dark px-4 py-2 rounded-xl font-bold shadow-brutal-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"></path></svg>
+          Export CSV
+        </button>
+        <button class="btn-brutal bg-primary border-2 border-dark px-4 py-2 rounded-xl font-black shadow-brutal-sm flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H8.25zm0 0a3 3 0 003 3h1.5a3 3 0 003-3v-1.5"></path></svg>
+          Export JSON
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="bg-white border-4 border-dark rounded-2xl p-4 shadow-brutal mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <div class="relative">
+        <svg class="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        <input type="text" placeholder="Search actor, target, metadata..." class="w-full bg-white border-2 border-dark pl-10 pr-4 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary">
+      </div>
+      <select class="bg-white border-2 border-dark px-4 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary appearance-none cursor-pointer">
+        <option value="">All Actions</option>
+        <optgroup label="User">
+          <option>user.promote</option>
+          <option>user.demote</option>
+          <option>user.verify</option>
+          <option>user.delete</option>
+        </optgroup>
+        <optgroup label="Content">
+          <option>project.delete</option>
+          <option>comment.delete</option>
+          <option>comment.resolve_flag</option>
+        </optgroup>
+        <optgroup label="Category & Tech">
+          <option>category.create</option>
+          <option>category.rename</option>
+          <option>category.delete</option>
+          <option>tech.create</option>
+          <option>tech.rename</option>
+          <option>tech.delete</option>
+        </optgroup>
+        <optgroup label="Auth">
+          <option>auth.login_fail</option>
+          <option>auth.register</option>
+          <option>auth.password_reset</option>
+        </optgroup>
+      </select>
+      <select class="bg-white border-2 border-dark px-4 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary appearance-none cursor-pointer">
+        <option value="">All Actors</option>
+        <option>Kresna Admin</option>
+        <option>System</option>
+        <option>Unknown</option>
+      </select>
+      <div class="flex items-center gap-2">
+        <input type="date" value="2026-08-10" class="w-full bg-white border-2 border-dark px-3 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary">
+      </div>
+      <div class="flex items-center gap-2">
+        <input type="date" value="2026-08-19" class="w-full bg-white border-2 border-dark px-3 py-2.5 rounded-xl font-bold shadow-brutal-sm focus:outline-none focus:border-primary">
+      </div>
+    </div>
+
+    <!-- Action legend -->
+    <div class="flex flex-wrap items-center gap-2 mb-4 text-xs font-black">
+      <span class="bg-warningSoft border-2 border-dark px-2 py-0.5 rounded">user / role</span>
+      <span class="bg-successSoft border-2 border-dark px-2 py-0.5 rounded">verify</span>
+      <span class="bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded">delete / fail</span>
+      <span class="bg-accentSoft border-2 border-dark px-2 py-0.5 rounded">category / tech</span>
+      <span class="bg-orangeSoft border-2 border-dark px-2 py-0.5 rounded">auth</span>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white border-4 border-dark rounded-2xl shadow-brutal overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-dark text-white text-left">
+              <th class="px-4 py-3 font-black">Timestamp</th>
+              <th class="px-4 py-3 font-black">Actor</th>
+              <th class="px-4 py-3 font-black">Action</th>
+              <th class="px-4 py-3 font-black">Target</th>
+              <th class="px-4 py-3 font-black hidden lg:table-cell">IP Address</th>
+              <th class="px-4 py-3 font-black hidden xl:table-cell">Details</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y-2 divide-dark">
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 19, 09:14:22</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=kresna" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Kresna Admin</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-warningSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">user.promote</span></td>
+              <td class="px-4 py-3 font-bold">krisnastya21@gmail.com</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">114.125.4.90</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">role: user → admin</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 18, 22:05:11</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-accentSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=bayu" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Bayu Putra</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-successSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">user.verify</span></td>
+              <td class="px-4 py-3 font-bold">rizky@devmail.com</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">182.1.180.22</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">verification granted</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 18, 19:47:03</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-dangerSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=sistem" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">System</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">auth.login_fail</span></td>
+              <td class="px-4 py-3 font-bold">admin@buildfolio.id</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">45.79.211.180</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">invalid credentials (attempt #3)</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 18, 14:12:48</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=kresna" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Kresna Admin</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">project.delete</span></td>
+              <td class="px-4 py-3 font-bold">"TaskFlow — Kanban Board"</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">114.125.4.90</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">project_id: 8f3c…92ad</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 18, 11:30:02</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-accentSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=bayu" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Bayu Putra</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-accentSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">category.create</span></td>
+              <td class="px-4 py-3 font-bold">DevOps</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">182.1.180.22</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">icon: terminal</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 17, 21:19:44</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-dangerSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=sistem" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">System</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-orangeSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">auth.register</span></td>
+              <td class="px-4 py-3 font-bold">nabila@gmail.com</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">103.94.21.7</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">provider: email</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 17, 18:55:31</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=kresna" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Kresna Admin</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">comment.delete</span></td>
+              <td class="px-4 py-3 font-bold">"Spam promotion link..."</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">114.125.4.90</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">comment_id: 21ab…07ff</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 17, 10:02:17</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-accentSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=bayu" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Bayu Putra</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-accentSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">tech.create</span></td>
+              <td class="px-4 py-3 font-bold">Rust</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">182.1.180.22</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">—</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 16, 20:44:09</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-warningSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=sistem" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">System</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-warningSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">auth.password_reset</span></td>
+              <td class="px-4 py-3 font-bold">fajar@gmail.com</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">182.55.9.131</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">token requested</td>
+            </tr>
+            <tr class="row">
+              <td class="px-4 py-3 font-bold whitespace-nowrap">Aug 16, 15:36:58</td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden shrink-0">
+                    <img src="https://api.dicebear.com/9.x/pixel-art/svg?seed=kresna" class="w-full h-full object-cover" alt="">
+                  </div>
+                  <span class="font-black">Kresna Admin</span>
+                </div>
+              </td>
+              <td class="px-4 py-3"><span class="font-black bg-dangerSoft border-2 border-dark px-2 py-0.5 rounded whitespace-nowrap">user.delete</span></td>
+              <td class="px-4 py-3 font-bold">spammer_9283@gmail.com</td>
+              <td class="px-4 py-3 font-mono text-xs text-gray-600 hidden lg:table-cell">114.125.4.90</td>
+              <td class="px-4 py-3 font-medium text-gray-600 hidden xl:table-cell">reason: repeated spam</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="border-t-4 border-dark px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <p class="text-xs font-bold text-gray-600">Showing <span class="font-black text-dark">1–10</span> of <span class="font-black text-dark">214</span> events</p>
+        <div class="flex items-center gap-1.5">
+          <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm opacity-40 cursor-not-allowed">Prev</button>
+          <button class="btn-brutal bg-secondary border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm">1</button>
+          <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm">2</button>
+          <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm">3</button>
+          <span class="font-black text-gray-500 px-1">…</span>
+          <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm">11</button>
+          <button class="btn-brutal bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm">Next</button>
+        </div>
+        <select class="bg-white border-2 border-dark px-3 py-1.5 rounded-lg font-black shadow-brutal-sm cursor-pointer">
+          <option>20 / page</option>
+          <option>50 / page</option>
+          <option>100 / page</option>
+        </select>
+      </div>
+    </div>
+
+  </main>
+</body>
+</html>

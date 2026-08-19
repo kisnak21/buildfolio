@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { listAdminTechs, createAdminTech } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus, httpError } from '@/lib/apiErrors'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
@@ -23,12 +24,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { error } = await requireAdmin(req)
+  const { admin, error } = await requireAdmin(req)
   if (error) return error
 
   try {
     const { name } = await req.json()
     const tech = await createAdminTech(name)
+    await logAudit({
+      actor: admin,
+      action: 'tech.create',
+      targetType: 'technology',
+      targetId: tech.id,
+      targetName: tech.name,
+      ...requestContext(req),
+    })
     return NextResponse.json({ success: true, data: tech }, { status: 201 })
   } catch (err: unknown) {
     if (httpError(err).statusCode === 400) {

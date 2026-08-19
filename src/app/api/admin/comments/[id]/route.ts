@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { deleteAdminComment } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function DELETE(
   req: NextRequest,
@@ -11,7 +12,7 @@ export async function DELETE(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { error } = await requireAdmin(req)
+  const { admin, error } = await requireAdmin(req)
   if (error) return error
 
   const { id } = await params
@@ -23,6 +24,14 @@ export async function DELETE(
         { status: 404 },
       )
     }
+    await logAudit({
+      actor: admin,
+      action: 'comment.delete',
+      targetType: 'comment',
+      targetId: id,
+      targetName: result.content.slice(0, 100),
+      ...requestContext(req),
+    })
     return NextResponse.json({ success: true, message: 'Comment deleted' })
   } catch (err: unknown) {
     return NextResponse.json(

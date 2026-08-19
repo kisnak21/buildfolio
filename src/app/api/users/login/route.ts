@@ -5,16 +5,27 @@ import { loginUserService } from '@/lib/services/userService'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { logAudit, requestContext } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
+  const ctx = requestContext(req)
   try {
     // Rate limit: 10 attempts per 15 minutes per IP
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
-    const { success, remaining, resetInMs } = await rateLimit(`login:${ip}`, { max: 10, windowMs: 15 * 60 * 1000 })
+    const { success, resetInMs } = await rateLimit(`login:${ip}`, { max: 10, windowMs: 15 * 60 * 1000 })
+
+    const { email, password } = await req.json()
 
     if (!success) {
+      await logAudit({
+        action: 'auth.login_fail',
+        targetType: 'auth',
+        targetName: typeof email === 'string' ? email : null,
+        metadata: { reason: 'rate limited' },
+        ...ctx,
+      })
       return NextResponse.json(
         { success: false, message: 'Too many login attempts. Try again later.' },
         {
@@ -27,7 +38,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { email, password } = await req.json()
     if (!email || !password) {
       return NextResponse.json(
         { success: false, message: 'email and password are required' },
@@ -36,6 +46,13 @@ export async function POST(req: NextRequest) {
     }
     const result = await loginUserService({ email, password })
     if (!result) {
+      await logAudit({
+        action: 'auth.login_fail',
+        targetType: 'auth',
+        targetName: email,
+        metadata: { reason: 'invalid credentials' },
+        ...ctx,
+      })
       return NextResponse.json(
         { success: false, message: 'Invalid email or password' },
         { status: 401 },
@@ -43,6 +60,13 @@ export async function POST(req: NextRequest) {
     }
 
     if ('needsVerification' in result) {
+      await logAudit({
+        action: 'auth.login_fail',
+        targetType: 'auth',
+        targetName: result.email,
+        metadata: { reason: 'email not verified' },
+        ...ctx,
+      })
       return NextResponse.json(
         {
           success: false,
