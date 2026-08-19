@@ -1,0 +1,19 @@
+name: Uptime Check
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping app & health endpoint
+    runs-on: ubuntu-latest
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - name: Check homepage
+        run: curl -fsS --max-time 20 -o /dev/null -w "homepage %{http_code}\n" "$APP_URL/"
+
+      - name: Check health endpoint
+        run: curl -fsS --max-time 20 "$APP_URL/api/health"
