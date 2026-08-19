@@ -32,6 +32,7 @@ Buildfolio lets developers:
 - Manage projects via a personal dashboard (Create, Read, Update, Delete)
 - Register and log in with real authentication and email verification
 - View public developer profiles
+- Moderate the community via an admin dashboard (users, projects, comments, content flags, audit logs)
 
 ---
 
@@ -91,6 +92,24 @@ Buildfolio lets developers:
 - **Comments** — post and delete comments on project detail pages (persisted to database)
 - **Settings** — update name and bio, or change password (persisted to database)
 
+### Admin (role `admin`)
+
+- **Dashboard** (`/admin`) — stat cards (users, projects, comments, likes, bookmarks), 14-day signups bar chart, cumulative growth chart (inline SVG, users vs projects), category distribution bars, recent signups
+- **Users** — searchable table, manual verification, promote/demote admin, delete
+- **Projects & Comments** — full lists with delete (content moderation)
+- **Categories & Technologies** — lightweight CRUD
+- **Content Flags** — review queue for user reports on projects/comments (reason + optional details), resolve/dismiss with audit trail
+- **Audit Logs** — every admin action and auth event recorded (actor snapshot, IP, user-agent, metadata); filter by action/search/date, pagination, CSV/JSON export
+- Backend gate via `requireAdmin` (DB role check, authoritative); frontend gate via JWT claim
+
+### Observability & CI/CD
+
+- **Structured logging** — pino JSON logs on the server (`register` + `onRequestError` via Next.js instrumentation)
+- **Client error ingestion** — `/api/log-error` (same-origin + rate limited) feeds global `error.tsx` digests into server logs
+- **CI quality gate** — GitHub Actions: lint, typecheck, build on every push
+- **Uptime monitoring** — scheduled check of the production URL every 6 hours
+- **Migrations on deploy** — `vercel.json` runs `prisma migrate deploy` before `next build`
+
 ### Static Pages
 
 - FAQ, Contact us (with email form routed to your inbox), Privacy Policy, Terms of Service
@@ -111,7 +130,11 @@ src/
 │   │   ├── bookmarks/        # GET by user, POST, DELETE
 │   │   ├── comments/         # GET by project, POST, DELETE
 │   │   ├── contact/          # POST send email
+│   │   ├── flags/            # POST content report (auth, rate limited)
+│   │   ├── admin/            # Admin API: stats, users, projects, comments, categories, technologies, flags, audit-logs
+│   │   ├── log-error/        # Client error ingestion (same-origin + rate limited)
 │   │   └── uploadthing/      # Uploadthing file handler
+│   ├── admin/                # Admin dashboard (Overview, Users, Projects, Comments, Categories & Tech, Flags, Audit Logs)
 │   ├── auth/google-callback  # Post-OAuth redirect page
 │   ├── dashboard/            # Dashboard, New Project, Edit Project
 │   ├── projects/             # All Projects, Project Detail (server-rendered, dynamic metadata)
@@ -143,17 +166,20 @@ src/
 ├── generated/prisma/         # Generated Prisma Client (via `npx prisma generate`)
 ├── lib/
 │   ├── api/                  # Fetch-based client API files (no axios) + cache headers helper
-│   ├── services/             # Server-side Prisma service files
+│   ├── services/             # Server-side Prisma service files (incl. admin stats, flags)
 │   ├── middleware/           # JWT auth middleware for API routes + edge JWT verification (jose)
 │   ├── data/                 # Static seed data (categories, technologies)
 │   ├── db.ts                 # Prisma Client singleton (pg Pool + @prisma/adapter-pg)
 │   ├── apiErrors.ts          # Error mapping (Prisma error codes → HTTP responses)
 │   ├── auth.ts               # JWT sign/verify helpers
+│   ├── audit.ts              # Audit log helper (never throws) + request context extraction
 │   ├── email.ts              # Resend transporter
+│   ├── logger.ts             # pino structured logger
 │   ├── rateLimit.ts          # Upstash Redis rate limiting (in-memory fallback)
 │   ├── uploadthing.ts        # Uploadthing config
 │   ├── uploadthing-client.ts # Uploadthing client-side config
 │   └── utils.ts              # Shared utilities (cn, etc.)
+├── instrumentation.ts        # Observability: pino register + onRequestError reporting
 ├── middleware.ts             # Route protection (protected + guest-only pages, edge JWT check)
 └── store/
     └── redux/                # store, provider, typed hooks, slices (projects, auth, bookmarks, comments, likes, toast)
@@ -165,7 +191,7 @@ Prisma-related files live at the project root:
 prisma/
 └── schema.prisma            # Prisma schema (models mapped to snake_case tables)
 prisma.config.ts             # Prisma config (datasource URL from DATABASE_URL)
-migrations/                  # Local-only SQL scripts (gitignored): schema + seed data
+migrations/                  # Versioned migrations (0001_init, 0002_content_flags) — tracked in git, applied via `prisma migrate deploy`
 ```
 
 ---
@@ -218,14 +244,16 @@ CONTACT_RECIPIENT_EMAIL=you@yourdomain.com
 ### Database Setup
 
 1. Configure `DATABASE_URL` in `.env.local`
-2. Set up the schema. Run the SQL scripts in the local `/migrations` folder in your Neon SQL editor, or push the Prisma schema directly:
+2. Apply the versioned migrations (kept in `prisma/migrations/`):
    ```bash
-   npx prisma db push
+   npx prisma migrate deploy
    ```
 3. Generate the Prisma client (also runs automatically via `postinstall` after `npm install`):
    ```bash
    npx prisma generate
    ```
+
+> On Vercel the same migrations run automatically before each build via `vercel.json` (`prisma migrate deploy && next build`).
 
 ### Running Locally
 
@@ -266,6 +294,19 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/comments`                  | Yes | Add comment                           |
 | DELETE | `/api/comments/:id`              | Yes | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
+| POST   | `/api/flags`                     | Yes | Report a project or comment (rate limited, duplicate-pending guarded) |
+| GET    | `/api/admin/stats`               | Admin | Dashboard stats (incl. 14-day charts) |
+| GET    | `/api/admin/users`               | Admin | User list |
+| PATCH/DELETE | `/api/admin/users/:id`       | Admin | Verify / promote / demote / delete user |
+| GET    | `/api/admin/projects`            | Admin | Project moderation list |
+| DELETE | `/api/admin/projects/:id`        | Admin | Delete project |
+| GET    | `/api/admin/comments`            | Admin | Comment moderation list |
+| DELETE | `/api/admin/comments/:id`        | Admin | Delete comment |
+| GET/POST | `/api/admin/categories`, `/api/admin/technologies` | Admin | Category & tech CRUD (plus `/:id` PATCH/DELETE) |
+| GET    | `/api/admin/flags`               | Admin | Content flag queue (status filter + pagination) |
+| PATCH  | `/api/admin/flags/:id`           | Admin | Resolve or dismiss a flag |
+| GET    | `/api/admin/audit-logs`          | Admin | Audit log (filter/search/date + pagination) |
+| POST   | `/api/log-error`                 | —    | Client error ingestion (same-origin, rate limited) |
 | GET    | `/api/auth/[...nextauth]`        | —    | NextAuth Google OAuth handler         |
 | POST   | `/api/auth/exchange`             | —    | Exchange NextAuth session → app JWT cookie |
 
@@ -273,8 +314,8 @@ Open `http://localhost:3000` in your browser.
 
 ## Known Limitations
 
-- **SQL migrations are kept local-only** — the `/migrations` folder is gitignored; schema changes are applied via `npx prisma db push` or run manually in the Neon SQL editor.
 - **Rate limiting falls back to in-memory without Upstash** — resets on server restart; fine for local development, but configure `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` for a single shared store in production.
+- **`middleware.ts` JWT check is structural** (3-part token) — full signature verification happens in API routes; the edge check is defense-in-depth only.
 
 ## Planned Improvements
 
@@ -285,6 +326,8 @@ Open `http://localhost:3000` in your browser.
 - [x] Resend email delivery, email verification, and password reset flow
 - [x] Upstash Redis rate limiting and CSRF/security hardening
 - [x] SEO (sitemap, robots, OG image, dynamic metadata) + thumbnail upload via Uploadthing
+- [x] Admin dashboard (users/projects/comments/categories moderation, audit logs, content flags, growth charts)
+- [x] CI/CD quality gate, observability (pino + client error ingestion), and uptime monitoring
 - [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
 - [ ] Public API documentation page
 
