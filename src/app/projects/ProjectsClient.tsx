@@ -10,15 +10,14 @@ import ProjectCard from '@/components/home/ProjectCard'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
 
-const categoryList = ['SaaS', 'AI', 'Web App', 'Mobile App', 'Open Source', 'Game']
-
 const PAGE_SIZE = 6
 
 interface ProjectsClientProps {
   techCounts: { name: string; count: number }[]
+  categories: { id: string; name: string; icon: string | null }[]
 }
 
-const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
+const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   const dispatch = useAppDispatch()
   const { items: projects, loading, error, pagination } = useAppSelector(
     (state) => state.projects,
@@ -114,9 +113,9 @@ const ProjectsClient = ({ techCounts }: ProjectsClientProps) => {
               className='input-brutal flex-1 md:flex-none bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none cursor-pointer'
             >
               <option value=''>All Categories</option>
-              {categoryList.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
                 </option>
               ))}
             </select>

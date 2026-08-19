@@ -139,18 +139,22 @@ export const getAdminCategories = async () => {
   return response.data.data
 }
 
-export const createAdminCategory = async (name: string) => {
+export const createAdminCategory = async (name: string, icon?: string) => {
   const response = await realApiClient.post<{ data: AdminCategory }>(
     `${RESOURCE}/categories`,
-    { name },
+    { name, icon },
   )
   return response.data.data
 }
 
-export const renameAdminCategory = async (id: string, name: string) => {
+export const renameAdminCategory = async (
+  id: string,
+  name: string,
+  icon?: string,
+) => {
   const response = await realApiClient.patch<{ data: AdminCategory }>(
     `${RESOURCE}/categories/${id}`,
-    { name },
+    { name, icon },
   )
   return response.data.data
 }

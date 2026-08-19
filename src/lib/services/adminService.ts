@@ -315,7 +315,11 @@ export const createAdminCategory = async (name: string, icon?: string) => {
   })
 }
 
-export const renameAdminCategory = async (id: string, name: string) => {
+export const renameAdminCategory = async (
+  id: string,
+  name: string,
+  icon?: string,
+) => {
   const trimmed = name.trim()
   if (!trimmed) {
     throw Object.assign(new Error('Category name is required'), {
@@ -324,7 +328,10 @@ export const renameAdminCategory = async (id: string, name: string) => {
   }
   return prisma.category.update({
     where: { id },
-    data: { name: trimmed },
+    data: {
+      name: trimmed,
+      ...(icon !== undefined && { icon: icon || null }),
+    },
     select: { id: true, name: true, icon: true },
   })
 }

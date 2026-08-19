@@ -12,22 +12,15 @@ import ProjectCard from '@/components/home/ProjectCard'
 import CategoryCard from '@/components/home/CategoryCard'
 import TechPill from '@/components/home/TechPill'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
-import { MagnifyingGlassIcon, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon } from '@heroicons/react/24/solid'
+import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
+import { getCategoryIcon } from '@/lib/categoryIcons'
 
 interface HomeClientProps {
   techCounts: { name: string; count: number }[]
+  categories: { id: string; name: string; icon: string | null }[]
 }
 
-const categoryList = [
-  { icon: <RocketLaunchIcon />, name: 'SaaS' },
-  { icon: <CpuChipIcon />, name: 'AI' },
-  { icon: <GlobeAltIcon />, name: 'Web App' },
-  { icon: <DevicePhoneMobileIcon />, name: 'Mobile App' },
-  { icon: <LockOpenIcon />, name: 'Open Source' },
-  { icon: <PuzzlePieceIcon />, name: 'Game' },
-]
-
-const HomeClient = ({ techCounts }: HomeClientProps) => {
+const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   const dispatch = useAppDispatch()
   const {
     items: projects,
@@ -69,10 +62,14 @@ const HomeClient = ({ techCounts }: HomeClientProps) => {
   const featuredProjects = sortedByLikes.slice(0, 3)
   const favoriteProjects = sortedByLikes.slice(3, 6)
 
-  const derivedCategories = categoryList.map((cat) => ({
-    ...cat,
-    count: projects.filter((p: any) => p.category === cat.name).length,
-  }))
+  const derivedCategories = categories.map((cat) => {
+    const Icon = getCategoryIcon(cat.icon, cat.name)
+    return {
+      icon: <Icon />,
+      name: cat.name,
+      count: projects.filter((p: any) => p.category === cat.name).length,
+    }
+  })
 
   const handleLike = async (id: string) => {
     if (!currentUser) {
@@ -115,8 +112,8 @@ const HomeClient = ({ techCounts }: HomeClientProps) => {
                 className='input-brutal bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm appearance-none pr-10 cursor-pointer'
               >
                 <option value=''>All Categories</option>
-                {categoryList.map((cat) => (
-                  <option key={cat.name} value={cat.name}>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
                     {cat.name}
                   </option>
                 ))}

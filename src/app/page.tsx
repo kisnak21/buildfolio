@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import HomeClient from './HomeClient'
 import { getTechnologyStats } from '@/lib/services/projectService'
+import prisma from '@/lib/db'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: {
@@ -11,6 +14,12 @@ export const metadata: Metadata = {
 }
 
 export default async function HomePage() {
-  const techCounts = await getTechnologyStats()
-  return <HomeClient techCounts={techCounts} />
+  const [techCounts, categories] = await Promise.all([
+    getTechnologyStats(),
+    prisma.category.findMany({
+      select: { id: true, name: true, icon: true },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+  return <HomeClient techCounts={techCounts} categories={categories} />
 }

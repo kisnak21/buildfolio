@@ -19,6 +19,10 @@ import {
   type AdminTech,
 } from '@/lib/api/adminApi'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
+import {
+  CATEGORY_ICONS,
+  getCategoryIconName,
+} from '@/lib/categoryIcons'
 
 const CategoriesClient = () => {
   const dispatch = useAppDispatch()
@@ -29,6 +33,7 @@ const CategoriesClient = () => {
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<AdminCategory | null>(null)
   const [newName, setNewName] = useState('')
+  const [selectedIcon, setSelectedIcon] = useState('')
   const [techModalOpen, setTechModalOpen] = useState(false)
   const [newTechName, setNewTechName] = useState('')
   const [confirmCategory, setConfirmCategory] = useState<AdminCategory | null>(
@@ -74,12 +79,14 @@ const CategoriesClient = () => {
   const openAdd = () => {
     setEditing(null)
     setNewName('')
+    setSelectedIcon('')
     setModalOpen(true)
   }
 
   const openEdit = (category: AdminCategory) => {
     setEditing(category)
     setNewName(category.name)
+    setSelectedIcon(getCategoryIconName(category.icon, category.name))
     setModalOpen(true)
   }
 
@@ -89,10 +96,16 @@ const CategoriesClient = () => {
     setBusy(true)
     try {
       if (editing) {
-        const updated = await renameAdminCategory(editing.id, name)
+        const updated = await renameAdminCategory(
+          editing.id,
+          name,
+          selectedIcon || undefined,
+        )
         setCategories(
           categories.map((c) =>
-            c.id === updated.id ? { ...c, name: updated.name } : c,
+            c.id === updated.id
+              ? { ...c, name: updated.name, icon: updated.icon }
+              : c,
           ),
         )
         dispatch(
@@ -102,7 +115,10 @@ const CategoriesClient = () => {
           }),
         )
       } else {
-        const created = await createAdminCategory(name)
+        const created = await createAdminCategory(
+          name,
+          selectedIcon || undefined,
+        )
         setCategories([...categories, { ...created, projects: 0 }])
         dispatch(
           showToast({
@@ -356,8 +372,32 @@ const CategoriesClient = () => {
               onKeyDown={(e) => e.key === 'Enter' && submitModal()}
               placeholder='e.g. DevOps'
               autoFocus
-              className='w-full bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm mb-6 focus:outline-none focus:border-primary'
+              className='w-full bg-white border-2 border-dark px-4 py-3 rounded-xl font-bold shadow-brutal-sm mb-4 focus:outline-none focus:border-primary'
             />
+            <p className='text-xs font-black text-gray-500 uppercase mb-2'>
+              Icon
+            </p>
+            <div className='grid grid-cols-5 gap-2 mb-6'>
+              {CATEGORY_ICONS.map((option) => {
+                const Icon = option.icon
+                const active = selectedIcon === option.name
+                return (
+                  <button
+                    key={option.name}
+                    type='button'
+                    onClick={() => setSelectedIcon(option.name)}
+                    title={option.label}
+                    className={`flex items-center justify-center w-10 h-10 rounded-lg border-2 transition-colors ${
+                      active
+                        ? 'bg-secondary border-dark shadow-brutal-sm'
+                        : 'bg-white border-dark hover:bg-inputBg'
+                    }`}
+                  >
+                    <Icon className='w-5 h-5' />
+                  </button>
+                )
+              })}
+            </div>
             <div className='flex items-center justify-end gap-3'>
               <Button
                 variant='secondary'

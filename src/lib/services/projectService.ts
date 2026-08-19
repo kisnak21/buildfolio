@@ -39,7 +39,6 @@ export const getTechnologyStats = async (): Promise<{ name: string; count: numbe
       _count: { select: { projectTechnologies: true } },
     },
     orderBy: { projectTechnologies: { _count: 'desc' } },
-    take: 10,
   })
   return grouped.map((t) => ({ name: t.name, count: t._count.projectTechnologies }))
 }

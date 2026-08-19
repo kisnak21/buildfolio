@@ -19,8 +19,8 @@ export async function PATCH(
 
   const { id } = await params
   try {
-    const { name } = await req.json()
-    const category = await renameAdminCategory(id, name)
+    const { name, icon } = await req.json()
+    const category = await renameAdminCategory(id, name, icon)
     return NextResponse.json({ success: true, data: category })
   } catch (err: unknown) {
     if (httpError(err).statusCode === 400) {
