@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import {
   ChartBarIcon,
@@ -15,44 +15,39 @@ import {
   Bars3Icon,
 } from '@heroicons/react/24/outline'
 import { useAppDispatch } from '@/store/redux/hooks'
+import { logoutUser } from '@/store/redux/authSlice'
 import { showToast } from '@/store/redux/toastSlice'
 
 interface NavItem {
   href: string
   label: string
   icon: React.ComponentType<{ className?: string }>
-  badge?: string
+  badge?: number
   badgeClass?: string
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface AdminSidebarProps {
+  user: { name: string; email: string } | null
+  counts: { users: number; projects: number; comments: number } | null
+}
+
+const NAV_ITEMS: Omit<NavItem, 'badge'>[] = [
   { href: '/admin', label: 'Overview', icon: ChartBarIcon },
-  {
-    href: '/admin/users',
-    label: 'Users',
-    icon: UsersIcon,
-    badge: '23',
-    badgeClass: 'bg-accentSoft',
-  },
-  {
-    href: '/admin/projects',
-    label: 'Projects',
-    icon: CodeBracketIcon,
-    badge: '37',
-    badgeClass: 'bg-successSoft',
-  },
-  {
-    href: '/admin/comments',
-    label: 'Comments',
-    icon: ChatBubbleOvalLeftIcon,
-    badge: '89',
-    badgeClass: 'bg-warningSoft',
-  },
+  { href: '/admin/users', label: 'Users', icon: UsersIcon },
+  { href: '/admin/projects', label: 'Projects', icon: CodeBracketIcon },
+  { href: '/admin/comments', label: 'Comments', icon: ChatBubbleOvalLeftIcon },
   { href: '/admin/categories', label: 'Categories & Tech', icon: TagIcon },
 ]
 
-const AdminSidebar = () => {
+const BADGE_CLASS: Record<string, string> = {
+  '/admin/users': 'bg-accentSoft',
+  '/admin/projects': 'bg-successSoft',
+  '/admin/comments': 'bg-warningSoft',
+}
+
+const AdminSidebar = ({ user, counts }: AdminSidebarProps) => {
   const dispatch = useAppDispatch()
+  const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -65,6 +60,14 @@ const AdminSidebar = () => {
     }`
 
   const closeSidebar = () => setOpen(false)
+
+  const handleLogout = () => {
+    dispatch(logoutUser())
+    dispatch(
+      showToast({ message: 'You have been logged out', type: 'success' }),
+    )
+    router.push('/')
+  }
 
   return (
     <>
@@ -82,24 +85,31 @@ const AdminSidebar = () => {
         </div>
 
         <nav className='flex-1 p-4 space-y-2 overflow-y-auto'>
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={closeSidebar}
-              className={navClass(item.href)}
-            >
-              <item.icon className='w-5 h-5' />
-              {item.label}
-              {item.badge && (
-                <span
-                  className={`ml-auto text-xs font-black ${item.badgeClass} border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const key = item.href.replace('/admin/', '') as
+              | 'users'
+              | 'projects'
+              | 'comments'
+            const badge = counts?.[key]
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={closeSidebar}
+                className={navClass(item.href)}
+              >
+                <item.icon className='w-5 h-5' />
+                {item.label}
+                {typeof badge === 'number' && (
+                  <span
+                    className={`ml-auto text-xs font-black ${BADGE_CLASS[item.href] ?? 'bg-gray-200'} border-2 border-dark px-2 py-0.5 rounded shadow-brutal-sm`}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
 
           <button
             disabled
@@ -115,20 +125,13 @@ const AdminSidebar = () => {
 
         <div className='p-4 border-t-4 border-dark'>
           <button
-            onClick={() =>
-              dispatch(
-                showToast({
-                  message: 'Logout backend menyusul di fase berikutnya',
-                  type: 'info',
-                }),
-              )
-            }
+            onClick={handleLogout}
             className='w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dark font-bold bg-white hover:bg-inputBg transition-colors'
           >
             <div className='w-8 h-8 rounded-full border-2 border-dark bg-purpleSoft overflow-hidden shrink-0'>
               <Image
-                src='https://api.dicebear.com/9.x/pixel-art/svg?seed=admin'
-                alt='Admin'
+                src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${user?.email ?? 'admin'}`}
+                alt={user?.name ?? 'Admin'}
                 width={32}
                 height={32}
                 unoptimized
@@ -136,9 +139,11 @@ const AdminSidebar = () => {
               />
             </div>
             <div className='leading-tight text-left min-w-0'>
-              <p className='font-black text-sm truncate'>Kresna Admin</p>
+              <p className='font-black text-sm truncate'>
+                {user?.name ?? 'Admin'}
+              </p>
               <p className='text-xs font-bold text-gray-500 truncate'>
-                kresna@buildfolio.id
+                {user?.email ?? 'Logged in via cookie'}
               </p>
             </div>
             <ArrowRightStartOnRectangleIcon className='w-4 h-4 ml-auto text-gray-500 shrink-0' />

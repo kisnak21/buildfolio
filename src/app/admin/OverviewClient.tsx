@@ -40,6 +40,7 @@ const OverviewClient = () => {
   const [stats, setStats] = useState<AdminStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [health, setHealth] = useState<'checking' | 'ok' | 'down'>('checking')
 
   const load = async () => {
     try {
@@ -63,6 +64,13 @@ const OverviewClient = () => {
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
+      })
+    fetch('/api/health', { cache: 'no-store' })
+      .then((res) => {
+        if (!cancelled) setHealth(res.ok ? 'ok' : 'down')
+      })
+      .catch(() => {
+        if (!cancelled) setHealth('down')
       })
     return () => {
       cancelled = true
@@ -125,9 +133,29 @@ const OverviewClient = () => {
             Platform health at a glance.
           </p>
         </div>
-        <span className='font-bold bg-successSoft border-2 border-dark px-3 py-1.5 rounded-lg shadow-brutal-sm text-sm flex items-center gap-2 w-fit'>
-          <span className='w-2.5 h-2.5 bg-greenMid border-2 border-dark rounded-full' />
-          All systems operational
+        <span
+          className={`font-bold border-2 border-dark px-3 py-1.5 rounded-lg shadow-brutal-sm text-sm flex items-center gap-2 w-fit ${
+            health === 'ok'
+              ? 'bg-successSoft'
+              : health === 'down'
+                ? 'bg-dangerSoft'
+                : 'bg-white'
+          }`}
+        >
+          <span
+            className={`w-2.5 h-2.5 border-2 border-dark rounded-full ${
+              health === 'ok'
+                ? 'bg-greenMid'
+                : health === 'down'
+                  ? 'bg-red-600 animate-pulse'
+                  : 'bg-gray-400'
+            }`}
+          />
+          {health === 'checking'
+            ? 'Checking systems...'
+            : health === 'ok'
+              ? 'All systems operational'
+              : 'System degraded'}
         </span>
       </div>
 
