@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 import prisma from '@/lib/db'
+import { logger } from '@/lib/logger'
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
@@ -18,18 +19,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: path === '' ? 1 : 0.8,
   }))
 
-  const [projects, users] = await Promise.all([
-    prisma.project.findMany({
-      select: { id: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    }),
-    prisma.user.findMany({
-      select: { username: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    }),
-  ])
+  let projects: { id: string; createdAt: Date }[] = []
+  let users: { username: string; createdAt: Date }[] = []
+
+  try {
+    ;[projects, users] = await Promise.all([
+      prisma.project.findMany({
+        select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+      prisma.user.findMany({
+        select: { username: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+    ])
+  } catch (err) {
+    logger.warn({ err }, 'sitemap: db unavailable, serving static routes only')
+  }
 
   const projectRoutes: MetadataRoute.Sitemap = projects.map((p) => ({
     url: `${siteUrl}/projects/${p.id}`,
