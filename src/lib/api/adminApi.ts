@@ -81,7 +81,9 @@ export interface AdminStats {
     bookmarks: number
   }
   chart: { date: string; count: number }[]
+  projectChart: { date: string; count: number }[]
   recentSignups: AdminSignup[]
+  categoryDist: { name: string; count: number }[]
 }
 
 interface ListResponse<T> {

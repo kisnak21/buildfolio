@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import AdminStatCard from '@/components/admin/AdminStatCard'
+import GrowthChart from '@/components/admin/GrowthChart'
 import { buttonClass } from '@/components/ui/buttonClass'
 import {
   getAdminStats,
@@ -81,6 +82,32 @@ const OverviewClient = () => {
     if (!stats) return 1
     return Math.max(...stats.chart.map((c) => c.count), 1)
   }, [stats])
+
+  const growthSeries = useMemo(() => {
+    if (!stats) return []
+    const toCumulative = (rows: { count: number }[]) =>
+      rows.reduce<number[]>((acc, row) => {
+        acc.push((acc[acc.length - 1] ?? 0) + row.count)
+        return acc
+      }, [])
+    return [
+      {
+        label: 'Users',
+        colorClass: 'stroke-primary',
+        values: toCumulative(stats.chart),
+      },
+      {
+        label: 'Projects',
+        colorClass: 'stroke-secondary',
+        values: toCumulative(stats.projectChart),
+      },
+    ]
+  }, [stats])
+
+  const growthDates = useMemo(
+    () => stats?.chart.map((c) => c.date) ?? [],
+    [stats],
+  )
 
   const statCards = stats
     ? [
@@ -277,6 +304,64 @@ const OverviewClient = () => {
                 className={`${buttonClass('secondary', 'md', 'w-full mt-5')}`}
               >
                 View all users
+              </Link>
+            </div>
+          </div>
+
+          <div className='grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6'>
+            <div className='lg:col-span-2 bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <div className='flex items-center justify-between mb-2'>
+                <h2 className='text-xl font-black'>
+                  Cumulative growth — last 14 days
+                </h2>
+              </div>
+              <div className='flex items-center gap-4 mb-4 text-xs font-black'>
+                {growthSeries.map((s) => (
+                  <span key={s.label} className='flex items-center gap-1.5'>
+                    <span
+                      className={`w-3 h-3 border-2 border-dark rounded-sm ${s.colorClass.replace('stroke', 'bg')}`}
+                    />
+                    {s.label}
+                  </span>
+                ))}
+              </div>
+              <GrowthChart series={growthSeries} dates={growthDates} />
+            </div>
+
+            <div className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <h2 className='text-xl font-black mb-4'>Projects by category</h2>
+              <div className='space-y-3'>
+                {stats.categoryDist.length === 0 && (
+                  <p className='text-sm font-bold text-gray-500'>
+                    No categories yet
+                  </p>
+                )}
+                {stats.categoryDist.map((cat) => {
+                  const pct =
+                    stats.stats.projects > 0
+                      ? Math.round((cat.count / stats.stats.projects) * 100)
+                      : 0
+                  return (
+                    <div key={cat.name}>
+                      <div className='flex items-center justify-between text-sm font-black mb-1'>
+                        <span className='truncate'>{cat.name}</span>
+                        <span className='text-gray-600'>{cat.count}</span>
+                      </div>
+                      <div className='h-4 border-2 border-dark rounded-sm bg-bgMain overflow-hidden'>
+                        <div
+                          className='h-full bg-primary border-r-2 border-dark transition-all'
+                          style={{ width: `${Math.max(pct, cat.count > 0 ? 4 : 0)}%` }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <Link
+                href='/admin/categories'
+                className={`${buttonClass('secondary', 'md', 'w-full mt-5')}`}
+              >
+                Manage categories
               </Link>
             </div>
           </div>

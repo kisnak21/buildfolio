@@ -69,7 +69,7 @@ const RegisterClient = () => {
     } catch (err) {
       const e = err as { response?: { status?: number } }
       if (e.response?.status === 409) {
-        setErrors({ email: 'An account with this email already exists.' })
+        setErrors({ email: 'An account with this email or username already exists.' })
       } else {
         setErrors({
           confirmPassword: 'Something went wrong. Please try again.',

@@ -20,7 +20,9 @@ export const getAdminStats = async () => {
     weekBookmarks,
     weekLikesAgg,
     chartRows,
+    projectChartRows,
     recentSignups,
+    categoryDist,
   ] = await Promise.all([
     prisma.user.count(),
     prisma.project.count(),
@@ -38,6 +40,9 @@ export const getAdminStats = async () => {
     prisma.$queryRaw<
       { day: Date; count: number }[]
     >`SELECT d::date AS day, count(u.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN users u ON u.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
+    prisma.$queryRaw<
+      { day: Date; count: number }[]
+    >`SELECT d::date AS day, count(p.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN projects p ON p.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -48,6 +53,10 @@ export const getAdminStats = async () => {
         image: true,
         createdAt: true,
       },
+    }),
+    prisma.category.findMany({
+      select: { name: true, _count: { select: { projects: true } } },
+      orderBy: { projects: { _count: 'desc' } },
     }),
   ])
 
@@ -70,7 +79,15 @@ export const getAdminStats = async () => {
       date: row.day,
       count: row.count,
     })),
+    projectChart: projectChartRows.map((row) => ({
+      date: row.day,
+      count: row.count,
+    })),
     recentSignups,
+    categoryDist: categoryDist.map((c) => ({
+      name: c.name,
+      count: c._count.projects,
+    })),
   }
 }
 
