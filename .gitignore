@@ -56,3 +56,7 @@ SECURITY.md
 
 # database migrations
 /migrations/
+
+# Local learning notes / mockups
+mockups/
+pembelajaran*.md
