@@ -59,6 +59,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    if ('accountBlocked' in result) {
+      await logAudit({
+        action: 'auth.login_fail',
+        targetType: 'auth',
+        targetName: result.email,
+        metadata: { reason: result.status },
+        ...ctx,
+      })
+      return NextResponse.json(
+        {
+          success: false,
+          code:
+            result.status === 'banned'
+              ? 'ACCOUNT_BANNED'
+              : 'ACCOUNT_SUSPENDED',
+          message:
+            result.status === 'banned'
+              ? 'This account has been banned.'
+              : 'This account is temporarily suspended.',
+          ...(result.status === 'suspended' && {
+            suspendedUntil: result.suspendedUntil?.toISOString(),
+          }),
+        },
+        { status: 403 },
+      )
+    }
+
     if ('needsVerification' in result) {
       await logAudit({
         action: 'auth.login_fail',

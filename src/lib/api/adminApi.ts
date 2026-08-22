@@ -7,7 +7,11 @@ export interface AdminUser {
   email: string
   image: string | null
   verified: boolean
-  role: 'ADMIN' | 'USER'
+  role: 'admin' | 'user'
+  status: 'active' | 'banned' | 'suspended'
+  bannedAt: string | null
+  suspendedUntil: string | null
+  moderationReason: string | null
   projects: number
   createdAt: string
 }
@@ -18,6 +22,9 @@ export interface AdminProject {
   author: string
   category: string
   likes: number
+  hiddenAt: string | null
+  hiddenReason: string | null
+  featuredAt: string | null
   createdAt: string
 }
 
@@ -26,6 +33,8 @@ export interface AdminComment {
   author: string
   project: string
   content: string
+  hiddenAt: string | null
+  hiddenReason: string | null
   createdAt: string
 }
 
@@ -101,7 +110,7 @@ export interface AdminFlag {
   targetName: string | null
 }
 
-interface ListResponse<T> {
+export interface ListResponse<T> {
   data: T[]
   pagination: {
     page: number
@@ -120,9 +129,37 @@ export const getAdminStats = async () => {
   return response.data.data
 }
 
-export const getAdminUsers = async () => {
+export const getAdminUsers = async ({
+  page = 1,
+  limit = 20,
+  search,
+  status,
+}: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+} = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (search) params.set('search', search)
+  if (status) params.set('status', status)
   const response = await realApiClient.get<{ data: ListResponse<AdminUser> }>(
-    `${RESOURCE}/users`,
+    `${RESOURCE}/users?${params.toString()}`,
+  )
+  return response.data.data
+}
+
+export const moderateAdminUser = async (
+  id: string,
+  data: {
+    action: 'ban' | 'suspend' | 'restore'
+    until?: string
+    reason?: string
+  },
+) => {
+  const response = await realApiClient.patch<{ data: AdminUser }>(
+    `${RESOURCE}/users?id=${encodeURIComponent(id)}`,
+    data,
   )
   return response.data.data
 }
@@ -142,10 +179,37 @@ export const deleteAdminUser = async (id: string) => {
   await realApiClient.delete(`${RESOURCE}/users/${id}`)
 }
 
-export const getAdminProjects = async () => {
+export const getAdminProjects = async ({
+  page = 1,
+  limit = 20,
+  search,
+  category,
+  status,
+}: {
+  page?: number
+  limit?: number
+  search?: string
+  category?: string
+  status?: string
+} = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (search) params.set('search', search)
+  if (category) params.set('category', category)
+  if (status) params.set('status', status)
   const response = await realApiClient.get<{
     data: ListResponse<AdminProject>
-  }>(`${RESOURCE}/projects`)
+  }>(`${RESOURCE}/projects?${params.toString()}`)
+  return response.data.data
+}
+
+export const moderateAdminProject = async (
+  id: string,
+  data: { hidden?: boolean; featured?: boolean; reason?: string },
+) => {
+  const response = await realApiClient.patch<{ data: AdminProject }>(
+    `${RESOURCE}/projects/${id}`,
+    data,
+  )
   return response.data.data
 }
 
@@ -153,10 +217,34 @@ export const deleteAdminProject = async (id: string) => {
   await realApiClient.delete(`${RESOURCE}/projects/${id}`)
 }
 
-export const getAdminComments = async () => {
+export const getAdminComments = async ({
+  page = 1,
+  limit = 20,
+  search,
+  status,
+}: {
+  page?: number
+  limit?: number
+  search?: string
+  status?: string
+} = {}) => {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) })
+  if (search) params.set('search', search)
+  if (status) params.set('status', status)
   const response = await realApiClient.get<{
     data: ListResponse<AdminComment>
-  }>(`${RESOURCE}/comments`)
+  }>(`${RESOURCE}/comments?${params.toString()}`)
+  return response.data.data
+}
+
+export const moderateAdminComment = async (
+  id: string,
+  data: { hidden: boolean; reason?: string },
+) => {
+  const response = await realApiClient.patch<{ data: AdminComment }>(
+    `${RESOURCE}/comments/${id}`,
+    data,
+  )
   return response.data.data
 }
 

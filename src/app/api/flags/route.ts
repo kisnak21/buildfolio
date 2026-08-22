@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { createFlag, FLAG_REASONS } from '@/lib/services/flagService'
 import { rateLimit } from '@/lib/rateLimit'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
@@ -10,7 +10,7 @@ import { logAudit, requestContext } from '@/lib/audit'
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   try {

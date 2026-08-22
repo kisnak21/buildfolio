@@ -36,7 +36,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   const deferredSearch = useDeferredValue(search)
 
   useEffect(() => {
-    dispatch(fetchProjects())
+    dispatch(fetchProjects({ sort: 'home' }))
     if (currentUser?.id) dispatch(fetchLikedProjects())
   }, [dispatch, currentUser?.id])
 
@@ -57,8 +57,22 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   })
 
   const sortedByLikes = [...filtered].sort((a, b) => b.likes - a.likes)
-  const featuredProjects = sortedByLikes.slice(0, 3)
-  const favoriteProjects = sortedByLikes.slice(3, 6)
+  const featuredProjects = [...filtered]
+    .sort((a, b) => {
+      if (a.featuredAt && b.featuredAt) {
+        return Date.parse(b.featuredAt) - Date.parse(a.featuredAt)
+      }
+      if (a.featuredAt) return -1
+      if (b.featuredAt) return 1
+      return b.likes - a.likes
+    })
+    .slice(0, 3)
+  const featuredIds = new Set(featuredProjects.map((project) => project.id))
+  const favoriteProjects = sortedByLikes
+    .filter(
+      (project) => !project.featuredAt && !featuredIds.has(project.id),
+    )
+    .slice(0, 3)
 
   const derivedCategories = categories.map((cat) => {
     const Icon = getCategoryIcon(cat.icon, cat.name)

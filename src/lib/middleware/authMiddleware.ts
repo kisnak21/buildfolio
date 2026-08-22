@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import prisma from '@/lib/db'
+import { accountStatus } from '@/lib/visibility'
 
 export const authenticate = (req: NextRequest) => {
   // Baca JWT dari httpOnly cookie (primary), dari Authorization header (fallback)
@@ -40,6 +41,63 @@ export const authenticate = (req: NextRequest) => {
   }
 }
 
+const accountBlockedResponse = (account: {
+  bannedAt: Date | null
+  suspendedUntil: Date | null
+}) => {
+  const status = accountStatus(account)
+  if (status === 'active') return null
+
+  const response = NextResponse.json(
+    {
+      success: false,
+      code: status === 'banned' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+      message:
+        status === 'banned'
+          ? 'This account has been banned.'
+          : 'This account is temporarily suspended.',
+      ...(status === 'suspended' && {
+        suspendedUntil: account.suspendedUntil?.toISOString(),
+      }),
+    },
+    { status: 403 },
+  )
+  response.cookies.set('buildfolio_token', '', { path: '/', maxAge: 0 })
+  response.cookies.set('buildfolio_session', '', { path: '/', maxAge: 0 })
+  return response
+}
+
+export const requireActiveUser = async (req: NextRequest) => {
+  const { user, error } = authenticate(req)
+  if (error || !user) return { user: null, error }
+
+  try {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { bannedAt: true, suspendedUntil: true },
+    })
+    if (!dbUser) {
+      return {
+        user: null,
+        error: NextResponse.json(
+          { success: false, message: 'Account not found' },
+          { status: 401 },
+        ),
+      }
+    }
+    const blocked = accountBlockedResponse(dbUser)
+    return blocked ? { user: null, error: blocked } : { user, error: null }
+  } catch {
+    return {
+      user: null,
+      error: NextResponse.json(
+        { success: false, message: 'Internal server error' },
+        { status: 500 },
+      ),
+    }
+  }
+}
+
 /**
  * Admin gate: verifies the JWT AND checks the role against the database
  * (1 query/request, instant revocation, never trusts the claim alone).
@@ -52,9 +110,21 @@ export const requireAdmin = async (req: NextRequest) => {
   try {
     const dbUser = await prisma.user.findUnique({
       where: { id: user.id },
-      select: { role: true },
+      select: { role: true, bannedAt: true, suspendedUntil: true },
     })
-    if (!dbUser || dbUser.role !== 'admin') {
+    if (!dbUser) {
+      return {
+        admin: null,
+        error: NextResponse.json(
+          { success: false, message: 'Account not found' },
+          { status: 401 },
+        ),
+      }
+    }
+    const blocked = accountBlockedResponse(dbUser)
+    if (blocked) return { admin: null, error: blocked }
+
+    if (dbUser.role !== 'admin') {
       return {
         admin: null,
         error: NextResponse.json(

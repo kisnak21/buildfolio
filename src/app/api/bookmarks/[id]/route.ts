@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { removeBookmark, getBookmarkById } from '@/lib/services/bookmarkService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 
 export async function DELETE(
@@ -9,7 +9,7 @@ export async function DELETE(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const { id } = await params

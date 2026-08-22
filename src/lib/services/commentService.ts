@@ -1,8 +1,9 @@
 import prisma from '@/lib/db'
+import { publicCommentWhere, publicProjectWhere } from '@/lib/visibility'
 
 export const getCommentsByProject = async (projectId: string) => {
   const comments = await prisma.comment.findMany({
-    where: { projectId },
+    where: { projectId, ...publicCommentWhere() },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -35,6 +36,13 @@ export const addComment = async ({
 }) => {
   if (!content || content.length > 2000) {
     throw Object.assign(new Error('Comment must be 1-2000 characters'), { statusCode: 400 })
+  }
+  const project = await prisma.project.findFirst({
+    where: { id: project_id, ...publicProjectWhere() },
+    select: { id: true },
+  })
+  if (!project) {
+    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
   }
   const comment = await prisma.comment.create({
     data: { content, userId: user_id, projectId: project_id },

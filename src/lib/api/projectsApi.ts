@@ -68,6 +68,11 @@ export const getProjects = async (
   }
 }
 
+export const getMyProjects = async (): Promise<NormalizedProject[]> => {
+  const response = await realApiClient.get('/projects/mine')
+  return response.data.data.map(normalizeProject)
+}
+
 export const createProject = async (project: CreateProjectInput): Promise<NormalizedProject> => {
   const response = await realApiClient.post('/projects', {
     title: project.title,

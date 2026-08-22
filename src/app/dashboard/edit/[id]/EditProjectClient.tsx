@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
-import { fetchProjects, updateProject } from '@/store/redux/projectsSlice'
+import { fetchMyProjects, updateProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -22,7 +22,7 @@ const EditProjectClient = () => {
 
   useEffect(() => {
     if (project) return
-    dispatch(fetchProjects())
+    dispatch(fetchMyProjects())
   }, [dispatch, project])
 
   const isOwner = String(project?.user_id) === String(currentUser?.id)

@@ -2,14 +2,14 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getUserById, createUser } from '@/lib/services/userService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { logAudit, requestContext } from '@/lib/audit'
 
 export async function GET(req: NextRequest) {
   try {
-    const { user, error } = authenticate(req)
+    const { user, error } = await requireActiveUser(req)
     if (error) return error
 
     const profile = await getUserById(user.id)

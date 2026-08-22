@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAllProjects, createProject } from '@/lib/services/projectService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   try {

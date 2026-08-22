@@ -1,8 +1,11 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
 import AdminSidebar from '@/components/admin/AdminSidebar'
 import { verifyToken } from '@/lib/auth'
 import { getAdminStats } from '@/lib/services/adminService'
+import prisma from '@/lib/db'
+import { accountStatus } from '@/lib/visibility'
 
 export const metadata: Metadata = {
   title: 'Admin',
@@ -16,11 +19,24 @@ const AdminLayout = async ({ children }: { children: React.ReactNode }) => {
   if (token) {
     try {
       const payload = verifyToken(token)
-      user = { name: payload.name, email: payload.email }
+      const dbUser = await prisma.user.findUnique({
+        where: { id: payload.id },
+        select: { role: true, bannedAt: true, suspendedUntil: true },
+      })
+      if (
+        !dbUser ||
+        dbUser.role !== 'admin' ||
+        accountStatus(dbUser) !== 'active'
+      ) {
+        user = null
+      } else {
+        user = { name: payload.name, email: payload.email }
+      }
     } catch {
       user = null
     }
   }
+  if (!user) redirect('/login')
 
   let counts: { users: number; projects: number; comments: number } | null =
     null

@@ -3,10 +3,11 @@ export const runtime = 'nodejs'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   getProjectById,
+  getProjectByIdUnscoped,
   updateProject,
   deleteProject,
 } from '@/lib/services/projectService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
@@ -39,7 +40,7 @@ export async function PATCH(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
@@ -59,7 +60,7 @@ export async function PATCH(
 
   const { id } = await params
   try {
-    const existingProject = await getProjectById(id)
+    const existingProject = await getProjectByIdUnscoped(id)
     if (!existingProject) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },
@@ -104,7 +105,7 @@ export async function DELETE(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'unknown'
@@ -124,7 +125,7 @@ export async function DELETE(
 
   const { id } = await params
   try {
-    const existingProject = await getProjectById(id)
+    const existingProject = await getProjectByIdUnscoped(id)
     if (!existingProject) {
       return NextResponse.json(
         { success: false, message: 'Project not found' },

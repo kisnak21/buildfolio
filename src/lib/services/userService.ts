@@ -4,6 +4,7 @@ import prisma from '@/lib/db'
 import bcrypt from 'bcrypt'
 import { signToken } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
+import { accountStatus, activeUserWhere } from '@/lib/visibility'
 
 const SALT_ROUNDS = 10
 
@@ -23,9 +24,23 @@ export const getUserById = async (id: string) => {
   })
 }
 
+export const getPublicUserById = async (id: string) => {
+  return prisma.user.findFirst({
+    where: { id, ...activeUserWhere() },
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      image: true,
+      bio: true,
+      createdAt: true,
+    },
+  })
+}
+
 export const getUserByUsername = async (username: string) => {
-  return prisma.user.findUnique({
-    where: { username },
+  return prisma.user.findFirst({
+    where: { username, ...activeUserWhere() },
     select: {
       id: true,
       name: true,
@@ -126,6 +141,16 @@ export const loginUserService = async ({
 
   const passwordMatch = await bcrypt.compare(password, user.password)
   if (!passwordMatch) return null
+
+  const status = accountStatus(user)
+  if (status !== 'active') {
+    return {
+      accountBlocked: true,
+      status,
+      suspendedUntil: user.suspendedUntil,
+      email: user.email,
+    }
+  }
 
   if (!user.isVerified) {
     return { needsVerification: true, email: user.email }

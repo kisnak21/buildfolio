@@ -1,8 +1,11 @@
 import type { MetadataRoute } from 'next'
 import prisma from '@/lib/db'
 import { logger } from '@/lib/logger'
+import { activeUserWhere, publicProjectWhere } from '@/lib/visibility'
 
 const siteUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+export const dynamic = 'force-dynamic'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -25,11 +28,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     ;[projects, users] = await Promise.all([
       prisma.project.findMany({
+        where: publicProjectWhere(),
         select: { id: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 200,
       }),
       prisma.user.findMany({
+        where: activeUserWhere(),
         select: { username: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
         take: 200,

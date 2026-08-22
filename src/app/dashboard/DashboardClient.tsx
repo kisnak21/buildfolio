@@ -3,14 +3,14 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
-import { fetchProjects, deleteProject } from '@/store/redux/projectsSlice'
+import { fetchMyProjects, deleteProject } from '@/store/redux/projectsSlice'
 import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
-import { PlusIcon } from '@heroicons/react/24/solid'
+import { LightBulbIcon, PlusIcon } from '@heroicons/react/24/solid'
 
 const DashboardClient = () => {
   const dispatch = useAppDispatch()
@@ -29,13 +29,14 @@ const DashboardClient = () => {
   const [deleteError, setDeleteError] = useState('')
 
   useEffect(() => {
-    if (projects.length === 0) {
-      dispatch(fetchProjects())
-    }
+    if (currentUser?.id) dispatch(fetchMyProjects())
+  }, [dispatch, currentUser?.id])
+
+  useEffect(() => {
     if (currentUser?.id && bookmarks.length === 0 && !bookmarkLoading) {
       dispatch(fetchBookmarks())
     }
-  }, [dispatch, projects.length, currentUser?.id, bookmarks.length, bookmarkLoading])
+  }, [dispatch, currentUser?.id, bookmarks.length, bookmarkLoading])
 
   const userProjects = projects.filter(
     (p) => p.user_id === currentUser?.id,
@@ -66,13 +67,22 @@ const DashboardClient = () => {
             </h1>
             <p className='font-medium text-gray-600 text-lg'>Manage your showcase and profile.</p>
           </div>
-          <Link
-            href='/dashboard/new'
-            className='btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal flex items-center gap-2 w-fit'
-          >
-            <PlusIcon className='w-5 h-5' />
-            New Project
-          </Link>
+          <div className='flex flex-col gap-3 sm:flex-row'>
+            <Link
+              href='/dashboard/ideas'
+              className='btn-brutal flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-dark bg-secondary px-5 py-3 font-bold shadow-brutal'
+            >
+              <LightBulbIcon className='h-5 w-5' aria-hidden />
+              Project Ideas
+            </Link>
+            <Link
+              href='/dashboard/new'
+              className='btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal flex items-center justify-center gap-2 min-h-11'
+            >
+              <PlusIcon className='w-5 h-5' aria-hidden />
+              New Project
+            </Link>
+          </div>
         </div>
 
         {/* Stats */}
@@ -126,7 +136,22 @@ const DashboardClient = () => {
                       className='border-b-2 border-dark border-dashed hover:bg-yellow-50 transition-colors last:border-b-0'
                     >
                       <td className='p-4 font-bold text-dark'>
-                        {project.title}
+                        <div className='flex flex-wrap items-center gap-2'>
+                          {project.title}
+                          {project.hiddenAt && (
+                            <span
+                              className='rounded-md border-2 border-dark bg-red-200 px-2 py-0.5 text-xs font-black uppercase'
+                              title={project.hiddenReason || 'Hidden by a moderator'}
+                            >
+                              Hidden
+                            </span>
+                          )}
+                        </div>
+                        {project.hiddenAt && project.hiddenReason && (
+                          <p className='mt-1 max-w-sm text-xs font-semibold text-gray-600'>
+                            {project.hiddenReason}
+                          </p>
+                        )}
                       </td>
                       <td className='p-4'>
                         <span className='bg-primary border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm text-dark'>

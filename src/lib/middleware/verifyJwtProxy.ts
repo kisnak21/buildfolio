@@ -2,7 +2,7 @@ import { jwtVerify } from 'jose'
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET || '')
 
-export interface EdgeJwtPayload {
+export interface ProxyJwtPayload {
   id: string
   email: string
   name: string
@@ -10,12 +10,12 @@ export interface EdgeJwtPayload {
 }
 
 /**
- * Full cryptographic verification of the app JWT for use on the Edge
- * runtime (middleware). Mirrors verifyToken() in lib/auth.ts.
+ * Full cryptographic verification of the app JWT in Next.js Proxy.
+ * Mirrors verifyToken() in lib/auth.ts without trusting unsigned claims.
  */
-export const verifyJwtEdge = async (
+export const verifyJwtProxy = async (
   token: string,
-): Promise<EdgeJwtPayload | null> => {
+): Promise<ProxyJwtPayload | null> => {
   if (!process.env.JWT_SECRET) return null
   try {
     const { payload } = await jwtVerify(token, secret, {

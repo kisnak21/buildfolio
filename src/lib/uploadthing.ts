@@ -1,5 +1,7 @@
 import { createUploadthing, type FileRouter } from 'uploadthing/next'
 import { verifyToken } from '@/lib/auth'
+import prisma from '@/lib/db'
+import { accountStatus } from '@/lib/visibility'
 
 const f = createUploadthing()
 
@@ -28,6 +30,13 @@ export const ourFileRouter = {
 
       try {
         const user = verifyToken(token)
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { bannedAt: true, suspendedUntil: true },
+        })
+        if (!dbUser || accountStatus(dbUser) !== 'active') {
+          throw new Error('Account is not active')
+        }
         return { userId: user.id }
       } catch {
         throw new Error('Invalid or expired token')

@@ -1,7 +1,7 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/middleware/authMiddleware'
+import { requireAdmin, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { updateFlagStatus } from '@/lib/services/flagService'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { logAudit, requestContext } from '@/lib/audit'
@@ -10,6 +10,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const csrfError = assertSameOrigin(req)
+  if (csrfError) return csrfError
   const { error, admin } = await requireAdmin(req)
   if (error) return error
 

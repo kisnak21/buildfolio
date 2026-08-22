@@ -2,7 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { changePassword } from '@/lib/services/userService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { rateLimit } from '@/lib/rateLimit'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 
@@ -12,7 +12,7 @@ export async function PATCH(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const ip =

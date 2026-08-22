@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { signToken } from '@/lib/auth'
 import prisma from '@/lib/db'
+import { accountStatus } from '@/lib/visibility'
 
 export const runtime = 'nodejs'
 
@@ -14,14 +15,38 @@ export async function POST(req: NextRequest) {
 
   const dbUser = await prisma.user.findUnique({
     where: { id: nextAuthToken.localId as string },
-    select: { role: true },
+    select: { role: true, bannedAt: true, suspendedUntil: true },
   })
+
+  if (!dbUser) {
+    return NextResponse.json(
+      { success: false, message: 'Account not found' },
+      { status: 401 },
+    )
+  }
+  const status = accountStatus(dbUser)
+  if (status !== 'active') {
+    return NextResponse.json(
+      {
+        success: false,
+        code: status === 'banned' ? 'ACCOUNT_BANNED' : 'ACCOUNT_SUSPENDED',
+        message:
+          status === 'banned'
+            ? 'This account has been banned.'
+            : 'This account is temporarily suspended.',
+        ...(status === 'suspended' && {
+          suspendedUntil: dbUser.suspendedUntil?.toISOString(),
+        }),
+      },
+      { status: 403 },
+    )
+  }
 
   const appToken = signToken({
     id: nextAuthToken.localId as string,
     email: nextAuthToken.email as string,
     name: nextAuthToken.name as string,
-    role: dbUser?.role,
+    role: dbUser.role,
   })
 
   const response = NextResponse.json({

@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import {
   getProjects,
+  getMyProjects,
   createProject,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
@@ -22,6 +23,9 @@ interface Project {
   likes: number
   user_id: string | number | null
   category_id: string | number | null
+  featuredAt: string | null
+  hiddenAt: string | null
+  hiddenReason: string | null
   createdAt: string | null
 }
 
@@ -60,6 +64,18 @@ export const fetchProjects = createAsyncThunk<
     return { items: result.items, pagination: result.pagination }
   } catch {
     return rejectWithValue('Failed to load projects. Please try again.')
+  }
+})
+
+export const fetchMyProjects = createAsyncThunk<
+  Project[],
+  void,
+  { rejectValue: string }
+>('projects/fetchMine', async (_, { rejectWithValue }) => {
+  try {
+    return await getMyProjects()
+  } catch {
+    return rejectWithValue('Failed to load your projects. Please try again.')
   }
 })
 
@@ -135,6 +151,20 @@ const projectsSlice = createSlice({
         state.pagination = action.payload.pagination
       })
       .addCase(fetchProjects.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload ?? null
+      })
+
+    builder
+      .addCase(fetchMyProjects.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(fetchMyProjects.fulfilled, (state, action) => {
+        state.loading = false
+        state.items = action.payload
+      })
+      .addCase(fetchMyProjects.rejected, (state, action) => {
         state.loading = false
         state.error = action.payload ?? null
       })

@@ -2,6 +2,7 @@ import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import prisma from '@/lib/db'
 import jwt from 'jsonwebtoken'
+import { accountStatus } from '@/lib/visibility'
 
 const JWT_SECRET = process.env.JWT_SECRET!
 
@@ -24,8 +25,16 @@ export const verifyToken = (token: string) => {
 }
 
 const syncGoogleUser = async (email: string, name: string, image?: string | null) => {
-  const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
-  if (existing) return existing.id
+  const existing = await prisma.user.findUnique({
+    where: { email },
+    select: { id: true, bannedAt: true, suspendedUntil: true },
+  })
+  if (existing) {
+    if (accountStatus(existing) !== 'active') {
+      throw new Error('Account is not active')
+    }
+    return existing.id
+  }
 
   const baseUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '')
   let username = baseUsername

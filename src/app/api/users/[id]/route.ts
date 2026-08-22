@@ -1,8 +1,8 @@
 export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getUserById, updateUser, deleteUser } from '@/lib/services/userService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { getPublicUserById, updateUser, deleteUser } from '@/lib/services/userService'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
 
@@ -12,7 +12,7 @@ export async function GET(
 ) {
   const { id } = await params
   try {
-    const user = await getUserById(id)
+    const user = await getPublicUserById(id)
     if (!user) {
       return NextResponse.json(
         { success: false, message: 'User not found' },
@@ -34,7 +34,7 @@ export async function PATCH(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const { id } = await params
@@ -71,7 +71,7 @@ export async function DELETE(
 ) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   const { id } = await params

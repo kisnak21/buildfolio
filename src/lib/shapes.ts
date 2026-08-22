@@ -16,6 +16,9 @@ export interface RawProject {
   likes?: number
   user_id?: string | number | null
   category_id?: string | number | null
+  featured_at?: string | null
+  hidden_at?: string | null
+  hidden_reason?: string | null
   created_at?: string | null
   createdAt?: string | null
 }
@@ -34,6 +37,9 @@ export interface ClientProject {
   likes: number
   user_id: string | number | null
   category_id: string | number | null
+  featuredAt: string | null
+  hiddenAt: string | null
+  hiddenReason: string | null
   createdAt: string | null
 }
 
@@ -51,5 +57,8 @@ export const toClientProject = (p: RawProject): ClientProject => ({
   likes: p.likes || 0,
   user_id: p.user_id || null,
   category_id: p.category_id || null,
+  featuredAt: p.featured_at || null,
+  hiddenAt: p.hidden_at || null,
+  hiddenReason: p.hidden_reason || null,
   createdAt: p.created_at || p.createdAt || null,
 })

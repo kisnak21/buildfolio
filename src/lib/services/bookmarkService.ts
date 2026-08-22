@@ -1,8 +1,9 @@
 import prisma from '@/lib/db'
+import { publicProjectWhere } from '@/lib/visibility'
 
 export const getBookmarksByUser = async (userId: string) => {
   const bookmarks = await prisma.bookmark.findMany({
-    where: { userId },
+    where: { userId, project: { is: publicProjectWhere() } },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -45,6 +46,13 @@ export const addBookmark = async ({
   user_id: string
   project_id: string
 }) => {
+  const project = await prisma.project.findFirst({
+    where: { id: project_id, ...publicProjectWhere() },
+    select: { id: true },
+  })
+  if (!project) {
+    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
+  }
   const bookmark = await prisma.bookmark.create({
     data: { userId: user_id, projectId: project_id },
   })

@@ -7,8 +7,18 @@ export type AuditAction =
   | 'user.demote'
   | 'user.verify'
   | 'user.delete'
+  | 'user.ban'
+  | 'user.unban'
+  | 'user.suspend'
+  | 'user.unsuspend'
   | 'project.delete'
+  | 'project.hide'
+  | 'project.unhide'
+  | 'project.feature'
+  | 'project.unfeature'
   | 'comment.delete'
+  | 'comment.hide'
+  | 'comment.unhide'
   | 'category.create'
   | 'category.rename'
   | 'category.delete'
@@ -36,28 +46,37 @@ export interface AuditLogParams {
   userAgent?: string | null
 }
 
+type AuditClient = Pick<Prisma.TransactionClient, 'auditLog'>
+
+export const writeAudit = async (
+  params: AuditLogParams,
+  client: AuditClient = prisma,
+) => {
+  await client.auditLog.create({
+    data: {
+      actorId: params.actor?.id ?? null,
+      actorName: params.actor?.name ?? null,
+      actorEmail: params.actor?.email ?? null,
+      action: params.action,
+      targetType: params.targetType,
+      targetId: params.targetId ?? null,
+      targetName: params.targetName ?? null,
+      ...(params.metadata
+        ? { metadata: params.metadata as Prisma.InputJsonValue }
+        : {}),
+      ip: params.ip ?? null,
+      userAgent: params.userAgent ?? null,
+    },
+  })
+}
+
 /**
  * Writes an audit log entry. Never throws: a failure to log must not
  * break the underlying operation.
  */
 export const logAudit = async (params: AuditLogParams) => {
   try {
-    await prisma.auditLog.create({
-      data: {
-        actorId: params.actor?.id ?? null,
-        actorName: params.actor?.name ?? null,
-        actorEmail: params.actor?.email ?? null,
-        action: params.action,
-        targetType: params.targetType,
-        targetId: params.targetId ?? null,
-        targetName: params.targetName ?? null,
-        ...(params.metadata
-          ? { metadata: params.metadata as Prisma.InputJsonValue }
-          : {}),
-        ip: params.ip ?? null,
-        userAgent: params.userAgent ?? null,
-      },
-    })
+    await writeAudit(params)
   } catch (err) {
     console.error('[audit] failed to log action:', params.action, err)
   }

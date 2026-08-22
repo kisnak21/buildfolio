@@ -1,6 +1,7 @@
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
 import type { RawProject } from '@/lib/shapes'
+import { activeUserWhere, publicProjectWhere } from '@/lib/visibility'
 
 const projectSelect = {
   id: true,
@@ -13,6 +14,9 @@ const projectSelect = {
   likes: true,
   userId: true,
   categoryId: true,
+  featuredAt: true,
+  hiddenAt: true,
+  hiddenReason: true,
   createdAt: true,
   user: { select: { name: true } },
   category: { select: { name: true } },
@@ -38,19 +42,33 @@ const normalizeProject = (p: ProjectRow): RawProject => ({
   likes: p.likes,
   user_id: p.userId,
   category_id: p.categoryId,
+  featured_at: p.featuredAt?.toISOString() ?? null,
+  hidden_at: p.hiddenAt?.toISOString() ?? null,
+  hidden_reason: p.hiddenReason,
   created_at: p.createdAt.toISOString(),
   createdAt: p.createdAt.toISOString(),
 })
 
 export const getTechnologyStats = async (): Promise<{ name: string; count: number }[]> => {
+  const visible = publicProjectWhere()
   const grouped = await prisma.technology.findMany({
     select: {
       name: true,
-      _count: { select: { projectTechnologies: true } },
+      _count: {
+        select: {
+          projectTechnologies: { where: { project: { is: visible } } },
+        },
+      },
     },
-    orderBy: { projectTechnologies: { _count: 'desc' } },
+    orderBy: { name: 'asc' },
   })
-  return grouped.map((t) => ({ name: t.name, count: t._count.projectTechnologies }))
+  return grouped
+    .map((technology) => ({
+      name: technology.name,
+      count: technology._count.projectTechnologies,
+    }))
+    .filter((technology) => technology.count > 0)
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
 }
 
 export const getAllProjects = async ({
@@ -66,7 +84,7 @@ export const getAllProjects = async ({
   page?: number
   limit?: number
 } = {}) => {
-  const where: Prisma.ProjectWhereInput = {}
+  const where: Prisma.ProjectWhereInput = publicProjectWhere()
 
   if (search) {
     where.OR = [
@@ -79,14 +97,49 @@ export const getAllProjects = async ({
     where.category = { name: category }
   }
 
-  const orderBy =
-    sort === 'likes'
-      ? { likes: 'desc' as const }
+  if (sort === 'home') {
+    const [total, pinnedRows, favoriteRows] = await Promise.all([
+      prisma.project.count({ where }),
+      prisma.project.findMany({
+        where: { ...where, featuredAt: { not: null } },
+        orderBy: { featuredAt: 'desc' },
+        take: 3,
+        select: projectSelect,
+      }),
+      prisma.project.findMany({
+        where: { ...where, featuredAt: null },
+        orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
+        take: Math.max(limit, 6),
+        select: projectSelect,
+      }),
+    ])
+    return {
+      data: [...pinnedRows, ...favoriteRows]
+        .slice(0, limit)
+        .map(normalizeProject),
+      pagination: {
+        page: 1,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    }
+  }
+
+  const orderBy: Prisma.ProjectOrderByWithRelationInput[] =
+    sort === 'featured'
+      ? [
+          { featuredAt: { sort: 'desc', nulls: 'last' } },
+          { likes: 'desc' },
+          { createdAt: 'desc' },
+        ]
+      : sort === 'likes'
+        ? [{ likes: 'desc' }]
       : sort === 'oldest'
-        ? { createdAt: 'asc' as const }
+        ? [{ createdAt: 'asc' }]
         : sort === 'title'
-          ? { title: 'asc' as const }
-          : { createdAt: 'desc' as const }
+          ? [{ title: 'asc' }]
+          : [{ createdAt: 'desc' }]
 
   const [total, rows] = await Promise.all([
     prisma.project.count({ where }),
@@ -111,6 +164,14 @@ export const getAllProjects = async ({
 }
 
 export const getProjectById = async (id: string) => {
+  const project = await prisma.project.findFirst({
+    where: { id, ...publicProjectWhere() },
+    select: projectSelect,
+  })
+  return project ? normalizeProject(project) : null
+}
+
+export const getProjectByIdUnscoped = async (id: string) => {
   const project = await prisma.project.findUnique({
     where: { id },
     select: projectSelect,
@@ -118,9 +179,26 @@ export const getProjectById = async (id: string) => {
   return project ? normalizeProject(project) : null
 }
 
+export const getProjectsByOwner = async (userId: string) => {
+  const rows = await prisma.project.findMany({
+    where: { userId },
+    orderBy: { createdAt: 'desc' },
+    select: projectSelect,
+  })
+  return rows.map(normalizeProject)
+}
+
 export const getProjectsByAuthor = async (author: string) => {
   const rows = await prisma.project.findMany({
-    where: { user: { name: { equals: author, mode: 'insensitive' } } },
+    where: {
+      ...publicProjectWhere(),
+      user: {
+        is: {
+          ...activeUserWhere(),
+          name: { equals: author, mode: 'insensitive' },
+        },
+      },
+    },
     orderBy: { createdAt: 'desc' },
     select: projectSelect,
   })
@@ -129,7 +207,7 @@ export const getProjectsByAuthor = async (author: string) => {
 
 export const getLikedProjectsByUser = async (userId: string) => {
   const likes = await prisma.projectLike.findMany({
-    where: { userId },
+    where: { userId, project: { is: publicProjectWhere() } },
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -300,6 +378,13 @@ export const deleteProject = async (id: string) => {
 }
 
 export const toggleLikeProject = async (projectId: string, userId: string) => {
+  const visibleProject = await prisma.project.findFirst({
+    where: { id: projectId, ...publicProjectWhere() },
+    select: { id: true },
+  })
+  if (!visibleProject) {
+    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
+  }
   return prisma.$transaction(async (tx) => {
     const existing = await tx.projectLike.findUnique({
       where: { userId_projectId: { userId, projectId } },

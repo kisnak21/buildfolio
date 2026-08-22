@@ -1,5 +1,6 @@
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
+import { publicCommentWhere, publicProjectWhere } from '@/lib/visibility'
 
 export const FLAG_REASONS = [
   'spam',
@@ -14,6 +15,8 @@ export type FlagTargetType = 'project' | 'comment'
 export type FlagStatus = 'pending' | 'resolved' | 'dismissed'
 
 const VALID_STATUSES: FlagStatus[] = ['pending', 'resolved', 'dismissed']
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 
 interface CreateFlagInput {
   targetType: FlagTargetType
@@ -35,6 +38,9 @@ export const createFlag = async ({
   if (targetType !== 'project' && targetType !== 'comment') {
     throw Object.assign(new Error('Invalid target type'), { statusCode: 400 })
   }
+  if (!UUID_PATTERN.test(targetId)) {
+    throw Object.assign(new Error('Invalid target ID'), { statusCode: 400 })
+  }
   if (!FLAG_REASONS.includes(reason)) {
     throw Object.assign(new Error('Invalid reason'), { statusCode: 400 })
   }
@@ -44,6 +50,20 @@ export const createFlag = async ({
     })
   }
   if (details && details.trim().length === 0) details = undefined
+
+  const target =
+    targetType === 'project'
+      ? await prisma.project.findFirst({
+          where: { id: targetId, ...publicProjectWhere() },
+          select: { id: true },
+        })
+      : await prisma.comment.findFirst({
+          where: { id: targetId, ...publicCommentWhere() },
+          select: { id: true },
+        })
+  if (!target) {
+    throw Object.assign(new Error('Content not found'), { statusCode: 404 })
+  }
 
   const existing = reporterId
     ? await prisma.contentFlag.findFirst({

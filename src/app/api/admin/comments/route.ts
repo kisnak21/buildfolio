@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/middleware/authMiddleware'
 import { listAdminComments } from '@/lib/services/adminService'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { isAllowedParam, parsePositiveInteger } from '@/lib/requestParams'
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAdmin(req)
@@ -12,7 +13,25 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || undefined
-    const data = await listAdminComments({ search })
+    const status = searchParams.get('status') || undefined
+    const page = parsePositiveInteger(searchParams.get('page'), 1)
+    const limit = parsePositiveInteger(searchParams.get('limit'), 20, 100)
+    if (
+      page === null ||
+      limit === null ||
+      !isAllowedParam(status, ['visible', 'hidden'] as const)
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid pagination or status filter' },
+        { status: 400 },
+      )
+    }
+    const data = await listAdminComments({
+      search,
+      status,
+      page,
+      limit,
+    })
     return NextResponse.json({ success: true, data })
   } catch (err: unknown) {
     return NextResponse.json(

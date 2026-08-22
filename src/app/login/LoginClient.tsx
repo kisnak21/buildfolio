@@ -37,6 +37,8 @@ const LoginClient = () => {
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
   const [needsVerification, setNeedsVerification] = useState<string | null>(null)
+  const [accountError, setAccountError] = useState('')
+  const blockedAccount = searchParams.get('blocked')
 
   const handleGoogle = async () => {
     setGoogleSubmitting(true)
@@ -58,6 +60,7 @@ const LoginClient = () => {
     if (Object.keys(newErrors).length > 0) return
 
     setSubmitting(true)
+    setAccountError('')
     try {
       const result = await loginUserApi({ email: email.trim(), password })
       dispatch(
@@ -72,11 +75,21 @@ const LoginClient = () => {
       dispatch(showToast({ message: 'Welcome back!', type: 'success' }))
       router.push(redirectTo)
     } catch (err) {
-      const e = err as { response?: { status?: number; data?: { needsVerification?: boolean; email?: string; message?: string } } }
+      const e = err as { response?: { status?: number; data?: { code?: string; needsVerification?: boolean; email?: string; message?: string } } }
       if (e.response?.status === 401) {
         setErrors({ password: 'Invalid email or password.' })
       } else if (e.response?.status === 403 && e.response?.data?.needsVerification) {
         setNeedsVerification(e.response?.data?.email || null)
+        setErrors({})
+      } else if (
+        e.response?.status === 403 &&
+        ['ACCOUNT_BANNED', 'ACCOUNT_SUSPENDED'].includes(
+          e.response?.data?.code || '',
+        )
+      ) {
+        setAccountError(
+          e.response?.data?.message || 'This account is not currently available.',
+        )
         setErrors({})
       } else {
         setErrors({ password: 'Something went wrong. Please try again.' })
@@ -93,6 +106,17 @@ const LoginClient = () => {
         subtitle='Log in to manage your projects.'
       >
         <form onSubmit={handleSubmit} noValidate>
+          {(accountError || blockedAccount) && (
+            <div
+              role='alert'
+              className='mb-4 rounded-xl border-2 border-dark bg-red-200 px-4 py-3 text-sm font-bold text-dark shadow-brutal-sm'
+            >
+              {accountError ||
+                (blockedAccount === 'banned'
+                  ? 'This account has been banned.'
+                  : 'This account is temporarily suspended.')}
+            </div>
+          )}
           {needsVerification && (
             <div
               role='alert'

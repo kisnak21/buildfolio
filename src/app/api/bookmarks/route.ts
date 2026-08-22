@@ -6,12 +6,12 @@ import {
   addBookmark,
   getBookmark,
 } from '@/lib/services/bookmarkService'
-import { authenticate, assertSameOrigin } from '@/lib/middleware/authMiddleware'
+import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 
 export async function GET(req: NextRequest) {
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   try {
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
-  const { user, error } = authenticate(req)
+  const { user, error } = await requireActiveUser(req)
   if (error) return error
 
   try {
