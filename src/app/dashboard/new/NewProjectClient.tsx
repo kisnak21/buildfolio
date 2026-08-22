@@ -9,7 +9,16 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectForm, { type ProjectFormData } from '@/components/dashboard/ProjectForm'
 
-const NewProjectClient = () => {
+interface NewProjectClientProps {
+  initialIdea?: {
+    title?: string
+    description?: string
+    category?: string
+    technologies?: string[]
+  }
+}
+
+const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
   const dispatch = useAppDispatch()
   const router = useRouter()
   const { currentUser } = useAppSelector((state) => state.auth)
@@ -58,7 +67,11 @@ const NewProjectClient = () => {
         {submitError && (
           <p className='text-sm font-bold text-red-600 mb-4'>{submitError}</p>
         )}
-        <ProjectForm onSubmit={handleSubmit} submitLabel='Create Project' />
+        <ProjectForm
+          initialValues={initialIdea}
+          onSubmit={handleSubmit}
+          submitLabel='Create Project'
+        />
       </main>
       <Footer />
     </div>

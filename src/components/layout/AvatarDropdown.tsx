@@ -97,6 +97,13 @@ const AvatarDropdown = ({ user }: AvatarDropdownProps) => {
             Bookmarks
           </Link>
           <Link
+            href='/dashboard/ideas'
+            onClick={() => setOpen(false)}
+            className='block px-4 py-3 font-bold text-dark hover:bg-yellow-100 transition-colors'
+          >
+            Project Ideas
+          </Link>
+          <Link
             href='/liked'
             onClick={() => setOpen(false)}
             className='block px-4 py-3 font-bold text-dark hover:bg-yellow-100 transition-colors'

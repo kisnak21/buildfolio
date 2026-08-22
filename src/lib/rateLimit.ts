@@ -23,18 +23,20 @@ const limiterCache = new Map<string, Ratelimit>()
 const hasUpstash =
   !!process.env.UPSTASH_REDIS_REST_URL && !!process.env.UPSTASH_REDIS_REST_TOKEN
 
+export const isDistributedRateLimitConfigured = hasUpstash
+
 function toDuration(windowMs: number): Duration {
   return `${windowMs} ms` as Duration
 }
 
-function getUpstashLimiter(key: string, config: RateLimitConfig) {
-  const cacheKey = `${key}:${config.max}:${config.windowMs}`
+function getUpstashLimiter(policy: string, config: RateLimitConfig) {
+  const cacheKey = `${policy}:${config.max}:${config.windowMs}`
   let limiter = limiterCache.get(cacheKey)
   if (!limiter) {
     limiter = new Ratelimit({
       redis: Redis.fromEnv(),
       limiter: Ratelimit.slidingWindow(config.max, toDuration(config.windowMs)),
-      prefix: `buildfolio:ratelimit:${key}`,
+      prefix: `buildfolio:ratelimit:${policy}`,
       ephemeralCache: new Map(),
     })
     limiterCache.set(cacheKey, limiter)
@@ -71,9 +73,19 @@ export async function rateLimit(
   config: RateLimitConfig,
 ): Promise<{ success: boolean; remaining: number; resetInMs: number }> {
   if (hasUpstash) {
-    const limiter = getUpstashLimiter(key, config)
-    const result = await limiter.limit(key)
-    return { success: result.success, remaining: result.remaining, resetInMs: 0 }
+    const separator = key.indexOf(':')
+    const policy = separator === -1 ? key : key.slice(0, separator)
+    const identifier = separator === -1 ? key : key.slice(separator + 1)
+    const limiter = getUpstashLimiter(policy, config)
+    const result = await limiter.limit(identifier)
+    if (result.reason === 'timeout') {
+      return { success: false, remaining: 0, resetInMs: 5_000 }
+    }
+    return {
+      success: result.success,
+      remaining: result.remaining,
+      resetInMs: Math.max(result.reset - Date.now(), 0),
+    }
   }
   return memoryRateLimit(key, config)
 }

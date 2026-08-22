@@ -17,7 +17,7 @@ export default function PrivacyPage() {
           <h1 className='text-4xl font-black mb-2'>
             Privacy Policy
           </h1>
-          <p className='font-bold text-gray-600 text-lg'>Last updated: July 2026</p>
+          <p className='font-bold text-gray-600 text-lg'>Last updated: August 2026</p>
         </div>
         <div className='bg-white border-4 border-dark rounded-2xl p-8 flex flex-col gap-8 shadow-brutal'>
           <section>
@@ -46,37 +46,55 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 className='text-2xl font-black text-dark mb-3'>
-              3. Data Storage
+              3. AI Writing Tools
+            </h2>
+            <p className='font-medium text-gray-700 leading-relaxed'>
+              When you choose to generate a description, README, or project idea,
+              the project fields shown in that form are sent to OpenRouter and an
+              AI model provider to produce the requested draft. Buildfolio asks
+              OpenRouter to exclude providers marked as collecting prompt data.
+              Do not enter passwords, API keys, or other sensitive personal data
+              into AI-assisted fields.
+            </p>
+          </section>
+          <section>
+            <h2 className='text-2xl font-black text-dark mb-3'>
+              4. Data Storage and Retention
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
               Your data is stored securely in a PostgreSQL database hosted on
               Neon. Passwords are hashed using bcrypt before storage and are
-              never stored or transmitted in plain text.
+              never stored or transmitted in plain text. Encrypted database
+              backups are retained for up to 14 days. Administrative audit logs
+              and resolved content reports are removed according to the configured
+              retention periods.
             </p>
           </section>
           <section>
             <h2 className='text-2xl font-black text-dark mb-3'>
-              4. Cookies and Local Storage
+              5. Cookies and Local Storage
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
-              Buildfolio uses browser localStorage to maintain your login
-              session and store bookmarks. We do not use tracking cookies or
-              third-party analytics services.
+              Buildfolio uses secure cookies to maintain your login session and
+              browser localStorage to keep a non-sensitive copy of your displayed
+              profile. Bookmarks are stored in the database. We do not use
+              tracking cookies or third-party analytics services.
             </p>
           </section>
           <section>
             <h2 className='text-2xl font-black text-dark mb-3'>
-              5. Your Rights
+              6. Your Rights
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
               You may delete your account at any time via the Dashboard
               settings. Deleting your account will permanently remove your
-              profile and all projects you have submitted.
+              profile and all projects you have submitted from the live database.
+              Encrypted backup copies expire within the 14-day backup window.
             </p>
           </section>
           <section>
             <h2 className='text-2xl font-black text-dark mb-3'>
-              6. Contact
+              7. Contact
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
               If you have questions about this Privacy Policy, please contact us
