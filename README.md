@@ -33,6 +33,7 @@ Buildfolio lets developers:
 - Register and log in with real authentication and email verification
 - View public developer profiles
 - Moderate the community via an admin dashboard (users, projects, comments, content flags, audit logs)
+- Draft project descriptions, READMEs, and scoped project ideas with free OpenRouter models
 
 ---
 
@@ -46,10 +47,11 @@ Buildfolio lets developers:
 | State Management | Redux Toolkit + React Redux                                 |
 | Database         | PostgreSQL (Neon)                                           |
 | ORM / Query      | Prisma ORM (v7) + @prisma/adapter-pg                        |
-| Authentication   | bcrypt + JWT (httpOnly cookie, jose edge verification) + NextAuth v4 (Google OAuth) |
+| Authentication   | bcrypt + JWT (httpOnly cookie, jose verification) + NextAuth v4 (Google OAuth) |
 | Email            | Resend                                                      |
 | File Upload      | Uploadthing                                                 |
 | Rate Limiting    | Upstash Redis (@upstash/ratelimit, in-memory fallback)      |
+| AI Generation    | OpenRouter (free Dots, Nemotron, GPT-OSS, and Gemma models) |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
 
 ---
@@ -58,7 +60,7 @@ Buildfolio lets developers:
 
 ### Public
 
-- Homepage with Featured Projects, Browse by Category, Trending Technologies, Community Favorites
+- Homepage with admin-pinned Featured Projects, Browse by Category, Trending Technologies, Community Favorites
 - Search projects by title or description
 - Filter by category and technology
 - Sort by newest, most liked, oldest, or title (alphabetical)
@@ -75,7 +77,7 @@ Buildfolio lets developers:
 - Resend verification email if the first one is missed
 - Forgot / reset password via emailed link (token with expiry)
 - Login with bcrypt password comparison and JWT token
-- Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS; verified with `jose` on the edge
+- Session persisted via **httpOnly cookie** (JWT in cookie, 7-day expiry) — secure, survives page refresh, protected from XSS; verified cryptographically with `jose`
 - Logout clears session cookie server-side
 - **OAuth (Google login)** via NextAuth v4 — one-click sign-in, auto-creates local user record, syncs to `buildfolio_token` httpOnly cookie
 - **Rate limiting** on auth and mutation endpoints (Login: 10 attempts/15m; Register: 5 registrations/hour per IP; plus limits on password and project mutations) — backed by Upstash Redis, in-memory fallback locally
@@ -91,16 +93,19 @@ Buildfolio lets developers:
 - **Liked Projects** — view projects you have liked; likes can be toggled
 - **Comments** — post and delete comments on project detail pages (persisted to database)
 - **Settings** — update name and bio, or change password (persisted to database)
+- **AI writing tools** — generate an editable project description or README draft from the project form
+- **Project Ideas** (`/dashboard/ideas`) — generate three scoped ideas and prefill the selected idea into a new project form
 
 ### Admin (role `admin`)
 
 - **Dashboard** (`/admin`) — stat cards (users, projects, comments, likes, bookmarks), 14-day signups bar chart, cumulative growth chart (inline SVG, users vs projects), category distribution bars, recent signups
-- **Users** — searchable table, manual verification, promote/demote admin, delete
-- **Projects & Comments** — full lists with delete (content moderation)
+- **Users** — paginated search, manual verification, promote/demote, reversible ban, dated suspension, and delete
+- **Projects & Comments** — paginated moderation with reversible hide/unhide; projects can also be featured/unfeatured
+- Banned or actively suspended users and their content are removed from public queries immediately; restored or expired accounts become visible again
 - **Categories & Technologies** — lightweight CRUD
 - **Content Flags** — review queue for user reports on projects/comments (reason + optional details), resolve/dismiss with audit trail
 - **Audit Logs** — every admin action and auth event recorded (actor snapshot, IP, user-agent, metadata); filter by action/search/date, pagination, CSV/JSON export
-- Backend gate via `requireAdmin` (DB role check, authoritative); frontend gate via JWT claim
+- Backend gate via `requireAdmin`; Next.js Proxy also checks current DB role and account status before protected pages
 
 ### Observability & CI/CD
 
@@ -108,7 +113,9 @@ Buildfolio lets developers:
 - **Client error ingestion** — `/api/log-error` (same-origin + rate limited) feeds global `error.tsx` digests into server logs
 - **CI quality gate** — GitHub Actions: lint, typecheck, build on every push
 - **Uptime monitoring** — scheduled check of the production URL every 6 hours
-- **Migrations on deploy** — `vercel.json` runs `prisma migrate deploy` before `next build`
+- **Migrations on deploy** — production Vercel builds run `prisma migrate deploy` before `next build`; previews never mutate the production schema
+- **Scheduled maintenance** — authenticated Vercel Cron expires suspensions and enforces audit/flag retention in bounded batches, failing visibly if a backlog remains
+- **Encrypted database backup** — nightly `pg_dump` workflow with AES-256 encryption and 14-day GitHub artifact retention
 
 ### Static Pages
 
@@ -131,12 +138,14 @@ src/
 │   │   ├── comments/         # GET by project, POST, DELETE
 │   │   ├── contact/          # POST send email
 │   │   ├── flags/            # POST content report (auth, rate limited)
+│   │   ├── ai/generate/      # Authenticated OpenRouter generation (rate limited)
+│   │   ├── cron/maintenance/ # Retention cleanup + suspension expiry (CRON_SECRET)
 │   │   ├── admin/            # Admin API: stats, users, projects, comments, categories, technologies, flags, audit-logs
 │   │   ├── log-error/        # Client error ingestion (same-origin + rate limited)
 │   │   └── uploadthing/      # Uploadthing file handler
 │   ├── admin/                # Admin dashboard (Overview, Users, Projects, Comments, Categories & Tech, Flags, Audit Logs)
 │   ├── auth/google-callback  # Post-OAuth redirect page
-│   ├── dashboard/            # Dashboard, New Project, Edit Project
+│   ├── dashboard/            # Dashboard, AI Project Ideas, New Project, Edit Project
 │   ├── projects/             # All Projects, Project Detail (server-rendered, dynamic metadata)
 │   ├── u/[author]/           # User Profile (server-rendered, dynamic metadata)
 │   ├── bookmarks/            # Bookmarks page
@@ -161,13 +170,13 @@ src/
 │   ├── auth/                 # AuthSessionProvider
 │   ├── layout/               # Header, Footer, AuthCard, AvatarDropdown
 │   ├── home/                 # Hero, Section, ProjectCard, CategoryCard, TechPill
-│   ├── dashboard/            # ProjectForm (with Uploadthing thumbnail upload)
+│   ├── dashboard/            # ProjectForm (Uploadthing + AI writing tools)
 │   └── ui/                   # Button, Input, Checkbox, Textarea, Alert, Divider, ConfirmDialog, EmptyState, GoogleButton, Toast, ProjectCardSkeleton, ProjectDetailSkeleton
 ├── generated/prisma/         # Generated Prisma Client (via `npx prisma generate`)
 ├── lib/
 │   ├── api/                  # Fetch-based client API files (no axios) + cache headers helper
-│   ├── services/             # Server-side Prisma service files (incl. admin stats, flags)
-│   ├── middleware/           # JWT auth middleware for API routes + edge JWT verification (jose)
+│   ├── services/             # Server-side Prisma services (incl. moderation, flags, OpenRouter)
+│   ├── middleware/           # API authorization + Proxy JWT verification (jose)
 │   ├── data/                 # Static seed data (categories, technologies)
 │   ├── db.ts                 # Prisma Client singleton (pg Pool + @prisma/adapter-pg)
 │   ├── apiErrors.ts          # Error mapping (Prisma error codes → HTTP responses)
@@ -176,11 +185,13 @@ src/
 │   ├── email.ts              # Resend transporter
 │   ├── logger.ts             # pino structured logger
 │   ├── rateLimit.ts          # Upstash Redis rate limiting (in-memory fallback)
+│   ├── visibility.ts         # Public visibility rules for moderated users/content
+│   ├── aiModels.ts           # Client-safe model/task definitions
 │   ├── uploadthing.ts        # Uploadthing config
 │   ├── uploadthing-client.ts # Uploadthing client-side config
 │   └── utils.ts              # Shared utilities (cn, etc.)
 ├── instrumentation.ts        # Observability: pino register + onRequestError reporting
-├── middleware.ts             # Route protection (protected + guest-only pages, edge JWT check)
+├── proxy.ts                  # Route protection (protected + guest-only pages, JWT check)
 └── store/
     └── redux/                # store, provider, typed hooks, slices (projects, auth, bookmarks, comments, likes, toast)
 ```
@@ -191,7 +202,7 @@ Prisma-related files live at the project root:
 prisma/
 └── schema.prisma            # Prisma schema (models mapped to snake_case tables)
 prisma.config.ts             # Prisma config (datasource URL from DATABASE_URL)
-migrations/                  # Versioned migrations (0001_init, 0002_content_flags) — tracked in git, applied via `prisma migrate deploy`
+migrations/                  # Versioned migrations (0001_init through 0004_moderation_invariants), applied via `prisma migrate deploy`
 ```
 
 ---
@@ -200,12 +211,13 @@ migrations/                  # Versioned migrations (0001_init, 0002_content_fla
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+
 - npm
 - A [Neon](https://neon.tech) PostgreSQL database
 - A [Resend](https://resend.com) account for email
 - An [Uploadthing](https://uploadthing.com) account for file uploads
-- (Optional) An [Upstash](https://upstash.com) Redis account for distributed rate limiting
+- An [Upstash](https://upstash.com) Redis account for production AI and distributed rate limiting (optional for local development)
+- (Optional) An [OpenRouter](https://openrouter.ai) API key for AI generation
 
 ### Installation
 
@@ -235,11 +247,19 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 CONTACT_RECIPIENT_EMAIL=you@yourdomain.com
+OPENROUTER_API_KEY=your_openrouter_api_key
+CRON_SECRET=generate_a_long_random_secret
+AUDIT_RETENTION_DAYS=365
+RESOLVED_FLAG_RETENTION_DAYS=90
 ```
 
 > Get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` from [Google Cloud Console](https://console.cloud.google.com) → APIs & Services → Credentials → OAuth client ID (Web application). Set authorized JS origin to `http://localhost:3000` and redirect URI to `http://localhost:3000/api/auth/callback/google`. Generate `NEXTAUTH_SECRET` with `openssl rand -base64 32`.
 >
 > Email is sent via [Resend](https://resend.com). Add your sending domain in the Resend dashboard and verify the DNS records (SPF/DKIM/DMARC), or omit `RESEND_FROM_EMAIL` to fall back to `onboarding@resend.dev`. Rate limiting is backed by [Upstash Redis](https://upstash.com) when `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` are set (in-memory fallback otherwise). `CONTACT_RECIPIENT_EMAIL` is the inbox that receives contact-form emails.
+>
+> `OPENROUTER_API_KEY` is server-only. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
+>
+> AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day limits, one OpenRouter key is capped at 20 requests/minute and 50/day by the application.
 
 ### Database Setup
 
@@ -253,7 +273,26 @@ CONTACT_RECIPIENT_EMAIL=you@yourdomain.com
    npx prisma generate
    ```
 
-> On Vercel the same migrations run automatically before each build via `vercel.json` (`prisma migrate deploy && next build`).
+> On Vercel, migrations run automatically for production builds only. Keep Preview environment variables isolated from production if previews need their own database schema.
+
+### Scheduled Operations and Backups
+
+- Vercel invokes `/api/cron/maintenance` daily at `03:17 UTC`. Configure `CRON_SECRET`, and optionally the two retention variables, in the Vercel project.
+- `.github/workflows/backup.yml` runs nightly at `02:17 UTC` and can also be dispatched manually.
+- Configure GitHub Actions secrets `BACKUP_DATABASE_URL`, `BACKUP_ENCRYPTION_PASSPHRASE`, and `BACKUP_HEARTBEAT_URL`. The database URL must use a dedicated direct, read-only PostgreSQL role. Use a long, unique passphrase and store a recovery copy outside GitHub; a lost passphrase makes every artifact unusable.
+- `BACKUP_HEARTBEAT_URL` must point to a dead-man monitor configured to alert when a daily ping is missed. This detects GitHub disabling schedules after repository inactivity.
+- Backup artifacts contain only `.dump.gpg` and its SHA-256 checksum. Every dump is restored into a disposable PostgreSQL 18 database before encryption, removed before upload, and artifacts expire after 14 days.
+
+Restore a downloaded artifact after verifying its checksum:
+
+```bash
+sha256sum -c buildfolio-*.dump.gpg.sha256
+gpg --output buildfolio.dump --decrypt buildfolio-*.dump.gpg
+pg_restore --list buildfolio.dump > /dev/null
+pg_restore --exit-on-error --single-transaction --no-owner --no-privileges --dbname="$RESTORE_DATABASE_URL" buildfolio.dump
+```
+
+> Restore only into a fresh, empty database. Live-table retention can remain in encrypted backup artifacts for up to the additional 14-day backup window.
 
 ### Running Locally
 
@@ -282,6 +321,7 @@ Open `http://localhost:3000` in your browser.
 | PATCH  | `/api/users/:id/password`        | Yes | Change password                       |
 | GET    | `/api/projects`                  | —    | Get all projects (filter/sort/search) |
 | POST   | `/api/projects`                  | Yes | Create project                        |
+| GET    | `/api/projects/mine`             | Yes | Get owned projects, including hidden  |
 | GET    | `/api/projects/:id`              | —    | Get project by ID                     |
 | PATCH  | `/api/projects/:id`              | Yes | Update project                        |
 | DELETE | `/api/projects/:id`              | Yes | Delete project                        |
@@ -295,13 +335,15 @@ Open `http://localhost:3000` in your browser.
 | DELETE | `/api/comments/:id`              | Yes | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
 | POST   | `/api/flags`                     | Yes | Report a project or comment (rate limited, duplicate-pending guarded) |
+| POST   | `/api/ai/generate`               | Yes | Generate descriptions, READMEs, or project ideas (5/hour, 15/day) |
 | GET    | `/api/admin/stats`               | Admin | Dashboard stats (incl. 14-day charts) |
 | GET    | `/api/admin/users`               | Admin | User list |
-| PATCH/DELETE | `/api/admin/users/:id`       | Admin | Verify / promote / demote / delete user |
+| PATCH  | `/api/admin/users?id=:id`        | Admin | Verify, role change, ban, suspend, or restore user |
+| DELETE | `/api/admin/users/:id`           | Admin | Delete user |
 | GET    | `/api/admin/projects`            | Admin | Project moderation list |
-| DELETE | `/api/admin/projects/:id`        | Admin | Delete project |
+| PATCH/DELETE | `/api/admin/projects/:id`  | Admin | Hide, feature, or delete project |
 | GET    | `/api/admin/comments`            | Admin | Comment moderation list |
-| DELETE | `/api/admin/comments/:id`        | Admin | Delete comment |
+| PATCH/DELETE | `/api/admin/comments/:id`  | Admin | Hide or delete comment |
 | GET/POST | `/api/admin/categories`, `/api/admin/technologies` | Admin | Category & tech CRUD (plus `/:id` PATCH/DELETE) |
 | GET    | `/api/admin/flags`               | Admin | Content flag queue (status filter + pagination) |
 | PATCH  | `/api/admin/flags/:id`           | Admin | Resolve or dismiss a flag |
@@ -309,13 +351,16 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/log-error`                 | —    | Client error ingestion (same-origin, rate limited) |
 | GET    | `/api/auth/[...nextauth]`        | —    | NextAuth Google OAuth handler         |
 | POST   | `/api/auth/exchange`             | —    | Exchange NextAuth session → app JWT cookie |
+| GET    | `/api/cron/maintenance`          | Cron | Apply retention and expire suspensions (`CRON_SECRET`) |
 
 ---
 
 ## Known Limitations
 
 - **Rate limiting falls back to in-memory without Upstash** — resets on server restart; fine for local development, but configure `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` for a single shared store in production.
-- **`middleware.ts` JWT check is structural** (3-part token) — full signature verification happens in API routes; the edge check is defense-in-depth only.
+- **Free OpenRouter models can be busy, replaced, or temporarily unavailable** — requests use an ordered free-model fallback ending in `openrouter/free`, but generation is not guaranteed.
+- **Scheduled workflows are not real-time schedulers** — Vercel and GitHub may start daily jobs later than the exact cron minute.
+- **GitHub disables schedules in inactive public repositories after 60 days** — monitor backup freshness and re-enable the workflow after long periods without repository activity.
 
 ## Planned Improvements
 
@@ -328,7 +373,9 @@ Open `http://localhost:3000` in your browser.
 - [x] SEO (sitemap, robots, OG image, dynamic metadata) + thumbnail upload via Uploadthing
 - [x] Admin dashboard (users/projects/comments/categories moderation, audit logs, content flags, growth charts)
 - [x] CI/CD quality gate, observability (pino + client error ingestion), and uptime monitoring
-- [ ] AI features — project description generator, README generator, idea generator (Groq API + Llama)
+- [x] Reversible moderation, featured ordering, pagination, and public visibility enforcement
+- [x] OpenRouter AI description, README, and idea generators with free-model fallback
+- [x] Audit retention cron and encrypted nightly database backups
 - [ ] Public API documentation page
 
 ---
@@ -350,6 +397,7 @@ GitHub: [@kisnak21](https://github.com/kisnak21)
 - [DiceBear](https://www.dicebear.com) — pixel-art avatar generation
 - [Resend](https://resend.com) — email delivery
 - [Upstash](https://upstash.com) — Redis rate limiting
+- [OpenRouter](https://openrouter.ai) — routed AI model access
 - [Dev.to](https://dev.to) — card design inspiration
 - [Product Hunt](https://www.producthunt.com) — layout inspiration
 - [GitHub Explore](https://github.com/explore) — project card aesthetic

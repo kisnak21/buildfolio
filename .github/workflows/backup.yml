@@ -1,0 +1,95 @@
+name: Database Backup
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: database-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Encrypted PostgreSQL Backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Create and encrypt backup
+        id: backup
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+          BACKUP_HEARTBEAT_URL: ${{ secrets.BACKUP_HEARTBEAT_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$DATABASE_URL" || -z "$BACKUP_ENCRYPTION_PASSPHRASE" || -z "$BACKUP_HEARTBEAT_URL" ]]; then
+            printf '%s\n' 'BACKUP_DATABASE_URL, BACKUP_ENCRYPTION_PASSPHRASE, and BACKUP_HEARTBEAT_URL are required.' >&2
+            exit 1
+          fi
+
+          backup_dir="$RUNNER_TEMP/buildfolio-backup"
+          backup_name="buildfolio-$(date -u +'%Y%m%dT%H%M%SZ').dump"
+          postgres_image="postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2"
+          verify_container="buildfolio-restore-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          mkdir -p "$backup_dir"
+
+          docker run --rm \
+            -e DATABASE_URL \
+            -e BACKUP_NAME="$backup_name" \
+            -v "$backup_dir:/backup" \
+            "$postgres_image" \
+            sh -ec 'pg_dump --dbname="$DATABASE_URL" --format=custom --compress=9 --no-owner --no-privileges --file="/backup/$BACKUP_NAME"; pg_restore --list "/backup/$BACKUP_NAME" >/dev/null'
+
+          cleanup() {
+            docker rm -f "$verify_container" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          docker run --detach --name "$verify_container" \
+            -e POSTGRES_PASSWORD=restore-check \
+            -e POSTGRES_DB=restore_check \
+            -v "$backup_dir:/backup:ro" \
+            "$postgres_image" >/dev/null
+          for _ in {1..30}; do
+            if docker exec "$verify_container" pg_isready --username=postgres --dbname=restore_check >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec "$verify_container" pg_isready --username=postgres --dbname=restore_check >/dev/null
+          docker exec "$verify_container" pg_restore \
+            --exit-on-error --single-transaction --no-owner --no-privileges \
+            --username=postgres --dbname=restore_check "/backup/$backup_name"
+          table_count="$(docker exec "$verify_container" psql --username=postgres --dbname=restore_check --tuples-only --no-align --command="SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")"
+          if [[ ! "$table_count" =~ ^[1-9][0-9]*$ ]]; then
+            printf '%s\n' 'Restore verification produced no public tables.' >&2
+            exit 1
+          fi
+          cleanup
+          trap - EXIT
+
+          printf '%s' "$BACKUP_ENCRYPTION_PASSPHRASE" | \
+            gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 \
+              --cipher-algo AES256 --symmetric \
+              --output "$backup_dir/$backup_name.gpg" "$backup_dir/$backup_name"
+          rm "$backup_dir/$backup_name"
+          (cd "$backup_dir" && sha256sum "$backup_name.gpg" > "$backup_name.gpg.sha256")
+          printf 'path=%s\n' "$backup_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload encrypted backup
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: buildfolio-db-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.backup.outputs.path }}
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Report backup freshness
+        shell: bash
+        env:
+          BACKUP_HEARTBEAT_URL: ${{ secrets.BACKUP_HEARTBEAT_URL }}
+        run: curl --fail --silent --show-error --max-time 20 --retry 3 --request POST "$BACKUP_HEARTBEAT_URL"
