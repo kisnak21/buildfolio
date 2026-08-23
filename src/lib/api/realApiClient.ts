@@ -71,6 +71,36 @@ const request = async <T>(url: string, options: RequestOptions): Promise<{ data:
   }
 }
 
+const streamRequest = async (
+  url: string,
+  options: { method: string; body?: string; signal?: AbortSignal },
+): Promise<ReadableStream<Uint8Array>> => {
+  const res = await fetch(`${baseURL}${url}`, {
+    method: options.method,
+    body: options.body,
+    credentials: 'include',
+    signal: options.signal,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    const body: Record<string, unknown> = await res.json().catch(() => ({}))
+    redirectBlockedAccount(body.code)
+    const err = new Error(
+      typeof body.error === 'string'
+        ? body.error
+        : typeof body.message === 'string'
+          ? body.message
+          : `Request failed (${res.status})`,
+    ) as Error & { response?: { status: number; data: Record<string, unknown> } }
+    err.response = { status: res.status, data: body }
+    throw err
+  }
+
+  if (!res.body) throw new Error('The AI stream was empty.')
+  return res.body
+}
+
 const realApiClient = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic defaults preserve axios-like call sites
   get: <T = any>(url: string): Promise<{ data: T }> =>
@@ -85,6 +115,16 @@ const realApiClient = {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
       timeoutMs: options?.timeoutMs,
+    }),
+  postStream: (
+    url: string,
+    data?: object,
+    options?: { signal?: AbortSignal },
+  ): Promise<ReadableStream<Uint8Array>> =>
+    streamRequest(url, {
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+      signal: options?.signal,
     }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   patch: <T = any>(url: string, data?: Record<string, unknown>): Promise<{ data: T }> =>

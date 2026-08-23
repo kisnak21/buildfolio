@@ -13,6 +13,7 @@ import {
 } from '@/lib/aiModels'
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const OPENROUTER_STREAM_IDLE_TIMEOUT_MS = 20_000
 type JsonRecord = Record<string, unknown>
 
 const apiError = (message: string, statusCode: number) =>
@@ -157,6 +158,16 @@ const readCompletionText = (content: unknown) => {
     .trim()
 }
 
+const readStreamText = (content: unknown) => {
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return ''
+  return content
+    .map((part) =>
+      isRecord(part) && typeof part.text === 'string' ? part.text : '',
+    )
+    .join('')
+}
+
 const boundedString = (value: unknown, max: number) =>
   typeof value === 'string' ? value.trim().slice(0, max) : ''
 
@@ -214,18 +225,16 @@ const parseIdeas = (text: string): AiIdea[] => {
   return ideas
 }
 
-const orderedModels = (requested: AiModelId, task: AiTask) => {
+const orderedCandidates = (requested: AiModelId, task: AiTask) => {
   const requestedConfig = AI_MODELS.find((model) => model.id === requested)
   const needsJsonSupport = task === 'ideas' && requestedConfig?.supportsJson === true
   const fallbackModels = AI_MODELS.filter(
     (model) => !needsJsonSupport || model.supportsJson,
   ).map((model) => model.id)
 
-  // OpenRouter accepts at most three model IDs in a fallback array.
   return [
     requested,
     ...fallbackModels.filter((id) => id !== requested),
-    'openrouter/free',
   ].slice(0, 3)
 }
 
@@ -239,7 +248,7 @@ const providerErrorMessage = (payload: unknown) => {
   return ''
 }
 
-export const generateWithOpenRouter = async ({
+const generateSingleWithOpenRouter = async ({
   task,
   model,
   input,
@@ -275,7 +284,7 @@ export const generateWithOpenRouter = async ({
         'X-OpenRouter-Title': 'Buildfolio',
       },
       body: JSON.stringify({
-        models: orderedModels(model, task),
+        model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: taskPrompt(task, input) },
@@ -345,4 +354,256 @@ export const generateWithOpenRouter = async ({
     clearTimeout(timeout)
     signal?.removeEventListener('abort', abortFromCaller)
   }
+}
+
+export const generateWithOpenRouter = async (params: {
+  task: AiTask
+  model: AiModelId
+  input: AiGenerationInput
+  signal?: AbortSignal
+}): Promise<AiGenerationResult> => {
+  let lastError: unknown
+
+  for (const candidate of orderedCandidates(params.model, params.task)) {
+    try {
+      return await generateSingleWithOpenRouter({ ...params, model: candidate })
+    } catch (error) {
+      if (params.signal?.aborted) throw error
+      lastError = error
+    }
+  }
+
+  throw lastError ?? apiError('AI provider is unavailable. Please try again.', 502)
+}
+
+export type AiStreamEvent =
+  | {
+      event: 'meta'
+      data: { model: string; attempt: number; total: number }
+    }
+  | { event: 'progress'; data: { model: string; characters: number } }
+  | {
+      event: 'fallback'
+      data: { from: string; next: string; message: string }
+    }
+  | { event: 'done'; data: { data: AiGenerationResult } }
+  | { event: 'error'; data: { message: string } }
+
+const parseOpenRouterStreamFrame = (frame: string) => {
+  const data = frame
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trimStart())
+    .join('\n')
+    .trim()
+
+  if (!data) return { done: false, text: '' }
+  if (data === '[DONE]') return { done: true, text: '' }
+
+  let payload: unknown
+  try {
+    payload = JSON.parse(data)
+  } catch {
+    throw apiError('AI provider returned an invalid stream.', 502)
+  }
+
+  const detail = providerErrorMessage(payload)
+  if (detail) throw apiError(`AI provider error: ${detail}`, 502)
+  if (!isRecord(payload) || !Array.isArray(payload.choices)) {
+    throw apiError('AI provider returned an invalid stream.', 502)
+  }
+
+  const firstChoice = payload.choices[0]
+  const delta = isRecord(firstChoice) && isRecord(firstChoice.delta)
+    ? firstChoice.delta.content
+    : undefined
+
+  return {
+    done: false,
+    text: readStreamText(delta),
+  }
+}
+
+const streamSingleWithOpenRouter = async function* ({
+  task,
+  model,
+  input,
+  signal,
+}: {
+  task: AiTask
+  model: AiModelId
+  input: AiGenerationInput
+  signal?: AbortSignal
+}): AsyncGenerator<string> {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) throw apiError('AI generation is not configured', 503)
+
+  const modelConfig = AI_MODELS.find((candidate) => candidate.id === model)
+  const useJsonFormat = task === 'ideas' && modelConfig?.supportsJson === true
+  const dataCollection =
+    process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow'
+  const controller = new AbortController()
+  const abortFromCaller = () => controller.abort()
+  let idleTimeout = setTimeout(
+    () => controller.abort(),
+    OPENROUTER_STREAM_IDLE_TIMEOUT_MS,
+  )
+  const resetIdleTimeout = () => {
+    clearTimeout(idleTimeout)
+    idleTimeout = setTimeout(
+      () => controller.abort(),
+      OPENROUTER_STREAM_IDLE_TIMEOUT_MS,
+    )
+  }
+
+  if (signal?.aborted) controller.abort()
+  else signal?.addEventListener('abort', abortFromCaller, { once: true })
+
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  try {
+    const response = await fetch(OPENROUTER_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer':
+          process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
+        'X-OpenRouter-Title': 'Buildfolio',
+      },
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: taskPrompt(task, input) },
+        ],
+        provider: {
+          require_parameters: useJsonFormat,
+          data_collection: dataCollection,
+        },
+        stream: true,
+        temperature: task === 'ideas' ? 0.85 : 0.55,
+        max_tokens:
+          task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
+        ...(useJsonFormat && {
+          response_format: { type: 'json_object' },
+        }),
+      }),
+    })
+
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null)
+      if (response.status === 429) {
+        throw apiError('Free AI models are busy. Please try again shortly.', 429)
+      }
+      const detail = providerErrorMessage(payload)
+      throw apiError(
+        detail
+          ? `AI provider error: ${detail}`
+          : 'AI generation failed. Please try another model.',
+        502,
+      )
+    }
+    if (!response.body) throw apiError('AI provider returned no stream.', 502)
+
+    reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    let streamDone = false
+
+    while (!streamDone) {
+      const { done, value } = await reader.read()
+      resetIdleTimeout()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const frames = buffer.split(/\r?\n\r?\n/)
+      buffer = frames.pop() ?? ''
+      for (const frame of frames) {
+        const parsed = parseOpenRouterStreamFrame(frame)
+        if (parsed.done) {
+          streamDone = true
+          break
+        }
+        if (parsed.text) yield parsed.text
+      }
+    }
+
+    if (!streamDone && buffer.trim()) {
+      const parsed = parseOpenRouterStreamFrame(buffer)
+      if (parsed.text) yield parsed.text
+    }
+  } catch (error) {
+    if (isRecord(error) && typeof error.statusCode === 'number') throw error
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw apiError('AI generation timed out. Please try again.', 504)
+    }
+    throw apiError('AI provider is unavailable. Please try again.', 502)
+  } finally {
+    reader?.releaseLock()
+    clearTimeout(idleTimeout)
+    signal?.removeEventListener('abort', abortFromCaller)
+  }
+}
+
+export async function* streamIdeasWithOpenRouter({
+  model,
+  input,
+  signal,
+}: {
+  model: AiModelId
+  input: AiGenerationInput
+  signal?: AbortSignal
+}): AsyncGenerator<AiStreamEvent> {
+  const candidates = orderedCandidates(model, 'ideas')
+  let lastError: unknown
+
+  for (let index = 0; index < candidates.length; index++) {
+    const candidate = candidates[index]
+    const next = candidates[index + 1]
+    yield {
+      event: 'meta',
+      data: { model: candidate, attempt: index + 1, total: candidates.length },
+    }
+
+    let text = ''
+    try {
+      for await (const chunk of streamSingleWithOpenRouter({
+        task: 'ideas',
+        model: candidate,
+        input,
+        signal,
+      })) {
+        text += chunk
+        if (text.length % 80 < chunk.length) {
+          yield {
+            event: 'progress',
+            data: { model: candidate, characters: text.length },
+          }
+        }
+      }
+
+      const result: AiGenerationResult = {
+        task: 'ideas',
+        ideas: parseIdeas(text),
+        model: candidate,
+      }
+      yield { event: 'done', data: { data: result } }
+      return
+    } catch (error) {
+      if (signal?.aborted) return
+      lastError = error
+      if (!next) break
+      yield {
+        event: 'fallback',
+        data: {
+          from: candidate,
+          next,
+          message: 'The model did not complete a valid result.',
+        },
+      }
+    }
+  }
+
+  throw lastError ?? apiError('AI provider is unavailable. Please try again.', 502)
 }

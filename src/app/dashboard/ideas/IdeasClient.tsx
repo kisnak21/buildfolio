@@ -11,9 +11,12 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import { AI_MODELS, DEFAULT_AI_MODEL, type AiIdea } from '@/lib/aiModels'
-import { generateAiContent } from '@/lib/api/aiApi'
+import { generateAiContent, type AiIdeasStreamEvent } from '@/lib/api/aiApi'
 
 const cardColors = ['bg-primary', 'bg-accentSoft', 'bg-secondary']
+
+const modelLabel = (id: string) =>
+  AI_MODELS.find((candidate) => candidate.id === id)?.name || id
 
 const ideaHref = (idea: AiIdea) => {
   const params = new URLSearchParams({
@@ -58,6 +61,27 @@ const IdeasClient = () => {
         interests: interests.trim() || undefined,
         technologies: technologyList,
         experience,
+      }, {
+        onEvent: (event: AiIdeasStreamEvent) => {
+          if (event.event === 'meta' && typeof event.data.model === 'string') {
+            const attempt =
+              typeof event.data.attempt === 'number' ? event.data.attempt : 1
+            const total =
+              typeof event.data.total === 'number' ? event.data.total : 1
+            setGenerationStatus(
+              `Trying ${modelLabel(event.data.model)} (${attempt}/${total}).`,
+            )
+          } else if (
+            event.event === 'fallback' &&
+            typeof event.data.next === 'string'
+          ) {
+            setGenerationStatus(
+              `Switching to ${modelLabel(event.data.next)}.`,
+            )
+          } else if (event.event === 'progress') {
+            setGenerationStatus('The selected model is drafting ideas.')
+          }
+        },
       })
       if (result.task === 'ideas') {
         setIdeas(result.ideas)

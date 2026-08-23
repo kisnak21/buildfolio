@@ -1,5 +1,5 @@
 export const runtime = 'nodejs'
-export const maxDuration = 30
+export const maxDuration = 60
 
 import { NextRequest, NextResponse } from 'next/server'
 import {
@@ -14,6 +14,8 @@ import {
 import {
   generateWithOpenRouter,
   parseAiRequest,
+  streamIdeasWithOpenRouter,
+  type AiStreamEvent,
 } from '@/lib/services/aiService'
 import { errorStatus, httpError } from '@/lib/apiErrors'
 import logger from '@/lib/logger'
@@ -23,6 +25,9 @@ const HOURLY_QUOTA = { max: 5, windowMs: 60 * 60 * 1_000 }
 const DAILY_QUOTA = { max: 15, windowMs: 24 * 60 * 60 * 1_000 }
 const GLOBAL_MINUTE_QUOTA = { max: 20, windowMs: 60 * 1_000 }
 const GLOBAL_DAY_QUOTA = { max: 50, windowMs: 24 * 60 * 60 * 1_000 }
+
+const sseEvent = (event: string, data: unknown) =>
+  `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 
 const readLimitedBody = async (req: NextRequest) => {
   if (!req.body) return ''
@@ -162,24 +167,71 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    const consumeSuccessfulQuota = async () => {
+      const consumed = await Promise.allSettled([
+        rateLimit(hourlyKey, HOURLY_QUOTA),
+        rateLimit(dailyKey, DAILY_QUOTA),
+        rateLimit(globalMinuteKey, GLOBAL_MINUTE_QUOTA),
+        rateLimit(globalDayKey, GLOBAL_DAY_QUOTA),
+      ])
+      const consumedHourly =
+        consumed[0].status === 'fulfilled' ? consumed[0].value : hourly
+      const consumedDaily =
+        consumed[1].status === 'fulfilled' ? consumed[1].value : daily
+      if (consumed.some((entry) => entry.status === 'rejected')) {
+        logger.warn({ task: request.task }, 'AI quota update failed after success')
+      }
+      return { consumedHourly, consumedDaily }
+    }
+
+    if (request.task === 'ideas') {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const encoder = new TextEncoder()
+          const send = (event: AiStreamEvent['event'], data: unknown) => {
+            controller.enqueue(encoder.encode(sseEvent(event, data)))
+          }
+          let completed = false
+
+          try {
+            for await (const event of streamIdeasWithOpenRouter({
+              model: request.model,
+              input: request.input,
+              signal: req.signal,
+            })) {
+              send(event.event, event.data)
+              if (event.event === 'done') completed = true
+            }
+            if (completed) await consumeSuccessfulQuota()
+          } catch (error) {
+            if (!req.signal.aborted) {
+              const status = errorStatus(error)
+              logger.warn({ status, task: request.task }, 'AI stream failed')
+              send('error', {
+                message: httpError(error).message || 'AI generation failed',
+              })
+            }
+          } finally {
+            controller.close()
+          }
+        },
+      })
+
+      return new Response(stream, {
+        headers: {
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'Content-Type': 'text/event-stream; charset=utf-8',
+          'X-Accel-Buffering': 'no',
+        },
+      })
+    }
+
     const result = await generateWithOpenRouter({
       ...request,
       signal: req.signal,
     })
-
-    const consumed = await Promise.allSettled([
-      rateLimit(hourlyKey, HOURLY_QUOTA),
-      rateLimit(dailyKey, DAILY_QUOTA),
-      rateLimit(globalMinuteKey, GLOBAL_MINUTE_QUOTA),
-      rateLimit(globalDayKey, GLOBAL_DAY_QUOTA),
-    ])
-    const consumedHourly =
-      consumed[0].status === 'fulfilled' ? consumed[0].value : hourly
-    const consumedDaily =
-      consumed[1].status === 'fulfilled' ? consumed[1].value : daily
-    if (consumed.some((entry) => entry.status === 'rejected')) {
-      logger.warn({ task: request.task }, 'AI quota update failed after success')
-    }
+    const { consumedHourly, consumedDaily } = await consumeSuccessfulQuota()
     logger.info(
       { task: request.task, model: result.model },
       'AI generation completed',
