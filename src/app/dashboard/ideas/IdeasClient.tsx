@@ -183,9 +183,8 @@ const IdeasClient = () => {
             </Button>
             </fieldset>
             <p className='mt-3 text-xs font-semibold leading-relaxed text-gray-500'>
-              These fields are sent to OpenRouter using providers marked as not
-              collecting prompt data. Limits: 5 generations per hour and 15 per
-              day.
+              These fields are sent to OpenRouter according to the server&apos;s data
+              collection policy. Limits: 5 generations per hour and 15 per day.
             </p>
             {error && (
               <p role='alert' className='mt-4 font-bold text-red-600'>

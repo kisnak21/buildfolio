@@ -248,6 +248,7 @@ NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 CONTACT_RECIPIENT_EMAIL=you@yourdomain.com
 OPENROUTER_API_KEY=your_openrouter_api_key
+OPENROUTER_DATA_COLLECTION=allow
 CRON_SECRET=generate_a_long_random_secret
 AUDIT_RETENTION_DAYS=365
 RESOLVED_FLAG_RETENTION_DAYS=90
@@ -257,7 +258,7 @@ RESOLVED_FLAG_RETENTION_DAYS=90
 >
 > Email is sent via [Resend](https://resend.com). Add your sending domain in the Resend dashboard and verify the DNS records (SPF/DKIM/DMARC), or omit `RESEND_FROM_EMAIL` to fall back to `onboarding@resend.dev`. Rate limiting is backed by [Upstash Redis](https://upstash.com) when `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` are set (in-memory fallback otherwise). `CONTACT_RECIPIENT_EMAIL` is the inbox that receives contact-form emails.
 >
-> `OPENROUTER_API_KEY` is server-only. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
+> `OPENROUTER_API_KEY` is server-only. `OPENROUTER_DATA_COLLECTION` defaults to `allow` so free models remain available; set it to `deny` only when your selected providers support that policy. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
 >
 > AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day limits, one OpenRouter key is capped at 20 requests/minute and 50/day by the application.
 

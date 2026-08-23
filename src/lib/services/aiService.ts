@@ -220,6 +220,16 @@ const orderedModels = (requested: AiModelId) => [
   'openrouter/free',
 ]
 
+const providerErrorMessage = (payload: unknown) => {
+  if (!isRecord(payload)) return ''
+  const providerError = payload.error
+  if (typeof providerError === 'string') return providerError.slice(0, 300)
+  if (isRecord(providerError) && typeof providerError.message === 'string') {
+    return providerError.message.slice(0, 300)
+  }
+  return ''
+}
+
 export const generateWithOpenRouter = async ({
   task,
   model,
@@ -233,6 +243,11 @@ export const generateWithOpenRouter = async ({
 }): Promise<AiGenerationResult> => {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) throw apiError('AI generation is not configured', 503)
+
+  const modelConfig = AI_MODELS.find((candidate) => candidate.id === model)
+  const useJsonFormat = task === 'ideas' && modelConfig?.supportsJson === true
+  const dataCollection =
+    process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow'
 
   const controller = new AbortController()
   const abortFromCaller = () => controller.abort()
@@ -257,14 +272,14 @@ export const generateWithOpenRouter = async ({
           { role: 'user', content: taskPrompt(task, input) },
         ],
         provider: {
-          require_parameters: true,
-          data_collection: 'deny',
+          require_parameters: useJsonFormat,
+          data_collection: dataCollection,
         },
         stream: false,
         temperature: task === 'ideas' ? 0.85 : 0.55,
         max_tokens:
           task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
-        ...(task === 'ideas' && {
+        ...(useJsonFormat && {
           response_format: { type: 'json_object' },
         }),
       }),
@@ -275,7 +290,13 @@ export const generateWithOpenRouter = async ({
       if (response.status === 429) {
         throw apiError('Free AI models are busy. Please try again shortly.', 429)
       }
-      throw apiError('AI generation failed. Please try another model.', 502)
+      const detail = providerErrorMessage(payload)
+      throw apiError(
+        detail
+          ? `AI provider error: ${detail}`
+          : 'AI generation failed. Please try another model.',
+        502,
+      )
     }
     if (!isRecord(payload) || !Array.isArray(payload.choices)) {
       throw apiError('AI provider returned an invalid response.', 502)

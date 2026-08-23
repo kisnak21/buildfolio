@@ -51,9 +51,10 @@ export default function PrivacyPage() {
             <p className='font-medium text-gray-700 leading-relaxed'>
               When you choose to generate a description, README, or project idea,
               the project fields shown in that form are sent to OpenRouter and an
-              AI model provider to produce the requested draft. Buildfolio asks
-              OpenRouter to exclude providers marked as collecting prompt data.
-              Do not enter passwords, API keys, or other sensitive personal data
+              AI model provider to produce the requested draft. The provider data
+              collection policy is configurable by the operator and defaults to
+              the provider&apos;s normal policy so free models remain available. Do
+              not enter passwords, API keys, or other sensitive personal data
               into AI-assisted fields.
             </p>
           </section>

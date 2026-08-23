@@ -3,21 +3,25 @@ export const AI_MODELS = [
     id: 'dots-studio/dots-3-note-preview:free',
     name: 'Dots3 Note',
     note: 'Balanced writing and reasoning',
+    supportsJson: true,
   },
   {
     id: 'nvidia/nemotron-3.5-lightning:free',
     name: 'Nemotron 3.5 Lightning',
     note: 'Fast, direct drafts',
+    supportsJson: false,
   },
   {
-    id: 'openai/gpt-oss-120b:free',
-    name: 'GPT-OSS 120B',
+    id: 'z-ai/glm-5.2:free',
+    name: 'GLM 5.2',
     note: 'Detailed technical copy',
+    supportsJson: true,
   },
   {
     id: 'google/gemma-4-26b-a4b-it:free',
     name: 'Gemma 4 26B',
     note: 'Concise project writing',
+    supportsJson: true,
   },
 ] as const
 

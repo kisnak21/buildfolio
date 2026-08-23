@@ -305,9 +305,9 @@ const ProjectForm = ({
         </div>
 
         <p className='mt-3 text-xs font-semibold leading-relaxed text-gray-500'>
-          Only the visible project fields above are sent to OpenRouter. Requests
-          exclude providers marked as collecting prompt data. Free model
-          availability can change.
+          Only the visible project fields above are sent to OpenRouter. Provider
+          data collection follows the server&apos;s OPENROUTER_DATA_COLLECTION setting.
+          Free model availability can change.
         </p>
         {aiError && (
           <p role='alert' className='mt-3 text-sm font-bold text-red-600'>
