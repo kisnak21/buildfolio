@@ -1,5 +1,11 @@
 export const AI_MODELS = [
   {
+    id: 'stealth/ox-alpha',
+    name: 'Ox Alpha',
+    note: 'Free long-context reasoning',
+    supportsJson: true,
+  },
+  {
     id: 'dots-studio/dots-3-note-preview:free',
     name: 'Dots3 Note',
     note: 'Balanced writing and reasoning',

@@ -51,7 +51,7 @@ Buildfolio lets developers:
 | Email            | Resend                                                      |
 | File Upload      | Uploadthing                                                 |
 | Rate Limiting    | Upstash Redis (@upstash/ratelimit, in-memory fallback)      |
-| AI Generation    | OpenRouter (free Dots, Nemotron, GLM, and Gemma models) |
+| AI Generation    | OpenRouter (Ox Alpha, Dots, Nemotron, GLM, and Gemma models) |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
 
 ---
