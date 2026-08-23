@@ -9,6 +9,7 @@ import {
 import {
   isDistributedRateLimitConfigured,
   rateLimit,
+  rateLimitStatus,
 } from '@/lib/rateLimit'
 import {
   generateWithOpenRouter,
@@ -18,6 +19,10 @@ import { errorStatus, httpError } from '@/lib/apiErrors'
 import logger from '@/lib/logger'
 
 const REQUEST_LIMIT = 20_000
+const HOURLY_QUOTA = { max: 5, windowMs: 60 * 60 * 1_000 }
+const DAILY_QUOTA = { max: 15, windowMs: 24 * 60 * 60 * 1_000 }
+const GLOBAL_MINUTE_QUOTA = { max: 20, windowMs: 60 * 1_000 }
+const GLOBAL_DAY_QUOTA = { max: 50, windowMs: 24 * 60 * 60 * 1_000 }
 
 const readLimitedBody = async (req: NextRequest) => {
   if (!req.body) return ''
@@ -103,10 +108,12 @@ export async function POST(req: NextRequest) {
     }
     const request = parseAiRequest(body)
 
-    const hourly = await rateLimit(`ai-hour:${user.id}`, {
-      max: 5,
-      windowMs: 60 * 60 * 1_000,
-    })
+    const hourlyKey = `ai-success-hour-v2:${user.id}`
+    const dailyKey = `ai-success-day-v2:${user.id}`
+    const globalMinuteKey = 'ai-success-global-minute-v2'
+    const globalDayKey = 'ai-success-global-day-v2'
+
+    const hourly = await rateLimitStatus(hourlyKey, HOURLY_QUOTA)
     if (!hourly.success) {
       return NextResponse.json(
         { success: false, message: 'AI hourly limit reached. Try again later.' },
@@ -117,10 +124,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const daily = await rateLimit(`ai-day:${user.id}`, {
-      max: 15,
-      windowMs: 24 * 60 * 60 * 1_000,
-    })
+    const daily = await rateLimitStatus(dailyKey, DAILY_QUOTA)
     if (!daily.success) {
       return NextResponse.json(
         { success: false, message: 'AI daily limit reached. Try again tomorrow.' },
@@ -131,10 +135,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const globalMinute = await rateLimit('ai-global-minute', {
-      max: 20,
-      windowMs: 60 * 1_000,
-    })
+    const globalMinute = await rateLimitStatus(
+      globalMinuteKey,
+      GLOBAL_MINUTE_QUOTA,
+    )
     if (!globalMinute.success) {
       return NextResponse.json(
         { success: false, message: 'Free AI capacity is busy. Try again shortly.' },
@@ -147,10 +151,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const globalDay = await rateLimit('ai-global-day', {
-      max: 50,
-      windowMs: 24 * 60 * 60 * 1_000,
-    })
+    const globalDay = await rateLimitStatus(globalDayKey, GLOBAL_DAY_QUOTA)
     if (!globalDay.success) {
       return NextResponse.json(
         { success: false, message: 'Daily free AI capacity has been reached.' },
@@ -165,6 +166,20 @@ export async function POST(req: NextRequest) {
       ...request,
       signal: req.signal,
     })
+
+    const consumed = await Promise.allSettled([
+      rateLimit(hourlyKey, HOURLY_QUOTA),
+      rateLimit(dailyKey, DAILY_QUOTA),
+      rateLimit(globalMinuteKey, GLOBAL_MINUTE_QUOTA),
+      rateLimit(globalDayKey, GLOBAL_DAY_QUOTA),
+    ])
+    const consumedHourly =
+      consumed[0].status === 'fulfilled' ? consumed[0].value : hourly
+    const consumedDaily =
+      consumed[1].status === 'fulfilled' ? consumed[1].value : daily
+    if (consumed.some((entry) => entry.status === 'rejected')) {
+      logger.warn({ task: request.task }, 'AI quota update failed after success')
+    }
     logger.info(
       { task: request.task, model: result.model },
       'AI generation completed',
@@ -174,8 +189,8 @@ export async function POST(req: NextRequest) {
       {
         headers: {
           'Cache-Control': 'no-store',
-          'X-RateLimit-Remaining-Hour': String(hourly.remaining),
-          'X-RateLimit-Remaining-Day': String(daily.remaining),
+          'X-RateLimit-Remaining-Hour': String(consumedHourly.remaining),
+          'X-RateLimit-Remaining-Day': String(consumedDaily.remaining),
         },
       },
     )

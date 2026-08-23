@@ -17,6 +17,12 @@ export interface RateLimitConfig {
   windowMs: number
 }
 
+export interface RateLimitResult {
+  success: boolean
+  remaining: number
+  resetInMs: number
+}
+
 const memoryStore = new Map<string, RateLimitEntry>()
 const limiterCache = new Map<string, Ratelimit>()
 
@@ -47,7 +53,7 @@ function getUpstashLimiter(policy: string, config: RateLimitConfig) {
 function memoryRateLimit(
   key: string,
   config: RateLimitConfig,
-): { success: boolean; remaining: number; resetInMs: number } {
+): RateLimitResult {
   const now = Date.now()
   const entry = memoryStore.get(key)
 
@@ -68,10 +74,54 @@ function memoryRateLimit(
   }
 }
 
+function memoryRateLimitStatus(
+  key: string,
+  config: RateLimitConfig,
+): RateLimitResult {
+  const now = Date.now()
+  const entry = memoryStore.get(key)
+
+  if (!entry || now >= entry.resetAt) {
+    return { success: true, remaining: config.max, resetInMs: config.windowMs }
+  }
+
+  const remaining = Math.max(config.max - entry.count, 0)
+  return {
+    success: remaining > 0,
+    remaining,
+    resetInMs: entry.resetAt - now,
+  }
+}
+
+export async function rateLimitStatus(
+  key: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  if (hasUpstash) {
+    const separator = key.indexOf(':')
+    const policy = separator === -1 ? key : key.slice(0, separator)
+    const identifier = separator === -1 ? key : key.slice(separator + 1)
+    const limiter = getUpstashLimiter(policy, config)
+
+    try {
+      const result = await limiter.getRemaining(identifier)
+      return {
+        success: result.remaining > 0,
+        remaining: result.remaining,
+        resetInMs: Math.max(result.reset - Date.now(), 0),
+      }
+    } catch {
+      return { success: false, remaining: 0, resetInMs: 5_000 }
+    }
+  }
+
+  return memoryRateLimitStatus(key, config)
+}
+
 export async function rateLimit(
   key: string,
   config: RateLimitConfig,
-): Promise<{ success: boolean; remaining: number; resetInMs: number }> {
+): Promise<RateLimitResult> {
   if (hasUpstash) {
     const separator = key.indexOf(':')
     const policy = separator === -1 ? key : key.slice(0, separator)

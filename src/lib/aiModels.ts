@@ -12,6 +12,12 @@ export const AI_MODELS = [
     supportsJson: false,
   },
   {
+    id: 'nvidia/nemotron-3-super-120b-a12b:free',
+    name: 'Nemotron 3 Super',
+    note: 'Strong structured output',
+    supportsJson: true,
+  },
+  {
     id: 'z-ai/glm-5.2:free',
     name: 'GLM 5.2',
     note: 'Detailed technical copy',
@@ -21,6 +27,12 @@ export const AI_MODELS = [
     id: 'google/gemma-4-26b-a4b-it:free',
     name: 'Gemma 4 26B',
     note: 'Concise project writing',
+    supportsJson: true,
+  },
+  {
+    id: 'google/gemma-4-31b-it:free',
+    name: 'Gemma 4 31B',
+    note: 'Reliable structured drafts',
     supportsJson: true,
   },
 ] as const

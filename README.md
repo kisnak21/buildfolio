@@ -51,7 +51,7 @@ Buildfolio lets developers:
 | Email            | Resend                                                      |
 | File Upload      | Uploadthing                                                 |
 | Rate Limiting    | Upstash Redis (@upstash/ratelimit, in-memory fallback)      |
-| AI Generation    | OpenRouter (free Dots, Nemotron, GPT-OSS, and Gemma models) |
+| AI Generation    | OpenRouter (free Dots, Nemotron, GLM, and Gemma models) |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
 
 ---
@@ -260,7 +260,7 @@ RESOLVED_FLAG_RETENTION_DAYS=90
 >
 > `OPENROUTER_API_KEY` is server-only. `OPENROUTER_DATA_COLLECTION` defaults to `allow` so free models remain available; set it to `deny` only when your selected providers support that policy. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
 >
-> AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day limits, one OpenRouter key is capped at 20 requests/minute and 50/day by the application.
+> AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day successful-generation limits, one OpenRouter key is capped at 20 successful requests/minute and 50/day by the application. The IP ingress limiter still limits repeated failed attempts.
 
 ### Database Setup
 
