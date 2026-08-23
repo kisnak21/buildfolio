@@ -214,11 +214,20 @@ const parseIdeas = (text: string): AiIdea[] => {
   return ideas
 }
 
-const orderedModels = (requested: AiModelId) => [
-  requested,
-  ...AI_MODELS.map((model) => model.id).filter((id) => id !== requested),
-  'openrouter/free',
-]
+const orderedModels = (requested: AiModelId, task: AiTask) => {
+  const requestedConfig = AI_MODELS.find((model) => model.id === requested)
+  const needsJsonSupport = task === 'ideas' && requestedConfig?.supportsJson === true
+  const fallbackModels = AI_MODELS.filter(
+    (model) => !needsJsonSupport || model.supportsJson,
+  ).map((model) => model.id)
+
+  // OpenRouter accepts at most three model IDs in a fallback array.
+  return [
+    requested,
+    ...fallbackModels.filter((id) => id !== requested),
+    'openrouter/free',
+  ].slice(0, 3)
+}
 
 const providerErrorMessage = (payload: unknown) => {
   if (!isRecord(payload)) return ''
@@ -266,7 +275,7 @@ export const generateWithOpenRouter = async ({
         'X-OpenRouter-Title': 'Buildfolio',
       },
       body: JSON.stringify({
-        models: orderedModels(model),
+        models: orderedModels(model, task),
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: taskPrompt(task, input) },
