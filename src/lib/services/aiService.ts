@@ -1,5 +1,6 @@
 import 'server-only'
 
+import OpenAI from 'openai'
 import {
   AI_MODELS,
   DEFAULT_AI_MODEL,
@@ -12,12 +13,36 @@ import {
   type AiTask,
 } from '@/lib/aiModels'
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+const OPENROUTER_BASE_URL =
+  (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(
+    /\/+$/,
+    '',
+  )
+const OPENROUTER_URL = `${OPENROUTER_BASE_URL}/chat/completions`
 const OPENROUTER_STREAM_IDLE_TIMEOUT_MS = 20_000
 type JsonRecord = Record<string, unknown>
 
 const apiError = (message: string, statusCode: number) =>
   Object.assign(new Error(message), { statusCode })
+
+let openRouterClient: OpenAI | undefined
+
+const getOpenRouterClient = () => {
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) throw apiError('AI generation is not configured', 503)
+  if (!openRouterClient) {
+    openRouterClient = new OpenAI({
+      apiKey,
+      baseURL: OPENROUTER_BASE_URL,
+      defaultHeaders: {
+        'HTTP-Referer':
+          process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
+        'X-Title': 'Buildfolio',
+      },
+    })
+  }
+  return openRouterClient
+}
 
 const isRecord = (value: unknown): value is JsonRecord =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -314,9 +339,9 @@ const generateSingleWithOpenRouter = async ({
       }
       const detail = providerErrorMessage(payload)
       throw apiError(
-          detail
-            ? `AI provider error: ${detail}`
-            : 'AI generation failed. Please try again.',
+        detail
+          ? `AI provider error: ${detail}`
+          : 'AI generation failed. Please try again.',
         502,
       )
     }
@@ -393,41 +418,6 @@ export type AiStreamEvent =
   | { event: 'done'; data: { data: AiGenerationResult } }
   | { event: 'error'; data: { message: string } }
 
-const parseOpenRouterStreamFrame = (frame: string) => {
-  const data = frame
-    .split(/\r?\n/)
-    .filter((line) => line.startsWith('data:'))
-    .map((line) => line.slice(5).trimStart())
-    .join('\n')
-    .trim()
-
-  if (!data) return { done: false, text: '' }
-  if (data === '[DONE]') return { done: true, text: '' }
-
-  let payload: unknown
-  try {
-    payload = JSON.parse(data)
-  } catch {
-    throw apiError('AI provider returned an invalid stream.', 502)
-  }
-
-  const detail = providerErrorMessage(payload)
-  if (detail) throw apiError(`AI provider error: ${detail}`, 502)
-  if (!isRecord(payload) || !Array.isArray(payload.choices)) {
-    throw apiError('AI provider returned an invalid stream.', 502)
-  }
-
-  const firstChoice = payload.choices[0]
-  const delta = isRecord(firstChoice) && isRecord(firstChoice.delta)
-    ? firstChoice.delta.content
-    : undefined
-
-  return {
-    done: false,
-    text: readStreamText(delta),
-  }
-}
-
 const streamSingleWithOpenRouter = async function* ({
   task,
   model,
@@ -439,9 +429,6 @@ const streamSingleWithOpenRouter = async function* ({
   input: AiGenerationInput
   signal?: AbortSignal
 }): AsyncGenerator<string> {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) throw apiError('AI generation is not configured', 503)
-
   const modelConfig = AI_MODELS.find((candidate) => candidate.id === model)
   const useJsonFormat = task === 'ideas' && modelConfig?.supportsJson === true
   const dataCollection =
@@ -463,19 +450,9 @@ const streamSingleWithOpenRouter = async function* ({
   if (signal?.aborted) controller.abort()
   else signal?.addEventListener('abort', abortFromCaller, { once: true })
 
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   try {
-    const response = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer':
-          process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
-        'X-OpenRouter-Title': 'Buildfolio',
-      },
-      body: JSON.stringify({
+    const stream = await getOpenRouterClient().chat.completions.create(
+      {
         model,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -495,59 +472,50 @@ const streamSingleWithOpenRouter = async function* ({
         ...(useJsonFormat && {
           response_format: { type: 'json_object' },
         }),
-      }),
-    })
+      } as unknown as Parameters<OpenAI['chat']['completions']['create']>[0] & {
+        stream: true
+      },
+      { signal: controller.signal },
+    )
 
-    if (!response.ok) {
-      const payload: unknown = await response.json().catch(() => null)
-      if (response.status === 429) {
-        throw apiError('Free AI models are busy. Please try again shortly.', 429)
-      }
-      const detail = providerErrorMessage(payload)
-      throw apiError(
-          detail
-            ? `AI provider error: ${detail}`
-            : 'AI generation failed. Please try again.',
-        502,
-      )
-    }
-    if (!response.body) throw apiError('AI provider returned no stream.', 502)
-
-    reader = response.body.getReader()
-    const decoder = new TextDecoder()
-    let buffer = ''
-    let streamDone = false
-
-    while (!streamDone) {
-      const { done, value } = await reader.read()
+    let hasFirstToken = false
+    for await (const chunk of stream) {
       resetIdleTimeout()
-      if (done) break
-
-      buffer += decoder.decode(value, { stream: true })
-      const frames = buffer.split(/\r?\n\r?\n/)
-      buffer = frames.pop() ?? ''
-      for (const frame of frames) {
-        const parsed = parseOpenRouterStreamFrame(frame)
-        if (parsed.done) {
-          streamDone = true
-          break
-        }
-        if (parsed.text) yield parsed.text
-      }
+      const delta = chunk.choices?.[0]?.delta?.content
+      const text = readStreamText(delta)
+      if (!text) continue
+      hasFirstToken = true
+      yield text
     }
-
-    if (!streamDone && buffer.trim()) {
-      const parsed = parseOpenRouterStreamFrame(buffer)
-      if (parsed.text) yield parsed.text
+    if (!hasFirstToken) {
+      throw apiError('AI provider returned no content.', 502)
     }
   } catch (error) {
     if (isRecord(error) && typeof error.statusCode === 'number') throw error
-    if (error instanceof Error && error.name === 'AbortError') {
+    const providerStatus =
+      isRecord(error) && typeof error.status === 'number'
+        ? error.status
+        : undefined
+    if (providerStatus === 429) {
+      throw apiError('Free AI models are busy. Please try again shortly.', 429)
+    }
+    if (
+      error instanceof Error &&
+      (error.name === 'AbortError' || error.name === 'APIUserAbortError')
+    ) {
       throw apiError('AI generation timed out. Please try again.', 504)
+    }
+    if (providerStatus && providerStatus >= 400) {
+      const detail = error instanceof Error ? error.message.slice(0, 300) : ''
+      throw apiError(
+        detail
+          ? `AI provider error: ${detail}`
+          : 'AI generation failed. Please try again.',
+        502,
+      )
     }
     throw apiError('AI provider is unavailable. Please try again.', 502)
   } finally {
-    reader?.releaseLock()
     clearTimeout(idleTimeout)
     signal?.removeEventListener('abort', abortFromCaller)
   }
