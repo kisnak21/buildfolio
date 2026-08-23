@@ -25,6 +25,7 @@ const HOURLY_QUOTA = { max: 5, windowMs: 60 * 60 * 1_000 }
 const DAILY_QUOTA = { max: 15, windowMs: 24 * 60 * 60 * 1_000 }
 const GLOBAL_MINUTE_QUOTA = { max: 20, windowMs: 60 * 1_000 }
 const GLOBAL_DAY_QUOTA = { max: 50, windowMs: 24 * 60 * 60 * 1_000 }
+const AI_STREAM_DEADLINE_MS = 52_000
 
 const sseEvent = (event: string, data: unknown) =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
@@ -185,10 +186,21 @@ export async function POST(req: NextRequest) {
     }
 
     if (request.task === 'ideas') {
+      const generationController = new AbortController()
+      let cancelled = false
       const stream = new ReadableStream({
         async start(controller) {
           const encoder = new TextEncoder()
+          const abortFromRequest = () => generationController.abort()
+          const deadline = setTimeout(
+            () => generationController.abort(),
+            AI_STREAM_DEADLINE_MS,
+          )
+          if (req.signal.aborted) generationController.abort()
+          else req.signal.addEventListener('abort', abortFromRequest, { once: true })
+
           const send = (event: AiStreamEvent['event'], data: unknown) => {
+            if (cancelled || controller.desiredSize === null) return
             controller.enqueue(encoder.encode(sseEvent(event, data)))
           }
           let completed = false
@@ -197,7 +209,7 @@ export async function POST(req: NextRequest) {
             for await (const event of streamIdeasWithOpenRouter({
               model: request.model,
               input: request.input,
-              signal: req.signal,
+              signal: generationController.signal,
             })) {
               send(event.event, event.data)
               if (event.event === 'done') completed = true
@@ -212,8 +224,14 @@ export async function POST(req: NextRequest) {
               })
             }
           } finally {
-            controller.close()
+            clearTimeout(deadline)
+            req.signal.removeEventListener('abort', abortFromRequest)
+            if (!cancelled) controller.close()
           }
+        },
+        cancel() {
+          cancelled = true
+          generationController.abort()
         },
       })
 

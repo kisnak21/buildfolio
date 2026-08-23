@@ -11,8 +11,6 @@ import {
   SparklesIcon,
 } from '@heroicons/react/24/solid'
 import {
-  AI_MODELS,
-  DEFAULT_AI_MODEL,
   PROJECT_CATEGORIES,
   type AiTask,
 } from '@/lib/aiModels'
@@ -68,7 +66,6 @@ const ProjectForm = ({
   const [uploadError, setUploadError] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
-  const [aiModel, setAiModel] = useState(DEFAULT_AI_MODEL)
   const [generating, setGenerating] = useState<AiTask | null>(null)
   const [aiError, setAiError] = useState('')
   const [aiStatus, setAiStatus] = useState('')
@@ -98,7 +95,7 @@ const ProjectForm = ({
       task === 'description' ? 'Generating description.' : 'Generating README.',
     )
     try {
-      const result = await generateAiContent(task, aiModel, {
+      const result = await generateAiContent(task, undefined, {
         title: title.trim(),
         description: description.trim() || undefined,
         category,
@@ -120,7 +117,7 @@ const ProjectForm = ({
       }
       setAiError(
         requestError.response?.data?.message ||
-          'Could not generate content. Please try another model.',
+          'Could not generate content. Please try again.',
       )
       setAiStatus('Generation failed.')
     } finally {
@@ -257,23 +254,6 @@ const ProjectForm = ({
             </p>
           </div>
         </div>
-
-        <label htmlFor='ai-model' className='mb-2 block text-sm font-black text-dark'>
-          Model
-        </label>
-        <select
-          id='ai-model'
-          value={aiModel}
-          onChange={(event) => setAiModel(event.target.value as typeof aiModel)}
-          disabled={generating !== null}
-          className='mb-4 min-h-11 w-full rounded-xl border-2 border-dark bg-bgMain px-3 py-2 font-bold text-dark shadow-brutal-sm'
-        >
-          {AI_MODELS.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.name} - {model.note}
-            </option>
-          ))}
-        </select>
 
         <div className='flex flex-col gap-3 sm:flex-row'>
           <Button

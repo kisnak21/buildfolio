@@ -232,10 +232,11 @@ const orderedCandidates = (requested: AiModelId, task: AiTask) => {
     (model) => !needsJsonSupport || model.supportsJson,
   ).map((model) => model.id)
 
+  const maxCandidates = task === 'ideas' ? 2 : 3
   return [
     requested,
     ...fallbackModels.filter((id) => id !== requested),
-  ].slice(0, 3)
+  ].slice(0, maxCandidates)
 }
 
 const providerErrorMessage = (payload: unknown) => {
@@ -297,6 +298,9 @@ const generateSingleWithOpenRouter = async ({
         temperature: task === 'ideas' ? 0.85 : 0.55,
         max_tokens:
           task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
+        ...(model === 'stealth/ox-alpha' && {
+          reasoning: { effort: 'low' },
+        }),
         ...(useJsonFormat && {
           response_format: { type: 'json_object' },
         }),
@@ -310,9 +314,9 @@ const generateSingleWithOpenRouter = async ({
       }
       const detail = providerErrorMessage(payload)
       throw apiError(
-        detail
-          ? `AI provider error: ${detail}`
-          : 'AI generation failed. Please try another model.',
+          detail
+            ? `AI provider error: ${detail}`
+            : 'AI generation failed. Please try again.',
         502,
       )
     }
@@ -485,6 +489,9 @@ const streamSingleWithOpenRouter = async function* ({
         temperature: task === 'ideas' ? 0.85 : 0.55,
         max_tokens:
           task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
+        ...(model === 'stealth/ox-alpha' && {
+          reasoning: { effort: 'low' },
+        }),
         ...(useJsonFormat && {
           response_format: { type: 'json_object' },
         }),
@@ -498,9 +505,9 @@ const streamSingleWithOpenRouter = async function* ({
       }
       const detail = providerErrorMessage(payload)
       throw apiError(
-        detail
-          ? `AI provider error: ${detail}`
-          : 'AI generation failed. Please try another model.',
+          detail
+            ? `AI provider error: ${detail}`
+            : 'AI generation failed. Please try again.',
         502,
       )
     }
@@ -591,7 +598,9 @@ export async function* streamIdeasWithOpenRouter({
       yield { event: 'done', data: { data: result } }
       return
     } catch (error) {
-      if (signal?.aborted) return
+      if (signal?.aborted) {
+        throw apiError('AI generation timed out before a result was completed.', 504)
+      }
       lastError = error
       if (!next) break
       yield {

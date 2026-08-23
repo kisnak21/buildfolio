@@ -359,7 +359,7 @@ Open `http://localhost:3000` in your browser.
 ## Known Limitations
 
 - **Rate limiting falls back to in-memory without Upstash** — resets on server restart; fine for local development, but configure `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` for a single shared store in production.
-- **Free OpenRouter models can be busy, replaced, or temporarily unavailable** — each request uses one model at a time, with Ox Alpha as the default and up to two application-level fallbacks. Ideas stream progress and validate the final JSON before counting a successful generation.
+- **Free OpenRouter models can be busy, replaced, or temporarily unavailable** — each request uses one server-selected model at a time, with Ox Alpha as the default. Writing tasks use up to two fallbacks; Ideas uses one fast fallback so the stream finishes before the platform limit. Ideas validate the final JSON before counting a successful generation.
 - **Scheduled workflows are not real-time schedulers** — Vercel and GitHub may start daily jobs later than the exact cron minute.
 - **GitHub disables schedules in inactive public repositories after 60 days** — monitor backup freshness and re-enable the workflow after long periods without repository activity.
 

@@ -27,7 +27,7 @@ const streamError = (message: string) => {
 }
 
 const generateAiIdeas = async (
-  model: AiModelId,
+  model: AiModelId | undefined,
   input: AiGenerationInput,
   options?: AiGenerationOptions,
 ): Promise<AiGenerationResult> => {
@@ -39,7 +39,7 @@ const generateAiIdeas = async (
   try {
     const body = await realApiClient.postStream(
       '/ai/generate',
-      { task: 'ideas', model, input },
+      { task: 'ideas', ...(model ? { model } : {}), input },
       { signal: controller.signal },
     )
     reader = body.getReader()
@@ -107,7 +107,7 @@ const generateAiIdeas = async (
 
 export const generateAiContent = async (
   task: AiTask,
-  model: AiModelId,
+  model: AiModelId | undefined,
   input: AiGenerationInput,
   options?: AiGenerationOptions,
 ): Promise<AiGenerationResult> => {
