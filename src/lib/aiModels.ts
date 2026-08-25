@@ -1,12 +1,7 @@
 // Structured-output flags follow the active OpenRouter endpoint metadata.
+// Ordered by latency/reliability - fastest JSON-capable models first.
+// Ox Alpha (reasoning, slow) is last fallback only due to frequent 22s timeouts.
 export const AI_MODELS = [
-  {
-    id: 'stealth/ox-alpha',
-    name: 'Ox Alpha',
-    note: 'Free long-context reasoning',
-    supportsJson: true,
-    supportsJsonSchema: false,
-  },
   {
     id: 'dots-studio/dots-3-note-preview:free',
     name: 'Dots3 Note',
@@ -15,10 +10,10 @@ export const AI_MODELS = [
     supportsJsonSchema: true,
   },
   {
-    id: 'nvidia/nemotron-3.5-lightning:free',
-    name: 'Nemotron 3.5 Lightning',
-    note: 'Fast, direct drafts',
-    supportsJson: false,
+    id: 'google/gemma-4-26b-a4b-it:free',
+    name: 'Gemma 4 26B',
+    note: 'Fast concise drafts',
+    supportsJson: true,
     supportsJsonSchema: false,
   },
   {
@@ -36,16 +31,23 @@ export const AI_MODELS = [
     supportsJsonSchema: true,
   },
   {
-    id: 'google/gemma-4-26b-a4b-it:free',
-    name: 'Gemma 4 26B',
-    note: 'Concise project writing',
+    id: 'google/gemma-4-31b-it:free',
+    name: 'Gemma 4 31B',
+    note: 'Reliable structured drafts',
     supportsJson: true,
     supportsJsonSchema: false,
   },
   {
-    id: 'google/gemma-4-31b-it:free',
-    name: 'Gemma 4 31B',
-    note: 'Reliable structured drafts',
+    id: 'nvidia/nemotron-3.5-lightning:free',
+    name: 'Nemotron 3.5 Lightning',
+    note: 'Fast direct drafts (no JSON)',
+    supportsJson: false,
+    supportsJsonSchema: false,
+  },
+  {
+    id: 'stealth/ox-alpha',
+    name: 'Ox Alpha',
+    note: 'Free long-context reasoning (slow fallback)',
     supportsJson: true,
     supportsJsonSchema: false,
   },

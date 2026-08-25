@@ -82,7 +82,7 @@ describe('AI request parsing', () => {
 
     expect(parsed).toMatchObject({
       task: 'ideas',
-      model: 'stealth/ox-alpha',
+      model: 'dots-studio/dots-3-note-preview:free',
       input: {
         interests: 'civic technology',
         technologies: ['TypeScript'],
