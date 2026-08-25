@@ -1,6 +1,6 @@
 # Buildfolio Implementation Plan
 
-Status updated: 2026-08-25. Milestones 1, 2, and 6 are complete in the current worktree.
+Status updated: 2026-08-26. AI generation is paused — Ideas and document workspace are Coming Soon while alternative models are evaluated. Routing stays, no quota consumed.
 
 This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, and project-discovery improvements. Model selection remains an internal server concern; users should not choose providers directly.
 
@@ -13,11 +13,13 @@ This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, an
 - Prefer server-side filtering and authorization over client-side filtering.
 - Add tests before expanding behavior across the existing application.
 
-## Milestone 1: AI Reliability
+## Milestone 1: AI Reliability — Paused (Coming Soon)
 
-- [x] Complete
+> AI generation disabled at the API layer (`POST /api/ai/generate` and `GET /api/ai/quota` now return `503 Coming Soon`). Free-model timeouts / empty completions under OpenRouter require alternative-model evaluation before re-enabling. Keep the implementation for rebase.
 
-### [x] Observability
+- [ ] Paused — code preserved for alternative-model rebase
+
+### Observability
 
 Update `src/app/api/ai/generate/route.ts`, `src/lib/services/aiService.ts`, and `src/lib/logger.ts`.
 
@@ -38,7 +40,7 @@ Update `src/app/api/ai/generate/route.ts`, `src/lib/services/aiService.ts`, and 
 - Keep provider status and sanitized error messages, but never log request input or response content.
 - Add tests proving prompt text cannot appear in AI log payloads.
 
-### [x] OpenAI SDK Consistency
+### OpenAI SDK Consistency
 
 Update `src/lib/services/aiService.ts` so description and README generation use the same OpenAI SDK client as Ideas.
 
@@ -49,7 +51,7 @@ Update `src/lib/services/aiService.ts` so description and README generation use 
 - Preserve provider routing, JSON response format, reasoning options, fallback order, and returned model metadata.
 - Remove duplicated OpenRouter transport logic after the migration.
 
-### [x] Structured Ideas Output
+### Structured Ideas Output
 
 Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
 
@@ -63,11 +65,11 @@ Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
 
 Capability metadata verified on 2026-08-25: Dots3, Nemotron 3 Super, and GLM 5.2 advertise `structured_outputs`; Ox Alpha and both Gemma endpoints use JSON mode.
 
-## Milestone 2: AI Controls and UX
+## Milestone 2: AI Controls and UX — Paused (Coming Soon)
 
-- [x] Complete
+- [ ] Paused — UI now generic (no experience selector), quota/progress components retained for rebase
 
-### [x] Cancel and Retry
+### Cancel and Retry
 
 Update `src/lib/api/realApiClient.ts`, `src/lib/api/aiApi.ts`, `src/components/dashboard/ProjectForm.tsx`, and `src/app/dashboard/ideas/IdeasClient.tsx`.
 
@@ -79,7 +81,7 @@ Update `src/lib/api/realApiClient.ts`, `src/lib/api/aiApi.ts`, `src/components/d
 - Preserve the last generation input and add an explicit `Retry` action after failure.
 - Do not automatically retry a user-cancelled request.
 
-### [x] Visible Progress
+### Visible Progress
 
 Create a shared `AiGenerationProgress` component.
 
@@ -89,7 +91,7 @@ Create a shared `AiGenerationProgress` component.
 - Do not display fake percentage completion.
 - Keep `aria-live`, `aria-busy`, keyboard focus, and reduced-motion behavior accessible.
 
-### [x] Quota and Retry-After
+### Quota and Retry-After
 
 Update `src/lib/rateLimit.ts`, `src/app/api/ai/generate/route.ts`, `src/lib/api/realApiClient.ts`, and both AI clients.
 
@@ -199,9 +201,9 @@ Update `ProjectCard.tsx` and `ProjectDetailClient.tsx`.
 - Reuse existing Open Graph metadata.
 - Keep the current ID route initially; move to slug routes separately if canonical URLs are desired.
 
-## Milestone 6: Ideas Workspace Documents
+## Milestone 6: Ideas Workspace Documents — Paused (Coming Soon)
 
-- [x] Complete
+- [ ] Paused — `/dashboard/ideas` renders Coming Soon, routing preserved; document generation re-queued for alternative-model rebase
 
 The Ideas page becomes the workspace for turning one generated idea into an actionable project package. The workspace stays inside `/dashboard/ideas`; a separate route is not needed because generated documents are initially ephemeral.
 
@@ -214,7 +216,7 @@ Confirmed product decisions:
 - Documents are not persisted in the database in the first version.
 - Project submission keeps only explicit description generation; README generation moves out of `ProjectForm`.
 
-### [x] AI Tasks and Contracts
+### AI Tasks and Contracts
 
 Update `src/lib/aiModels.ts`, `src/lib/services/aiService.ts`, `src/lib/api/aiApi.ts`, and `src/app/api/ai/generate/route.ts`.
 
@@ -226,14 +228,14 @@ Update `src/lib/aiModels.ts`, `src/lib/services/aiService.ts`, `src/lib/api/aiAp
 - Count each successful generated document as one AI quota unit.
 - Make each document prompt explicitly separate factual project context from design recommendations.
 
-### [x] Document Prompts
+### Document Prompts
 
 - PRD: problem, target users, goals, non-goals, user stories, MVP scope, requirements, acceptance criteria, risks, metrics, and milestones.
 - Design Spec: product direction, information architecture, layouts, flows, interaction states, responsive behavior, accessibility, and implementation notes.
 - Style Guide: visual personality, semantic color roles, typography, spacing, radii, shadows, components, and UI states.
 - README: purpose, overview, features based on supplied facts, tech stack, setup placeholders, and links.
 
-### [x] Ideas UI
+### Ideas UI
 
 Update `src/app/dashboard/ideas/IdeasClient.tsx` and add reusable components:
 
@@ -248,7 +250,7 @@ Update `src/app/dashboard/ideas/IdeasClient.tsx` and add reusable components:
 - Add loading, retry, cancel, empty, copy-success, download, and provider-error states.
 - Avoid a `Generate all` action initially because it could consume four quota units at once.
 
-### [x] Copy and Download Utilities
+### Copy and Download Utilities
 
 Add client-safe helpers in `src/lib/utils.ts` or a dedicated document utility module:
 
@@ -256,7 +258,7 @@ Add client-safe helpers in `src/lib/utils.ts` or a dedicated document utility mo
 - `downloadText(filename, content, mimeType)` using a Blob and object URL cleanup.
 - Keep downloaded content as UTF-8 Markdown.
 
-### [x] Project Form Changes
+### Project Form Changes
 
 Update `src/components/dashboard/ProjectForm.tsx`.
 
@@ -265,7 +267,7 @@ Update `src/components/dashboard/ProjectForm.tsx`.
 - Keep description generation explicit rather than automatically consuming quota during project submission.
 - Keep `Start this project` prefill behavior unchanged.
 
-### [x] Documentation
+### Documentation
 
 Update `README.md` and `src/app/privacy/page.tsx` to describe document generation under Project Ideas instead of the project form.
 

@@ -33,7 +33,7 @@ Buildfolio lets developers:
 - Register and log in with real authentication and email verification
 - View public developer profiles
 - Moderate the community via an admin dashboard (users, projects, comments, content flags, audit logs)
-- Draft project descriptions, scoped project ideas, and editable project documents with free OpenRouter models
+- Project workspace for ideas and documents *(coming soon — AI generation under alternative model evaluation)*
 
 ---
 
@@ -51,7 +51,7 @@ Buildfolio lets developers:
 | Email            | Resend                                                      |
 | File Upload      | Uploadthing                                                 |
 | Rate Limiting    | Upstash Redis (@upstash/ratelimit, in-memory fallback)      |
-| AI Generation    | OpenRouter (Ox Alpha, Dots, Nemotron, GLM, and Gemma models) |
+| AI Generation    | Coming soon — alternative model evaluation (previously OpenRouter) |
 | API              | Next.js API Route Handlers (full-stack, no separate server) |
 
 ---
@@ -93,9 +93,8 @@ Buildfolio lets developers:
 - **Liked Projects** — view projects you have liked; likes can be toggled
 - **Comments** — post and delete comments on project detail pages (persisted to database)
 - **Settings** — update name and bio, or change password (persisted to database)
-- **Description assistant** — write or rewrite an editable project description from the project form
-- **Project Ideas** (`/dashboard/ideas`) — generate three scoped ideas, prefill a new project form, or build an editable PRD, Design Spec, Style Guide, and README for one selected idea
-- **Ideas document workspace** — generate documents separately, edit them during the page session, then copy or download them as UTF-8 Markdown
+- **Create Project** flow is manual for now — AI description and document helpers are paused while we evaluate alternative models
+- **Project Ideas** (`/dashboard/ideas`) — route stays, content is *Coming soon* while the AI workspace returns
 
 ### Admin (role `admin`)
 
@@ -337,8 +336,8 @@ Open `http://localhost:3000` in your browser.
 | DELETE | `/api/comments/:id`              | Yes | Delete comment                        |
 | POST   | `/api/contact`                   | —    | Send contact email                    |
 | POST   | `/api/flags`                     | Yes | Report a project or comment (rate limited, duplicate-pending guarded) |
-| POST   | `/api/ai/generate`               | Yes | Generate descriptions, READMEs, or project ideas (5/hour, 15/day) |
-| GET    | `/api/ai/quota`                  | Yes | Remaining AI generations this hour and today |
+| POST   | `/api/ai/generate`               | Yes | *Coming soon* — AI generation paused for alternative model evaluation |
+| GET    | `/api/ai/quota`                  | Yes | *Coming soon* — quota endpoint paused |
 | GET    | `/api/admin/stats`               | Admin | Dashboard stats (incl. 14-day charts) |
 | GET    | `/api/admin/users`               | Admin | User list |
 | PATCH  | `/api/admin/users?id=:id`        | Admin | Verify, role change, ban, suspend, or restore user |

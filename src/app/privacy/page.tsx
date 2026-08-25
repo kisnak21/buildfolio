@@ -46,18 +46,15 @@ export default function PrivacyPage() {
           </section>
           <section>
             <h2 className='text-2xl font-black text-dark mb-3'>
-              3. AI Writing Tools
+              3. AI Writing Tools — Coming Soon
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
-              When you choose to generate a description, project idea, PRD, Design
-              Spec, Style Guide, or README, the project fields shown in that
-              workspace are sent to OpenRouter and an AI model provider to produce
-              the requested draft. Generated project documents remain in the
-              current page session unless you copy or download them. The provider
-              data collection policy is configurable by the operator and defaults
-              to the provider&apos;s normal policy so free models remain available.
-              Do not enter passwords, API keys, or other sensitive personal data
-              into AI-assisted fields.
+              AI generation (descriptions, project ideas, PRD, Design Spec, Style
+              Guide, README) is temporarily paused while we evaluate alternative
+              models. No project fields are sent to an AI provider in this mode,
+              and the <span className='font-bold'>/dashboard/ideas</span> route
+              shows a Coming Soon preview. We will update this section when the
+              workspace returns.
             </p>
           </section>
           <section>
