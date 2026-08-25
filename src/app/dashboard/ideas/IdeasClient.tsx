@@ -40,9 +40,6 @@ const ideaHref = (idea: AiIdea) => {
 const IdeasClient = () => {
   const [interests, setInterests] = useState('')
   const [technologies, setTechnologies] = useState('')
-  const [experience, setExperience] = useState<
-    'beginner' | 'intermediate' | 'advanced'
-  >('intermediate')
   const [ideas, setIdeas] = useState<AiIdea[]>([])
   const [error, setError] = useState('')
   const [generationStatus, setGenerationStatus] = useState('')
@@ -118,7 +115,6 @@ const IdeasClient = () => {
       const result = await generateAiContent('ideas', undefined, {
         interests: interests.trim() || undefined,
         technologies: technologyList,
-        experience,
       }, {
         signal: controller.signal,
         onEvent: (event: AiIdeasStreamEvent) => {
@@ -233,26 +229,6 @@ const IdeasClient = () => {
               placeholder='Next.js, PostgreSQL, TypeScript'
               className='mb-5 min-h-11 w-full rounded-xl border-2 border-dark bg-bgMain px-4 py-3 font-semibold shadow-brutal-sm'
             />
-
-            <div className='mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2'>
-              <div>
-                <label htmlFor='idea-experience' className='mb-2 block font-black'>
-                  Experience
-                </label>
-                <select
-                  id='idea-experience'
-                  value={experience}
-                  onChange={(event) =>
-                    setExperience(event.target.value as typeof experience)
-                  }
-                  className='min-h-11 w-full rounded-xl border-2 border-dark bg-white px-3 py-2 font-bold shadow-brutal-sm'
-                >
-                  <option value='beginner'>Beginner</option>
-                  <option value='intermediate'>Intermediate</option>
-                  <option value='advanced'>Advanced</option>
-                </select>
-              </div>
-            </div>
 
             <Button
               type='submit'
