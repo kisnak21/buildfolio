@@ -296,9 +296,15 @@ export async function POST(req: NextRequest) {
       const stream = new ReadableStream({
         async start(controller) {
           const encoder = new TextEncoder()
-          const abortFromRequest = () => generationController.abort()
+          const abortFromRequest = () =>
+            generationController.abort(
+              new DOMException('AI generation cancelled', 'AbortError'),
+            )
           const deadline = setTimeout(
-            () => generationController.abort(),
+            () =>
+              generationController.abort(
+                new DOMException('AI generation deadline exceeded', 'TimeoutError'),
+              ),
             AI_STREAM_DEADLINE_MS,
           )
           if (req.signal.aborted) generationController.abort()
@@ -411,9 +417,15 @@ export async function POST(req: NextRequest) {
 
     const result = await (async () => {
       const generationController = new AbortController()
-      const abortFromRequest = () => generationController.abort()
+      const abortFromRequest = () =>
+        generationController.abort(
+          new DOMException('AI generation cancelled', 'AbortError'),
+        )
       const deadline = setTimeout(
-        () => generationController.abort(),
+        () =>
+          generationController.abort(
+            new DOMException('AI generation deadline exceeded', 'TimeoutError'),
+          ),
         AI_STREAM_DEADLINE_MS,
       )
       if (req.signal.aborted) generationController.abort()
@@ -459,6 +471,28 @@ export async function POST(req: NextRequest) {
     )
   } catch (err: unknown) {
     const status = errorStatus(err)
+    if (status === 499) {
+      logger.info(
+        {
+          requestId,
+          status,
+          task: observedTask,
+          provider: observedTask ? 'openrouter' : undefined,
+          attempts,
+          fallbackCount,
+          firstTokenMs,
+          latencyMs: Math.round(performance.now() - requestStartedAt),
+          outputCharacters,
+          outcome: 'cancelled',
+        },
+        'AI generation cancelled',
+      )
+      return jsonResponse(
+        { success: false, message: 'AI generation cancelled.' },
+        { status },
+        requestId,
+      )
+    }
     logger.warn(
       {
         requestId,

@@ -7,6 +7,7 @@ interface RequestOptions {
   body?: string
   headers?: Record<string, string>
   timeoutMs?: number
+  signal?: AbortSignal
 }
 
 let redirectingBlockedAccount = false
@@ -31,10 +32,13 @@ const redirectBlockedAccount = (code: unknown) => {
 
 const request = async <T>(url: string, options: RequestOptions): Promise<{ data: T }> => {
   const controller = new AbortController()
+  const abortFromCaller = () => controller.abort(options.signal?.reason)
   const timeout = setTimeout(
     () => controller.abort(),
     options.timeoutMs ?? 15_000,
   )
+  if (options.signal?.aborted) abortFromCaller()
+  else options.signal?.addEventListener('abort', abortFromCaller, { once: true })
 
   try {
     const res = await fetch(`${baseURL}${url}`, {
@@ -68,6 +72,7 @@ const request = async <T>(url: string, options: RequestOptions): Promise<{ data:
     return { data: body as T }
   } finally {
     clearTimeout(timeout)
+    options.signal?.removeEventListener('abort', abortFromCaller)
   }
 }
 
@@ -109,12 +114,13 @@ const realApiClient = {
   post: <T = any>(
     url: string,
     data?: object,
-    options?: { timeoutMs?: number },
+    options?: { timeoutMs?: number; signal?: AbortSignal },
   ): Promise<{ data: T }> =>
     request<T>(url, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
       timeoutMs: options?.timeoutMs,
+      signal: options?.signal,
     }),
   postStream: (
     url: string,

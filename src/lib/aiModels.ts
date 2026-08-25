@@ -61,10 +61,12 @@ export const PROJECT_CATEGORIES = [
 ] as const
 
 export type AiModelId = (typeof AI_MODELS)[number]['id']
-export type AiTask = 'description' | 'readme' | 'ideas'
+export type AiDocumentTask = 'prd' | 'design' | 'styleGuide' | 'readme'
+export type AiTask = 'description' | 'ideas' | AiDocumentTask
 
 export interface AiGenerationInput {
   title?: string
+  summary?: string
   description?: string
   category?: string
   technologies?: string[]
@@ -84,7 +86,7 @@ export interface AiIdea {
 
 export type AiGenerationResult =
   | {
-      task: 'description' | 'readme'
+      task: 'description' | AiDocumentTask
       text: string
       model: string
     }

@@ -101,6 +101,34 @@ describe('AI request parsing', () => {
     expect(() => parseAiRequest({ task: 'ideas', input: {} })).toThrow(
       'Add at least one interest or technology',
     )
+    for (const task of ['prd', 'design', 'styleGuide', 'readme']) {
+      expect(() =>
+        parseAiRequest({ task, input: { title: 'Buildfolio' } }),
+      ).toThrow('description is required')
+    }
+  })
+
+  it('normalizes selected idea context for document tasks', () => {
+    expect(
+      parseAiRequest({
+        task: 'prd',
+        input: {
+          title: ' Buildfolio ',
+          summary: ' A project discovery platform. ',
+          description: ' Developers share their work. ',
+          category: 'Web App',
+          technologies: [' Next.js '],
+        },
+      }),
+    ).toMatchObject({
+      task: 'prd',
+      input: {
+        title: 'Buildfolio',
+        summary: 'A project discovery platform.',
+        description: 'Developers share their work.',
+        technologies: ['Next.js'],
+      },
+    })
   })
 
   it('rejects unsupported tasks, models, and experience levels', () => {
@@ -116,6 +144,12 @@ describe('AI request parsing', () => {
         input: { interests: 'tools', experience: 'expert' },
       }),
     ).toThrow('Invalid experience level')
+    expect(() =>
+      parseAiRequest({
+        task: ['prd'],
+        input: { title: 'Buildfolio', description: 'Project description' },
+      }),
+    ).toThrow('Invalid generation task')
   })
 })
 
@@ -247,6 +281,35 @@ describe('OpenRouter SDK generation', () => {
     })
   })
 
+  it.each([
+    ['prd', 'product requirements document', 2_500],
+    ['design', 'design specification', 2_200],
+    ['styleGuide', 'UI style guide', 2_200],
+    ['readme', 'README draft', 2_200],
+  ] as const)(
+    'builds the task-specific %s Markdown request',
+    async (task, promptText, maxTokens) => {
+      sdk.create.mockReturnValue(sdkResponse(['# Generated document']))
+
+      const result = await generateWithOpenRouter({
+        task,
+        model: 'stealth/ox-alpha',
+        input: {
+          title: 'Buildfolio',
+          summary: 'A project showcase.',
+          description: 'Developers publish portfolio projects.',
+        },
+      })
+
+      expect(result).toMatchObject({ task, text: '# Generated document' })
+      const body = sdk.create.mock.calls.at(-1)?.[0]
+      expect(body.max_tokens).toBe(maxTokens)
+      expect(body.messages[1].content).toContain(promptText)
+      expect(body.messages[1].content).toContain('"summary": "A project showcase."')
+      expect(body.response_format).toBeUndefined()
+    },
+  )
+
   it('falls back to JSON mode when the schema-capable model fails', async () => {
     const providerError = Object.assign(new Error('provider unavailable'), {
       name: 'APIError',
@@ -306,7 +369,7 @@ describe('OpenRouter SDK generation', () => {
         input: { title: 'Buildfolio' },
         signal: controller.signal,
       }),
-    ).rejects.toMatchObject({ statusCode: 504 })
+    ).rejects.toMatchObject({ statusCode: 499 })
     expect(sdk.create).toHaveBeenCalledTimes(1)
   })
 
@@ -370,7 +433,7 @@ describe('OpenRouter SDK generation', () => {
           if (event.event === 'first_token') controller.abort()
         },
       }),
-    ).rejects.toMatchObject({ statusCode: 504 })
+    ).rejects.toMatchObject({ statusCode: 499 })
     expect(sdk.create).toHaveBeenCalledTimes(1)
   })
 
@@ -447,5 +510,32 @@ describe('OpenRouter SDK generation', () => {
       event: 'done',
       data: { data: { task: 'ideas', ideas: expect.any(Array) } },
     })
+  })
+
+  it('cancels Ideas streaming without reporting an attempt failure', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    sdk.create.mockImplementation((_body, options) => ({
+      withResponse: vi.fn().mockImplementation(async () => {
+        expect(options.signal.aborted).toBe(true)
+        const error = new Error('aborted')
+        error.name = 'APIUserAbortError'
+        throw error
+      }),
+    }))
+    const telemetry: AiTelemetryEvent[] = []
+
+    const stream = streamIdeasWithOpenRouter({
+      model: 'stealth/ox-alpha',
+      input: { interests: 'community tools' },
+      signal: controller.signal,
+      onTelemetry: (event) => telemetry.push(event),
+    })
+
+    const first = await stream.next()
+    expect(first.done).toBe(false)
+    await expect(stream.next()).rejects.toMatchObject({ statusCode: 499 })
+    expect(sdk.create).toHaveBeenCalledTimes(1)
+    expect(telemetry.map((event) => event.event)).toEqual(['attempt_started'])
   })
 })

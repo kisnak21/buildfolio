@@ -11,6 +11,7 @@ interface ButtonProps {
   disabled?: boolean
   onClick?: () => void
   className?: string
+  'aria-pressed'?: boolean
 }
 
 const Button = ({
@@ -22,12 +23,14 @@ const Button = ({
   disabled = false,
   onClick,
   className = '',
+  'aria-pressed': ariaPressed,
 }: ButtonProps) => {
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-pressed={ariaPressed}
       className={`${buttonClass(variant, size)} ${fullWidth ? 'w-full' : ''} ${
         disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
       } ${className}`}

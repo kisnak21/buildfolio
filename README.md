@@ -33,7 +33,7 @@ Buildfolio lets developers:
 - Register and log in with real authentication and email verification
 - View public developer profiles
 - Moderate the community via an admin dashboard (users, projects, comments, content flags, audit logs)
-- Draft project descriptions, READMEs, and scoped project ideas with free OpenRouter models
+- Draft project descriptions, scoped project ideas, and editable project documents with free OpenRouter models
 
 ---
 
@@ -93,8 +93,9 @@ Buildfolio lets developers:
 - **Liked Projects** — view projects you have liked; likes can be toggled
 - **Comments** — post and delete comments on project detail pages (persisted to database)
 - **Settings** — update name and bio, or change password (persisted to database)
-- **AI writing tools** — generate an editable project description or README draft from the project form
-- **Project Ideas** (`/dashboard/ideas`) — generate three scoped ideas and prefill the selected idea into a new project form
+- **Description assistant** — write or rewrite an editable project description from the project form
+- **Project Ideas** (`/dashboard/ideas`) — generate three scoped ideas, prefill a new project form, or build an editable PRD, Design Spec, Style Guide, and README for one selected idea
+- **Ideas document workspace** — generate documents separately, edit them during the page session, then copy or download them as UTF-8 Markdown
 
 ### Admin (role `admin`)
 

@@ -13,6 +13,7 @@ export interface AiIdeasStreamEvent {
 
 interface AiGenerationOptions {
   onEvent?: (event: AiIdeasStreamEvent) => void
+  signal?: AbortSignal
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -32,7 +33,14 @@ const generateAiIdeas = async (
   options?: AiGenerationOptions,
 ): Promise<AiGenerationResult> => {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 65_000)
+  let timedOut = false
+  const timeout = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, 65_000)
+  const abortFromCaller = () => controller.abort(options?.signal?.reason)
+  if (options?.signal?.aborted) abortFromCaller()
+  else options?.signal?.addEventListener('abort', abortFromCaller, { once: true })
   let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
   let result: AiGenerationResult | undefined
 
@@ -96,11 +104,18 @@ const generateAiIdeas = async (
     return result
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
+      if (options?.signal?.aborted) {
+        throw streamError('AI generation cancelled.')
+      }
+      if (timedOut) {
+        throw streamError('AI generation timed out. Please try again.')
+      }
       throw streamError('AI generation timed out. Please try again.')
     }
     throw error
   } finally {
     clearTimeout(timeout)
+    options?.signal?.removeEventListener('abort', abortFromCaller)
     reader?.releaseLock()
   }
 }
@@ -116,7 +131,7 @@ export const generateAiContent = async (
   const response = await realApiClient.post(
     '/ai/generate',
     { task, model, input },
-    { timeoutMs: 65_000 },
+    { timeoutMs: 65_000, signal: options?.signal },
   )
   return response.data.data as AiGenerationResult
 }

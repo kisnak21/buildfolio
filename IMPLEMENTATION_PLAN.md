@@ -1,6 +1,6 @@
 # Buildfolio Implementation Plan
 
-Status updated: 2026-08-25. Milestone 1 is complete in the current worktree.
+Status updated: 2026-08-25. Milestones 1 and 6 are complete in the current worktree.
 
 This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, and project-discovery improvements. Model selection remains an internal server concern; users should not choose providers directly.
 
@@ -199,6 +199,8 @@ Update `ProjectCard.tsx` and `ProjectDetailClient.tsx`.
 
 ## Milestone 6: Ideas Workspace Documents
 
+- [x] Complete
+
 The Ideas page becomes the workspace for turning one generated idea into an actionable project package. The workspace stays inside `/dashboard/ideas`; a separate route is not needed because generated documents are initially ephemeral.
 
 Confirmed product decisions:
@@ -210,7 +212,7 @@ Confirmed product decisions:
 - Documents are not persisted in the database in the first version.
 - Project submission keeps only explicit description generation; README generation moves out of `ProjectForm`.
 
-### AI Tasks and Contracts
+### [x] AI Tasks and Contracts
 
 Update `src/lib/aiModels.ts`, `src/lib/services/aiService.ts`, `src/lib/api/aiApi.ts`, and `src/app/api/ai/generate/route.ts`.
 
@@ -222,14 +224,14 @@ Update `src/lib/aiModels.ts`, `src/lib/services/aiService.ts`, `src/lib/api/aiAp
 - Count each successful generated document as one AI quota unit.
 - Make each document prompt explicitly separate factual project context from design recommendations.
 
-### Document Prompts
+### [x] Document Prompts
 
 - PRD: problem, target users, goals, non-goals, user stories, MVP scope, requirements, acceptance criteria, risks, metrics, and milestones.
 - Design Spec: product direction, information architecture, layouts, flows, interaction states, responsive behavior, accessibility, and implementation notes.
 - Style Guide: visual personality, semantic color roles, typography, spacing, radii, shadows, components, and UI states.
 - README: purpose, overview, features based on supplied facts, tech stack, setup placeholders, and links.
 
-### Ideas UI
+### [x] Ideas UI
 
 Update `src/app/dashboard/ideas/IdeasClient.tsx` and add reusable components:
 
@@ -244,7 +246,7 @@ Update `src/app/dashboard/ideas/IdeasClient.tsx` and add reusable components:
 - Add loading, retry, cancel, empty, copy-success, download, and provider-error states.
 - Avoid a `Generate all` action initially because it could consume four quota units at once.
 
-### Copy and Download Utilities
+### [x] Copy and Download Utilities
 
 Add client-safe helpers in `src/lib/utils.ts` or a dedicated document utility module:
 
@@ -252,7 +254,7 @@ Add client-safe helpers in `src/lib/utils.ts` or a dedicated document utility mo
 - `downloadText(filename, content, mimeType)` using a Blob and object URL cleanup.
 - Keep downloaded content as UTF-8 Markdown.
 
-### Project Form Changes
+### [x] Project Form Changes
 
 Update `src/components/dashboard/ProjectForm.tsx`.
 
@@ -261,7 +263,7 @@ Update `src/components/dashboard/ProjectForm.tsx`.
 - Keep description generation explicit rather than automatically consuming quota during project submission.
 - Keep `Start this project` prefill behavior unchanged.
 
-### Documentation
+### [x] Documentation
 
 Update `README.md` and `src/app/privacy/page.tsx` to describe document generation under Project Ideas instead of the project form.
 
@@ -302,7 +304,7 @@ Use an authenticated staging session for AI SSE verification and a disposable da
 3. [x] Add structured JSON Schema and verify model capability.
 4. Add cancel, retry, visible progress, quota, and Retry-After UX.
 5. Verify backup secrets and complete a manual restore drill.
-6. Expand Project Ideas into the document workspace and move README generation there.
+6. [x] Expand Project Ideas into the document workspace and move README generation there.
 7. Add draft status, draft APIs, and visibility safeguards.
 8. Move search and filters server-side.
 9. Correct bookmark data loading and add card actions.

@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRightIcon,
   LightBulbIcon,
-  SparklesIcon,
 } from '@heroicons/react/24/solid'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import IdeaWorkspace from '@/components/dashboard/IdeaWorkspace'
 import Button from '@/components/ui/Button'
 import type { AiIdea } from '@/lib/aiModels'
 import { generateAiContent, type AiIdeasStreamEvent } from '@/lib/api/aiApi'
@@ -35,6 +35,9 @@ const IdeasClient = () => {
   const [error, setError] = useState('')
   const [generationStatus, setGenerationStatus] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [selectedIdeaIndex, setSelectedIdeaIndex] = useState<number | null>(null)
+  const [ideaBatch, setIdeaBatch] = useState(0)
+  const workspaceRef = useRef<HTMLDivElement>(null)
 
   const handleGenerate = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -75,6 +78,8 @@ const IdeasClient = () => {
       })
       if (result.task === 'ideas') {
         setIdeas(result.ideas)
+        setSelectedIdeaIndex(null)
+        setIdeaBatch((current) => current + 1)
         setGenerationStatus('Three project ideas generated.')
       }
     } catch (requestError) {
@@ -174,7 +179,7 @@ const IdeasClient = () => {
             </div>
 
             <Button type='submit' fullWidth disabled={generating}>
-              <SparklesIcon className='h-5 w-5' aria-hidden />
+              <LightBulbIcon className='h-5 w-5' aria-hidden />
               {generating ? 'Generating ideas...' : 'Generate three ideas'}
             </Button>
             </fieldset>
@@ -204,6 +209,7 @@ const IdeasClient = () => {
                   type='button'
                   onClick={() => {
                     setIdeas([])
+                    setSelectedIdeaIndex(null)
                     setGenerationStatus('Idea results cleared.')
                   }}
                   className='min-h-11 font-bold underline decoration-2 underline-offset-4'
@@ -258,18 +264,55 @@ const IdeasClient = () => {
                         ))}
                       </div>
                     )}
-                    <Link
-                      href={ideaHref(idea)}
-                      className='mt-6 inline-flex min-h-11 items-center gap-2 rounded-xl border-2 border-dark bg-dark px-4 py-2 font-black text-white shadow-brutal-sm hover:bg-accentDark'
-                    >
-                      Start this project
-                      <ArrowRightIcon className='h-4 w-4' aria-hidden />
-                    </Link>
+                    <div className='mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap'>
+                      <Button
+                        type='button'
+                        variant='secondary'
+                        aria-pressed={selectedIdeaIndex === index}
+                        onClick={() => {
+                          setSelectedIdeaIndex(index)
+                          requestAnimationFrame(() => {
+                            const heading =
+                              workspaceRef.current?.querySelector<HTMLElement>(
+                                '[data-workspace-heading]',
+                              )
+                            heading?.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start',
+                            })
+                            heading?.focus({ preventScroll: true })
+                          })
+                        }}
+                        className='min-h-11'
+                      >
+                        <LightBulbIcon className='h-5 w-5' aria-hidden />
+                        {selectedIdeaIndex === index
+                          ? 'Package selected'
+                          : 'Build project package'}
+                      </Button>
+                      <Link
+                        href={ideaHref(idea)}
+                        className='inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border-2 border-dark bg-dark px-4 py-2 font-black text-white shadow-brutal-sm hover:bg-accentDark'
+                      >
+                        Start this project
+                        <ArrowRightIcon className='h-4 w-4' aria-hidden />
+                      </Link>
+                    </div>
                   </article>
                 ))}
               </div>
             )}
           </section>
+        </div>
+        <div ref={workspaceRef}>
+          <IdeaWorkspace
+            idea={selectedIdeaIndex === null ? null : ideas[selectedIdeaIndex]}
+            ideaKey={
+              selectedIdeaIndex === null || !ideas[selectedIdeaIndex]
+                ? null
+                : `${ideaBatch}:${selectedIdeaIndex}:${ideas[selectedIdeaIndex].title}`
+            }
+          />
         </div>
       </main>
       <Footer />

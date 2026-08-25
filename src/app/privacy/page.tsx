@@ -49,12 +49,14 @@ export default function PrivacyPage() {
               3. AI Writing Tools
             </h2>
             <p className='font-medium text-gray-700 leading-relaxed'>
-              When you choose to generate a description, README, or project idea,
-              the project fields shown in that form are sent to OpenRouter and an
-              AI model provider to produce the requested draft. The provider data
-              collection policy is configurable by the operator and defaults to
-              the provider&apos;s normal policy so free models remain available. Do
-              not enter passwords, API keys, or other sensitive personal data
+              When you choose to generate a description, project idea, PRD, Design
+              Spec, Style Guide, or README, the project fields shown in that
+              workspace are sent to OpenRouter and an AI model provider to produce
+              the requested draft. Generated project documents remain in the
+              current page session unless you copy or download them. The provider
+              data collection policy is configurable by the operator and defaults
+              to the provider&apos;s normal policy so free models remain available.
+              Do not enter passwords, API keys, or other sensitive personal data
               into AI-assisted fields.
             </p>
           </section>
