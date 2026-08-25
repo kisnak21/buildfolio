@@ -18,12 +18,15 @@ const OPENROUTER_BASE_URL =
     /\/+$/,
     '',
   )
-const OPENROUTER_URL = `${OPENROUTER_BASE_URL}/chat/completions`
 const OPENROUTER_STREAM_IDLE_TIMEOUT_MS = 20_000
+const OPENROUTER_ATTEMPT_TIMEOUT_MS = 22_000
 type JsonRecord = Record<string, unknown>
 
-const apiError = (message: string, statusCode: number) =>
-  Object.assign(new Error(message), { statusCode })
+const apiError = (
+  message: string,
+  statusCode: number,
+  metadata?: { providerStatus?: number; errorClass?: string },
+) => Object.assign(new Error(message), { statusCode, ...metadata })
 
 let openRouterClient: OpenAI | undefined
 
@@ -37,8 +40,10 @@ const getOpenRouterClient = () => {
       defaultHeaders: {
         'HTTP-Referer':
           process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
-        'X-Title': 'Buildfolio',
+        'X-OpenRouter-Title': 'Buildfolio',
       },
+      maxRetries: 0,
+      timeout: OPENROUTER_ATTEMPT_TIMEOUT_MS,
     })
   }
   return openRouterClient
@@ -172,31 +177,54 @@ ${data}
 </project_data>`
 }
 
-const readCompletionText = (content: unknown) => {
-  if (typeof content === 'string') return content.trim()
-  if (!Array.isArray(content)) return ''
-  return content
-    .map((part) =>
-      isRecord(part) && typeof part.text === 'string' ? part.text : '',
-    )
-    .join('')
-    .trim()
+export const IDEAS_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ideas: {
+      type: 'array',
+      minItems: 3,
+      maxItems: 3,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          title: { type: 'string', minLength: 1, maxLength: 120 },
+          summary: { type: 'string', minLength: 1, maxLength: 300 },
+          description: { type: 'string', minLength: 1, maxLength: 1_000 },
+          category: { type: 'string', enum: PROJECT_CATEGORIES },
+          technologies: {
+            type: 'array',
+            maxItems: 10,
+            uniqueItems: true,
+            items: { type: 'string', minLength: 1, maxLength: 100 },
+          },
+        },
+        required: [
+          'title',
+          'summary',
+          'description',
+          'category',
+          'technologies',
+        ],
+      },
+    },
+  },
+  required: ['ideas'],
+} as const
+
+const ideaString = (
+  candidate: JsonRecord,
+  key: string,
+  maxLength: number,
+) => {
+  const value = candidate[key]
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  return trimmed.length <= maxLength ? trimmed : ''
 }
 
-const readStreamText = (content: unknown) => {
-  if (typeof content === 'string') return content
-  if (!Array.isArray(content)) return ''
-  return content
-    .map((part) =>
-      isRecord(part) && typeof part.text === 'string' ? part.text : '',
-    )
-    .join('')
-}
-
-const boundedString = (value: unknown, max: number) =>
-  typeof value === 'string' ? value.trim().slice(0, max) : ''
-
-const parseIdeas = (text: string): AiIdea[] => {
+export const parseIdeas = (text: string): AiIdea[] => {
   const unfenced = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
   const start = unfenced.indexOf('{')
   const end = unfenced.lastIndexOf('}')
@@ -213,32 +241,65 @@ const parseIdeas = (text: string): AiIdea[] => {
   if (!isRecord(parsed) || !Array.isArray(parsed.ideas)) {
     throw apiError('The AI returned an invalid idea format. Please try again.', 502)
   }
+  if (Object.keys(parsed).some((key) => key !== 'ideas')) {
+    throw apiError('The AI returned an invalid idea format. Please try again.', 502)
+  }
   if (parsed.ideas.length !== 3) {
     throw apiError('The AI did not return exactly three ideas. Please try again.', 502)
   }
 
   const ideas = parsed.ideas.flatMap((candidate): AiIdea[] => {
     if (!isRecord(candidate)) return []
-    const title = boundedString(candidate.title, 120)
-    const summary = boundedString(candidate.summary, 300)
-    const description = boundedString(candidate.description, 1_000)
-    const requestedCategory = boundedString(candidate.category, 100)
-    const category = PROJECT_CATEGORIES.includes(
-      requestedCategory as (typeof PROJECT_CATEGORIES)[number],
-    )
-      ? requestedCategory
-      : 'Web App'
-    const technologies = Array.isArray(candidate.technologies)
-      ? [...new Set(
-          candidate.technologies
-            .filter((item): item is string => typeof item === 'string')
-            .map((item) => item.trim().slice(0, 100))
-            .filter(Boolean),
-        )].slice(0, 10)
-      : []
+    const expectedKeys = new Set([
+      'title',
+      'summary',
+      'description',
+      'category',
+      'technologies',
+    ])
+    if (Object.keys(candidate).some((key) => !expectedKeys.has(key))) return []
+    const title = ideaString(candidate, 'title', 120)
+    const summary = ideaString(candidate, 'summary', 300)
+    const description = ideaString(candidate, 'description', 1_000)
+    const requestedCategory = ideaString(candidate, 'category', 100)
+    if (
+      !PROJECT_CATEGORIES.includes(
+        requestedCategory as (typeof PROJECT_CATEGORIES)[number],
+      )
+    ) {
+      return []
+    }
+    if (
+      !Array.isArray(candidate.technologies) ||
+      candidate.technologies.length > 10
+    ) {
+      return []
+    }
+    const technologies = candidate.technologies.flatMap((item): string[] => {
+      if (typeof item !== 'string') return []
+      const trimmed = item.trim()
+      return trimmed && trimmed.length <= 100 ? [trimmed] : []
+    })
 
-    if (!title || !summary || !description) return []
-    return [{ title, summary, description, category, technologies }]
+    if (
+      !title ||
+      !summary ||
+      !description ||
+      technologies.length !== candidate.technologies.length ||
+      new Set(technologies.map((item) => item.toLowerCase())).size !==
+        technologies.length
+    ) {
+      return []
+    }
+    return [
+      {
+        title,
+        summary,
+        description,
+        category: requestedCategory,
+        technologies,
+      },
+    ]
   })
 
   if (
@@ -248,161 +309,6 @@ const parseIdeas = (text: string): AiIdea[] => {
     throw apiError('The AI returned invalid or duplicate ideas. Please try again.', 502)
   }
   return ideas
-}
-
-const orderedCandidates = (requested: AiModelId, task: AiTask) => {
-  const requestedConfig = AI_MODELS.find((model) => model.id === requested)
-  const needsJsonSupport = task === 'ideas' && requestedConfig?.supportsJson === true
-  const fallbackModels = AI_MODELS.filter(
-    (model) => !needsJsonSupport || model.supportsJson,
-  ).map((model) => model.id)
-
-  const maxCandidates = task === 'ideas' ? 2 : 3
-  return [
-    requested,
-    ...fallbackModels.filter((id) => id !== requested),
-  ].slice(0, maxCandidates)
-}
-
-const providerErrorMessage = (payload: unknown) => {
-  if (!isRecord(payload)) return ''
-  const providerError = payload.error
-  if (typeof providerError === 'string') return providerError.slice(0, 300)
-  if (isRecord(providerError) && typeof providerError.message === 'string') {
-    return providerError.message.slice(0, 300)
-  }
-  return ''
-}
-
-const generateSingleWithOpenRouter = async ({
-  task,
-  model,
-  input,
-  signal,
-}: {
-  task: AiTask
-  model: AiModelId
-  input: AiGenerationInput
-  signal?: AbortSignal
-}): Promise<AiGenerationResult> => {
-  const apiKey = process.env.OPENROUTER_API_KEY
-  if (!apiKey) throw apiError('AI generation is not configured', 503)
-
-  const modelConfig = AI_MODELS.find((candidate) => candidate.id === model)
-  const useJsonFormat = task === 'ideas' && modelConfig?.supportsJson === true
-  const dataCollection =
-    process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow'
-
-  const controller = new AbortController()
-  const abortFromCaller = () => controller.abort()
-  if (signal?.aborted) controller.abort()
-  else signal?.addEventListener('abort', abortFromCaller, { once: true })
-  const timeout = setTimeout(() => controller.abort(), 22_000)
-  try {
-    const response = await fetch(OPENROUTER_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer':
-          process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
-        'X-OpenRouter-Title': 'Buildfolio',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: taskPrompt(task, input) },
-        ],
-        provider: {
-          require_parameters: useJsonFormat,
-          data_collection: dataCollection,
-        },
-        stream: false,
-        temperature: task === 'ideas' ? 0.85 : 0.55,
-        max_tokens:
-          task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
-        ...(model === 'stealth/ox-alpha' && {
-          reasoning: { effort: 'low' },
-        }),
-        ...(useJsonFormat && {
-          response_format: { type: 'json_object' },
-        }),
-      }),
-    })
-
-    const payload: unknown = await response.json()
-    if (!response.ok) {
-      if (response.status === 429) {
-        throw apiError('Free AI models are busy. Please try again shortly.', 429)
-      }
-      const detail = providerErrorMessage(payload)
-      throw apiError(
-        detail
-          ? `AI provider error: ${detail}`
-          : 'AI generation failed. Please try again.',
-        502,
-      )
-    }
-    if (!isRecord(payload) || !Array.isArray(payload.choices)) {
-      throw apiError('AI provider returned an invalid response.', 502)
-    }
-
-    const firstChoice = payload.choices[0]
-    const text =
-      isRecord(firstChoice) && isRecord(firstChoice.message)
-        ? readCompletionText(firstChoice.message.content)
-        : ''
-    if (!text) {
-      throw apiError('The AI returned an empty response. Please try again.', 502)
-    }
-
-    const actualModel =
-      typeof payload.model === 'string' ? payload.model : model
-    if (task === 'ideas') {
-      return { task, ideas: parseIdeas(text), model: actualModel }
-    }
-    return {
-      task,
-      text: text.slice(0, task === 'description' ? 1_200 : 12_000),
-      model: actualModel,
-    }
-  } catch (error) {
-    if (
-      isRecord(error) &&
-      typeof error.statusCode === 'number'
-    ) {
-      throw error
-    }
-    if (error instanceof Error && error.name === 'AbortError') {
-      throw apiError('AI generation timed out. Please try again.', 504)
-    }
-    throw apiError('AI provider is unavailable. Please try again.', 502)
-  } finally {
-    clearTimeout(timeout)
-    signal?.removeEventListener('abort', abortFromCaller)
-  }
-}
-
-export const generateWithOpenRouter = async (params: {
-  task: AiTask
-  model: AiModelId
-  input: AiGenerationInput
-  signal?: AbortSignal
-}): Promise<AiGenerationResult> => {
-  let lastError: unknown
-
-  for (const candidate of orderedCandidates(params.model, params.task)) {
-    try {
-      return await generateSingleWithOpenRouter({ ...params, model: candidate })
-    } catch (error) {
-      if (params.signal?.aborted) throw error
-      lastError = error
-    }
-  }
-
-  throw lastError ?? apiError('AI provider is unavailable. Please try again.', 502)
 }
 
 export type AiStreamEvent =
@@ -418,26 +324,200 @@ export type AiStreamEvent =
   | { event: 'done'; data: { data: AiGenerationResult } }
   | { event: 'error'; data: { message: string } }
 
+export type AiTelemetryEvent =
+  | {
+      event: 'attempt_started'
+      model: string
+      attempt: number
+      totalAttempts: number
+    }
+  | {
+      event: 'provider_connected'
+      model: string
+      attempt: number
+      providerStatus: number
+      latencyMs: number
+    }
+  | {
+      event: 'first_token'
+      model: string
+      actualModel: string
+      attempt: number
+      providerStatus: number
+      latencyMs: number
+    }
+  | {
+      event: 'attempt_succeeded'
+      model: string
+      actualModel: string
+      attempt: number
+      providerStatus: number
+      latencyMs: number
+      outputCharacters: number
+    }
+  | {
+      event: 'attempt_failed'
+      model: string
+      attempt: number
+      providerStatus?: number
+      latencyMs: number
+      errorClass: string
+    }
+  | {
+      event: 'fallback'
+      from: string
+      next: string
+      attempt: number
+    }
+
+export type AiTelemetryHandler = (event: AiTelemetryEvent) => void
+
+const emitTelemetry = (
+  handler: AiTelemetryHandler | undefined,
+  event: AiTelemetryEvent,
+) => {
+  try {
+    handler?.(event)
+  } catch {
+    // Telemetry must never interrupt generation.
+  }
+}
+
+const elapsedMs = (startedAt: number) =>
+  Math.max(0, Math.round(performance.now() - startedAt))
+
+const providerStatusFromError = (error: unknown) => {
+  if (!isRecord(error)) return undefined
+  if (typeof error.providerStatus === 'number') return error.providerStatus
+  return typeof error.status === 'number' ? error.status : undefined
+}
+
+const errorClassFrom = (error: unknown) => {
+  if (isRecord(error) && typeof error.errorClass === 'string') {
+    return error.errorClass.slice(0, 80)
+  }
+  if (error instanceof Error) {
+    const constructorName = error.constructor?.name
+    return (constructorName && constructorName !== 'Error'
+      ? constructorName
+      : error.name
+    ).slice(0, 80) || 'Error'
+  }
+  return 'UnknownError'
+}
+
+const mapOpenRouterError = (error: unknown) => {
+  if (isRecord(error) && typeof error.statusCode === 'number') return error
+  const providerStatus = providerStatusFromError(error)
+  const errorClass = errorClassFrom(error)
+
+  if (providerStatus === 429) {
+    return apiError('Free AI models are busy. Please try again shortly.', 429, {
+      providerStatus,
+      errorClass,
+    })
+  }
+  if (
+    errorClass === 'AbortError' ||
+    errorClass === 'APIUserAbortError' ||
+    errorClass === 'APIConnectionTimeoutError'
+  ) {
+    return apiError('AI generation timed out. Please try again.', 504, {
+      providerStatus,
+      errorClass,
+    })
+  }
+  return apiError('AI provider is unavailable. Please try again.', 502, {
+    providerStatus,
+    errorClass,
+  })
+}
+
+const orderedCandidates = (requested: AiModelId, task: AiTask) => {
+  const available = AI_MODELS.filter(
+    (model) => task !== 'ideas' || model.supportsJson,
+  ).map((model) => model.id)
+  const candidates = available.includes(requested)
+    ? [requested, ...available.filter((id) => id !== requested)]
+    : available
+  return candidates.slice(0, task === 'ideas' ? 2 : 3)
+}
+
+const responseFormatFor = (task: AiTask, model: AiModelId) => {
+  if (task !== 'ideas') return undefined
+  const config = AI_MODELS.find((candidate) => candidate.id === model)
+  if (config?.supportsJsonSchema) {
+    return {
+      type: 'json_schema',
+      json_schema: {
+        name: 'buildfolio_project_ideas',
+        strict: true,
+        schema: IDEAS_JSON_SCHEMA,
+      },
+    }
+  }
+  return config?.supportsJson ? { type: 'json_object' } : undefined
+}
+
+const openRouterRequest = (
+  task: AiTask,
+  model: AiModelId,
+  input: AiGenerationInput,
+) => {
+  const responseFormat = responseFormatFor(task, model)
+  return {
+    model,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: taskPrompt(task, input) },
+    ],
+    provider: {
+      require_parameters: responseFormat !== undefined,
+      data_collection:
+        process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow',
+    },
+    stream: true,
+    temperature: task === 'ideas' ? 0.85 : 0.55,
+    max_tokens:
+      task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
+    ...(model === 'stealth/ox-alpha' && {
+      reasoning: { effort: 'low' },
+    }),
+    ...(responseFormat && { response_format: responseFormat }),
+  }
+}
+
+interface OpenRouterTextChunk {
+  text: string
+  actualModel: string
+  providerStatus: number
+}
+
 const streamSingleWithOpenRouter = async function* ({
   task,
   model,
   input,
   signal,
+  attempt,
+  onTelemetry,
 }: {
   task: AiTask
   model: AiModelId
   input: AiGenerationInput
   signal?: AbortSignal
-}): AsyncGenerator<string> {
-  const modelConfig = AI_MODELS.find((candidate) => candidate.id === model)
-  const useJsonFormat = task === 'ideas' && modelConfig?.supportsJson === true
-  const dataCollection =
-    process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow'
+  attempt: number
+  onTelemetry?: AiTelemetryHandler
+}): AsyncGenerator<OpenRouterTextChunk> {
   const controller = new AbortController()
   const abortFromCaller = () => controller.abort()
+  const startedAt = performance.now()
   let idleTimeout = setTimeout(
     () => controller.abort(),
     OPENROUTER_STREAM_IDLE_TIMEOUT_MS,
+  )
+  const attemptTimeout = setTimeout(
+    () => controller.abort(),
+    OPENROUTER_ATTEMPT_TIMEOUT_MS,
   )
   const resetIdleTimeout = () => {
     clearTimeout(idleTimeout)
@@ -451,84 +531,190 @@ const streamSingleWithOpenRouter = async function* ({
   else signal?.addEventListener('abort', abortFromCaller, { once: true })
 
   try {
-    const stream = await getOpenRouterClient().chat.completions.create(
-      {
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: taskPrompt(task, input) },
-        ],
-        provider: {
-          require_parameters: useJsonFormat,
-          data_collection: dataCollection,
-        },
-        stream: true,
-        temperature: task === 'ideas' ? 0.85 : 0.55,
-        max_tokens:
-          task === 'description' ? 500 : task === 'readme' ? 2_000 : 1_400,
-        ...(model === 'stealth/ox-alpha' && {
-          reasoning: { effort: 'low' },
-        }),
-        ...(useJsonFormat && {
-          response_format: { type: 'json_object' },
-        }),
-      } as unknown as Parameters<OpenAI['chat']['completions']['create']>[0] & {
+    const request = getOpenRouterClient().chat.completions.create(
+      openRouterRequest(task, model, input) as unknown as Parameters<
+        OpenAI['chat']['completions']['create']
+      >[0] & {
         stream: true
       },
       { signal: controller.signal },
     )
+    const { data: stream, response } = await request.withResponse()
+    const providerStatus = response.status
+    emitTelemetry(onTelemetry, {
+      event: 'provider_connected',
+      model,
+      attempt,
+      providerStatus,
+      latencyMs: elapsedMs(startedAt),
+    })
 
     let hasFirstToken = false
+    let actualModel: string = model
     for await (const chunk of stream) {
       resetIdleTimeout()
+      actualModel = chunk.model || actualModel
       const delta = chunk.choices?.[0]?.delta?.content
-      const text = readStreamText(delta)
+      const text = typeof delta === 'string' ? delta : ''
       if (!text) continue
-      hasFirstToken = true
-      yield text
+      if (!hasFirstToken) {
+        hasFirstToken = true
+        emitTelemetry(onTelemetry, {
+          event: 'first_token',
+          model,
+          actualModel,
+          attempt,
+          providerStatus,
+          latencyMs: elapsedMs(startedAt),
+        })
+      }
+      yield { text, actualModel, providerStatus }
     }
     if (!hasFirstToken) {
-      throw apiError('AI provider returned no content.', 502)
+      throw apiError('AI provider returned no content.', 502, {
+        providerStatus,
+        errorClass: 'EmptyCompletionError',
+      })
     }
   } catch (error) {
-    if (isRecord(error) && typeof error.statusCode === 'number') throw error
-    const providerStatus =
-      isRecord(error) && typeof error.status === 'number'
-        ? error.status
-        : undefined
-    if (providerStatus === 429) {
-      throw apiError('Free AI models are busy. Please try again shortly.', 429)
+    if (controller.signal.aborted) {
+      throw apiError('AI generation timed out. Please try again.', 504, {
+        providerStatus: providerStatusFromError(error),
+        errorClass: errorClassFrom(error),
+      })
     }
-    if (
-      error instanceof Error &&
-      (error.name === 'AbortError' || error.name === 'APIUserAbortError')
-    ) {
-      throw apiError('AI generation timed out. Please try again.', 504)
-    }
-    if (providerStatus && providerStatus >= 400) {
-      const detail = error instanceof Error ? error.message.slice(0, 300) : ''
-      throw apiError(
-        detail
-          ? `AI provider error: ${detail}`
-          : 'AI generation failed. Please try again.',
-        502,
-      )
-    }
-    throw apiError('AI provider is unavailable. Please try again.', 502)
+    throw mapOpenRouterError(error)
   } finally {
     clearTimeout(idleTimeout)
+    clearTimeout(attemptTimeout)
     signal?.removeEventListener('abort', abortFromCaller)
   }
+}
+
+const generateSingleWithOpenRouter = async ({
+  task,
+  model,
+  input,
+  signal,
+  attempt,
+  onTelemetry,
+}: {
+  task: AiTask
+  model: AiModelId
+  input: AiGenerationInput
+  signal?: AbortSignal
+  attempt: number
+  onTelemetry?: AiTelemetryHandler
+}) => {
+  let text = ''
+  let actualModel: string = model
+  let providerStatus = 200
+  for await (const chunk of streamSingleWithOpenRouter({
+    task,
+    model,
+    input,
+    signal,
+    attempt,
+    onTelemetry,
+  })) {
+    text += chunk.text
+    actualModel = chunk.actualModel
+    providerStatus = chunk.providerStatus
+  }
+
+  const trimmed = text.trim()
+  if (task === 'ideas') {
+    return {
+      result: { task, ideas: parseIdeas(trimmed), model: actualModel },
+      outputCharacters: text.length,
+      actualModel,
+      providerStatus,
+    } as const
+  }
+  return {
+    result: {
+      task,
+      text: trimmed.slice(0, task === 'description' ? 1_200 : 12_000),
+      model: actualModel,
+    },
+    outputCharacters: text.length,
+    actualModel,
+    providerStatus,
+  } as const
+}
+
+export const generateWithOpenRouter = async (params: {
+  task: AiTask
+  model: AiModelId
+  input: AiGenerationInput
+  signal?: AbortSignal
+  onTelemetry?: AiTelemetryHandler
+}): Promise<AiGenerationResult> => {
+  const candidates = orderedCandidates(params.model, params.task)
+  let lastError: unknown
+
+  for (let index = 0; index < candidates.length; index++) {
+    const candidate = candidates[index]
+    const next = candidates[index + 1]
+    const attempt = index + 1
+    const startedAt = performance.now()
+    emitTelemetry(params.onTelemetry, {
+      event: 'attempt_started',
+      model: candidate,
+      attempt,
+      totalAttempts: candidates.length,
+    })
+    try {
+      const generated = await generateSingleWithOpenRouter({
+        ...params,
+        model: candidate,
+        attempt,
+      })
+      emitTelemetry(params.onTelemetry, {
+        event: 'attempt_succeeded',
+        model: candidate,
+        actualModel: generated.actualModel,
+        attempt,
+        providerStatus: generated.providerStatus,
+        latencyMs: elapsedMs(startedAt),
+        outputCharacters: generated.outputCharacters,
+      })
+      return generated.result
+    } catch (error) {
+      emitTelemetry(params.onTelemetry, {
+        event: 'attempt_failed',
+        model: candidate,
+        attempt,
+        providerStatus: providerStatusFromError(error),
+        latencyMs: elapsedMs(startedAt),
+        errorClass: errorClassFrom(error),
+      })
+      if (params.signal?.aborted) throw error
+      lastError = error
+      if (next) {
+        emitTelemetry(params.onTelemetry, {
+          event: 'fallback',
+          from: candidate,
+          next,
+          attempt,
+        })
+      }
+    }
+  }
+
+  throw lastError ?? apiError('AI provider is unavailable. Please try again.', 502)
 }
 
 export async function* streamIdeasWithOpenRouter({
   model,
   input,
   signal,
+  onTelemetry,
 }: {
   model: AiModelId
   input: AiGenerationInput
   signal?: AbortSignal
+  onTelemetry?: AiTelemetryHandler
 }): AsyncGenerator<AiStreamEvent> {
   const candidates = orderedCandidates(model, 'ideas')
   let lastError: unknown
@@ -536,21 +722,35 @@ export async function* streamIdeasWithOpenRouter({
   for (let index = 0; index < candidates.length; index++) {
     const candidate = candidates[index]
     const next = candidates[index + 1]
+    const attempt = index + 1
+    const startedAt = performance.now()
+    emitTelemetry(onTelemetry, {
+      event: 'attempt_started',
+      model: candidate,
+      attempt,
+      totalAttempts: candidates.length,
+    })
     yield {
       event: 'meta',
-      data: { model: candidate, attempt: index + 1, total: candidates.length },
+      data: { model: candidate, attempt, total: candidates.length },
     }
 
     let text = ''
+    let actualModel: string = candidate
+    let providerStatus = 200
     try {
       for await (const chunk of streamSingleWithOpenRouter({
         task: 'ideas',
         model: candidate,
         input,
         signal,
+        attempt,
+        onTelemetry,
       })) {
-        text += chunk
-        if (text.length % 80 < chunk.length) {
+        text += chunk.text
+        actualModel = chunk.actualModel
+        providerStatus = chunk.providerStatus
+        if (text.length % 80 < chunk.text.length) {
           yield {
             event: 'progress',
             data: { model: candidate, characters: text.length },
@@ -561,16 +761,39 @@ export async function* streamIdeasWithOpenRouter({
       const result: AiGenerationResult = {
         task: 'ideas',
         ideas: parseIdeas(text),
-        model: candidate,
+        model: actualModel,
       }
+      emitTelemetry(onTelemetry, {
+        event: 'attempt_succeeded',
+        model: candidate,
+        actualModel,
+        attempt,
+        providerStatus,
+        latencyMs: elapsedMs(startedAt),
+        outputCharacters: text.length,
+      })
       yield { event: 'done', data: { data: result } }
       return
     } catch (error) {
+      emitTelemetry(onTelemetry, {
+        event: 'attempt_failed',
+        model: candidate,
+        attempt,
+        providerStatus: providerStatusFromError(error),
+        latencyMs: elapsedMs(startedAt),
+        errorClass: errorClassFrom(error),
+      })
       if (signal?.aborted) {
         throw apiError('AI generation timed out before a result was completed.', 504)
       }
       lastError = error
       if (!next) break
+      emitTelemetry(onTelemetry, {
+        event: 'fallback',
+        from: candidate,
+        next,
+        attempt,
+      })
       yield {
         event: 'fallback',
         data: {

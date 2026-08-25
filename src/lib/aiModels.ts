@@ -1,45 +1,53 @@
+// Structured-output flags follow the active OpenRouter endpoint metadata.
 export const AI_MODELS = [
   {
     id: 'stealth/ox-alpha',
     name: 'Ox Alpha',
     note: 'Free long-context reasoning',
     supportsJson: true,
+    supportsJsonSchema: false,
   },
   {
     id: 'dots-studio/dots-3-note-preview:free',
     name: 'Dots3 Note',
     note: 'Balanced writing and reasoning',
     supportsJson: true,
+    supportsJsonSchema: true,
   },
   {
     id: 'nvidia/nemotron-3.5-lightning:free',
     name: 'Nemotron 3.5 Lightning',
     note: 'Fast, direct drafts',
     supportsJson: false,
+    supportsJsonSchema: false,
   },
   {
     id: 'nvidia/nemotron-3-super-120b-a12b:free',
     name: 'Nemotron 3 Super',
     note: 'Strong structured output',
     supportsJson: true,
+    supportsJsonSchema: true,
   },
   {
     id: 'z-ai/glm-5.2:free',
     name: 'GLM 5.2',
     note: 'Detailed technical copy',
     supportsJson: true,
+    supportsJsonSchema: true,
   },
   {
     id: 'google/gemma-4-26b-a4b-it:free',
     name: 'Gemma 4 26B',
     note: 'Concise project writing',
     supportsJson: true,
+    supportsJsonSchema: false,
   },
   {
     id: 'google/gemma-4-31b-it:free',
     name: 'Gemma 4 31B',
     note: 'Reliable structured drafts',
     supportsJson: true,
+    supportsJsonSchema: false,
   },
 ] as const
 

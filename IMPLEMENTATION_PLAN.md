@@ -1,6 +1,6 @@
 # Buildfolio Implementation Plan
 
-Status baseline: commit `3d8c118` with a clean worktree and successful CI.
+Status updated: 2026-08-25. Milestone 1 is complete in the current worktree.
 
 This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, and project-discovery improvements. Model selection remains an internal server concern; users should not choose providers directly.
 
@@ -15,7 +15,9 @@ This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, an
 
 ## Milestone 1: AI Reliability
 
-### Observability
+- [x] Complete
+
+### [x] Observability
 
 Update `src/app/api/ai/generate/route.ts`, `src/lib/services/aiService.ts`, and `src/lib/logger.ts`.
 
@@ -36,18 +38,18 @@ Update `src/app/api/ai/generate/route.ts`, `src/lib/services/aiService.ts`, and 
 - Keep provider status and sanitized error messages, but never log request input or response content.
 - Add tests proving prompt text cannot appear in AI log payloads.
 
-### OpenAI SDK Consistency
+### [x] OpenAI SDK Consistency
 
 Update `src/lib/services/aiService.ts` so description and README generation use the same OpenAI SDK client as Ideas.
 
-- Keep a single server-only OpenAI client configured with `OPENROUTER_BASE_URL`, `OPENROUTER_API_KEY`, `HTTP-Referer`, and `X-Title`.
+- Keep a single server-only OpenAI client configured with `OPENROUTER_BASE_URL`, `OPENROUTER_API_KEY`, `HTTP-Referer`, and `X-OpenRouter-Title`.
 - Replace the remaining manual `fetch()` request in `generateSingleWithOpenRouter()` with `chat.completions.create()`.
 - Use the same timeout and abort handling for all tasks.
 - Centralize provider error mapping for SDK errors, status codes, rate limits, timeouts, and connection failures.
 - Preserve provider routing, JSON response format, reasoning options, fallback order, and returned model metadata.
 - Remove duplicated OpenRouter transport logic after the migration.
 
-### Structured Ideas Output
+### [x] Structured Ideas Output
 
 Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
 
@@ -58,6 +60,8 @@ Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
 - Fall back to `json_object` for models that do not support JSON Schema.
 - Continue server-side validation because JSON Schema alone cannot guarantee unique titles.
 - Verify structured-output support for every configured fallback model before enabling it.
+
+Capability metadata verified on 2026-08-25: Dots3, Nemotron 3 Super, and GLM 5.2 advertise `structured_outputs`; Ox Alpha and both Gemma endpoints use JSON mode.
 
 ## Milestone 2: AI Controls and UX
 
@@ -293,9 +297,9 @@ Use an authenticated staging session for AI SSE verification and a disposable da
 
 ## Recommended Order
 
-1. Add test foundation and AI observability.
-2. Migrate description and README to the OpenAI SDK.
-3. Add structured JSON Schema and verify model capability.
+1. [x] Add test foundation and AI observability.
+2. [x] Migrate description and README to the OpenAI SDK.
+3. [x] Add structured JSON Schema and verify model capability.
 4. Add cancel, retry, visible progress, quota, and Retry-After UX.
 5. Verify backup secrets and complete a manual restore drill.
 6. Expand Project Ideas into the document workspace and move README generation there.

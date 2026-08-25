@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
+import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import {
   assertSameOrigin,
@@ -16,7 +17,9 @@ import {
   parseAiRequest,
   streamIdeasWithOpenRouter,
   type AiStreamEvent,
+  type AiTelemetryEvent,
 } from '@/lib/services/aiService'
+import type { AiTask } from '@/lib/aiModels'
 import { errorStatus, httpError } from '@/lib/apiErrors'
 import logger from '@/lib/logger'
 
@@ -29,6 +32,27 @@ const AI_STREAM_DEADLINE_MS = 52_000
 
 const sseEvent = (event: string, data: unknown) =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
+
+const withRequestId = <T extends Response>(response: T, requestId: string) => {
+  response.headers.set('X-Request-ID', requestId)
+  return response
+}
+
+const jsonResponse = (
+  body: unknown,
+  init: ResponseInit,
+  requestId: string,
+) => withRequestId(NextResponse.json(body, init), requestId)
+
+const errorClass = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'errorClass' in error &&
+  typeof error.errorClass === 'string'
+    ? error.errorClass.slice(0, 80)
+    : error instanceof Error
+      ? error.name.slice(0, 80) || 'Error'
+      : 'UnknownError'
 
 const readLimitedBody = async (req: NextRequest) => {
   if (!req.body) return ''
@@ -53,33 +77,48 @@ const readLimitedBody = async (req: NextRequest) => {
 }
 
 export async function POST(req: NextRequest) {
+  const requestId = randomUUID()
+  const requestStartedAt = performance.now()
+  const requestStartedAtIso = new Date().toISOString()
+  let observedTask: AiTask | undefined
+  let attempts = 0
+  let fallbackCount = 0
+  let firstTokenMs: number | undefined
+  let providerStatus: number | undefined
+  let outputCharacters = 0
+  let actualModel: string | undefined
+  const firstTokenByAttempt = new Map<number, number>()
+
   const csrfError = assertSameOrigin(req)
-  if (csrfError) return csrfError
+  if (csrfError) return withRequestId(csrfError, requestId)
   const { user, error } = await requireActiveUser(req)
-  if (error || !user) return error
+  if (error || !user) return withRequestId(error, requestId)
 
   if (
     process.env.NODE_ENV === 'production' &&
     !isDistributedRateLimitConfigured
   ) {
-    return NextResponse.json(
+    return jsonResponse(
       { success: false, message: 'AI generation is temporarily unavailable' },
       { status: 503 },
+      requestId,
     )
   }
 
   if (!req.headers.get('content-type')?.startsWith('application/json')) {
-    return NextResponse.json(
+    return jsonResponse(
       { success: false, message: 'Content-Type must be application/json' },
       { status: 415 },
+      requestId,
     )
   }
 
   const contentLength = Number(req.headers.get('content-length') || '0')
   if (Number.isFinite(contentLength) && contentLength > REQUEST_LIMIT) {
-    return NextResponse.json(
+    return jsonResponse(
       { success: false, message: 'Request body is too large' },
       { status: 413 },
+      requestId,
     )
   }
 
@@ -93,12 +132,13 @@ export async function POST(req: NextRequest) {
       windowMs: 10 * 60 * 1_000,
     })
     if (!ingress.success) {
-      return NextResponse.json(
+      return jsonResponse(
         { success: false, message: 'Too many AI requests. Try again later.' },
         {
           status: 429,
           headers: { 'Retry-After': String(Math.ceil(ingress.resetInMs / 1_000)) },
         },
+        requestId,
       )
     }
 
@@ -107,37 +147,95 @@ export async function POST(req: NextRequest) {
     try {
       body = JSON.parse(rawBody)
     } catch {
-      return NextResponse.json(
+      return jsonResponse(
         { success: false, message: 'Invalid JSON body' },
         { status: 400 },
+        requestId,
       )
     }
     const request = parseAiRequest(body)
+    observedTask = request.task
+    const onTelemetry = (event: AiTelemetryEvent) => {
+      if (event.event === 'attempt_started') attempts = event.attempt
+      if (event.event === 'fallback') fallbackCount += 1
+      if (event.event === 'first_token') {
+        firstTokenByAttempt.set(
+          event.attempt,
+          Math.round(performance.now() - requestStartedAt),
+        )
+      }
+      if ('providerStatus' in event) providerStatus = event.providerStatus
+      if ('actualModel' in event) actualModel = event.actualModel
+      if (event.event === 'attempt_succeeded') {
+        outputCharacters = event.outputCharacters
+        firstTokenMs = firstTokenByAttempt.get(event.attempt)
+      }
+
+      const metadata = {
+        requestId,
+        task: request.task,
+        provider: 'openrouter',
+        ...event,
+      }
+      if (event.event === 'attempt_failed' || event.event === 'fallback') {
+        logger.warn(metadata, `AI ${event.event}`)
+      } else {
+        logger.info(metadata, `AI ${event.event}`)
+      }
+    }
+    logger.info(
+      {
+        requestId,
+        task: request.task,
+        model: request.model,
+        provider: 'openrouter',
+        startedAt: requestStartedAtIso,
+      },
+      'AI generation started',
+    )
 
     const hourlyKey = `ai-success-hour-v2:${user.id}`
     const dailyKey = `ai-success-day-v2:${user.id}`
     const globalMinuteKey = 'ai-success-global-minute-v2'
     const globalDayKey = 'ai-success-global-day-v2'
+    const logQuotaRejection = (reason: string) => {
+      logger.warn(
+        {
+          requestId,
+          task: request.task,
+          provider: 'openrouter',
+          status: 429,
+          outcome: 'rejected',
+          reason,
+          latencyMs: Math.round(performance.now() - requestStartedAt),
+        },
+        'AI generation rejected',
+      )
+    }
 
     const hourly = await rateLimitStatus(hourlyKey, HOURLY_QUOTA)
     if (!hourly.success) {
-      return NextResponse.json(
+      logQuotaRejection('hourly_quota')
+      return jsonResponse(
         { success: false, message: 'AI hourly limit reached. Try again later.' },
         {
           status: 429,
           headers: { 'Retry-After': String(Math.ceil(hourly.resetInMs / 1_000)) },
         },
+        requestId,
       )
     }
 
     const daily = await rateLimitStatus(dailyKey, DAILY_QUOTA)
     if (!daily.success) {
-      return NextResponse.json(
+      logQuotaRejection('daily_quota')
+      return jsonResponse(
         { success: false, message: 'AI daily limit reached. Try again tomorrow.' },
         {
           status: 429,
           headers: { 'Retry-After': String(Math.ceil(daily.resetInMs / 1_000)) },
         },
+        requestId,
       )
     }
 
@@ -146,7 +244,8 @@ export async function POST(req: NextRequest) {
       GLOBAL_MINUTE_QUOTA,
     )
     if (!globalMinute.success) {
-      return NextResponse.json(
+      logQuotaRejection('global_minute_quota')
+      return jsonResponse(
         { success: false, message: 'Free AI capacity is busy. Try again shortly.' },
         {
           status: 429,
@@ -154,17 +253,20 @@ export async function POST(req: NextRequest) {
             'Retry-After': String(Math.ceil(globalMinute.resetInMs / 1_000)),
           },
         },
+        requestId,
       )
     }
 
     const globalDay = await rateLimitStatus(globalDayKey, GLOBAL_DAY_QUOTA)
     if (!globalDay.success) {
-      return NextResponse.json(
+      logQuotaRejection('global_daily_quota')
+      return jsonResponse(
         { success: false, message: 'Daily free AI capacity has been reached.' },
         {
           status: 429,
           headers: { 'Retry-After': String(Math.ceil(globalDay.resetInMs / 1_000)) },
         },
+        requestId,
       )
     }
 
@@ -180,7 +282,10 @@ export async function POST(req: NextRequest) {
       const consumedDaily =
         consumed[1].status === 'fulfilled' ? consumed[1].value : daily
       if (consumed.some((entry) => entry.status === 'rejected')) {
-        logger.warn({ task: request.task }, 'AI quota update failed after success')
+        logger.warn(
+          { requestId, task: request.task },
+          'AI quota update failed after success',
+        )
       }
       return { consumedHourly, consumedDaily }
     }
@@ -201,7 +306,11 @@ export async function POST(req: NextRequest) {
 
           const send = (event: AiStreamEvent['event'], data: unknown) => {
             if (cancelled || controller.desiredSize === null) return
-            controller.enqueue(encoder.encode(sseEvent(event, data)))
+            const enriched =
+              typeof data === 'object' && data !== null && !Array.isArray(data)
+                ? { ...data, requestId }
+                : { data, requestId }
+            controller.enqueue(encoder.encode(sseEvent(event, enriched)))
           }
           let completed = false
 
@@ -210,15 +319,52 @@ export async function POST(req: NextRequest) {
               model: request.model,
               input: request.input,
               signal: generationController.signal,
+              onTelemetry,
             })) {
               send(event.event, event.data)
               if (event.event === 'done') completed = true
             }
-            if (completed) await consumeSuccessfulQuota()
+            if (completed) {
+              await consumeSuccessfulQuota()
+              logger.info(
+                {
+                  requestId,
+                  task: request.task,
+                  model: actualModel,
+                  provider: 'openrouter',
+                  providerStatus,
+                  attempts,
+                  fallbackCount,
+                  firstTokenMs,
+                  latencyMs: Math.round(performance.now() - requestStartedAt),
+                  outputCharacters,
+                  outcome: 'success',
+                },
+                'AI generation completed',
+              )
+            }
           } catch (error) {
-            if (!req.signal.aborted) {
+            if (!req.signal.aborted && !cancelled) {
               const status = errorStatus(error)
-              logger.warn({ status, task: request.task }, 'AI stream failed')
+              logger.warn(
+                {
+                  requestId,
+                  status,
+                  task: request.task,
+                  provider: 'openrouter',
+                  providerStatus,
+                  attempts,
+                  fallbackCount,
+                  firstTokenMs,
+                  latencyMs: Math.round(performance.now() - requestStartedAt),
+                  outputCharacters,
+                  outcome: 'failed',
+                  errorClass: errorClass(error),
+                  errorMessage:
+                    httpError(error).message || 'AI generation failed',
+                },
+                'AI stream failed',
+              )
               send('error', {
                 message: httpError(error).message || 'AI generation failed',
               })
@@ -226,6 +372,23 @@ export async function POST(req: NextRequest) {
           } finally {
             clearTimeout(deadline)
             req.signal.removeEventListener('abort', abortFromRequest)
+            if (!completed && (req.signal.aborted || cancelled)) {
+              logger.info(
+                {
+                  requestId,
+                  task: request.task,
+                  provider: 'openrouter',
+                  providerStatus,
+                  attempts,
+                  fallbackCount,
+                  firstTokenMs,
+                  latencyMs: Math.round(performance.now() - requestStartedAt),
+                  outputCharacters,
+                  outcome: 'cancelled',
+                },
+                'AI generation cancelled',
+              )
+            }
             if (!cancelled) controller.close()
           }
         },
@@ -241,20 +404,49 @@ export async function POST(req: NextRequest) {
           Connection: 'keep-alive',
           'Content-Type': 'text/event-stream; charset=utf-8',
           'X-Accel-Buffering': 'no',
+          'X-Request-ID': requestId,
         },
       })
     }
 
-    const result = await generateWithOpenRouter({
-      ...request,
-      signal: req.signal,
-    })
+    const result = await (async () => {
+      const generationController = new AbortController()
+      const abortFromRequest = () => generationController.abort()
+      const deadline = setTimeout(
+        () => generationController.abort(),
+        AI_STREAM_DEADLINE_MS,
+      )
+      if (req.signal.aborted) generationController.abort()
+      else req.signal.addEventListener('abort', abortFromRequest, { once: true })
+      try {
+        return await generateWithOpenRouter({
+          ...request,
+          signal: generationController.signal,
+          onTelemetry,
+        })
+      } finally {
+        clearTimeout(deadline)
+        req.signal.removeEventListener('abort', abortFromRequest)
+      }
+    })()
     const { consumedHourly, consumedDaily } = await consumeSuccessfulQuota()
     logger.info(
-      { task: request.task, model: result.model },
+      {
+        requestId,
+        task: request.task,
+        model: result.model,
+        provider: 'openrouter',
+        providerStatus,
+        attempts,
+        fallbackCount,
+        firstTokenMs,
+        latencyMs: Math.round(performance.now() - requestStartedAt),
+        outputCharacters,
+        outcome: 'success',
+      },
       'AI generation completed',
     )
-    return NextResponse.json(
+    return jsonResponse(
       { success: true, data: result },
       {
         headers: {
@@ -263,11 +455,29 @@ export async function POST(req: NextRequest) {
           'X-RateLimit-Remaining-Day': String(consumedDaily.remaining),
         },
       },
+      requestId,
     )
   } catch (err: unknown) {
     const status = errorStatus(err)
-    logger.warn({ status }, 'AI generation failed')
-    return NextResponse.json(
+    logger.warn(
+      {
+        requestId,
+        status,
+        task: observedTask,
+        provider: observedTask ? 'openrouter' : undefined,
+        providerStatus,
+        attempts,
+        fallbackCount,
+        firstTokenMs,
+        latencyMs: Math.round(performance.now() - requestStartedAt),
+        outputCharacters,
+        outcome: 'failed',
+        errorClass: errorClass(err),
+        errorMessage: httpError(err).message || 'AI generation failed',
+      },
+      'AI generation failed',
+    )
+    return jsonResponse(
       {
         success: false,
         message:
@@ -276,6 +486,7 @@ export async function POST(req: NextRequest) {
             : httpError(err).message || 'AI generation failed',
       },
       { status },
+      requestId,
     )
   }
 }

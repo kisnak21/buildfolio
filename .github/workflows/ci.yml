@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   quality:
-    name: Lint, Typecheck & Build
+    name: Lint, Typecheck, Test & Build
     runs-on: ubuntu-latest
     env:
       # Required for `next build` (sitemap queries Prisma at build time)
@@ -37,6 +37,9 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build
