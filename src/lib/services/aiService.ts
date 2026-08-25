@@ -502,6 +502,8 @@ const openRouterRequest = (
   input: AiGenerationInput,
 ) => {
   const responseFormat = responseFormatFor(task, model)
+  const shouldUseReasoning =
+    model === 'stealth/ox-alpha' && responseFormat === undefined
   return {
     model,
     messages: [
@@ -523,7 +525,7 @@ const openRouterRequest = (
           : task === 'prd'
             ? 2_500
             : 2_200,
-    ...(model === 'stealth/ox-alpha' && {
+    ...(shouldUseReasoning && {
       reasoning: { effort: 'low' },
     }),
     ...(responseFormat && { response_format: responseFormat }),
@@ -597,8 +599,16 @@ const streamSingleWithOpenRouter = async function* ({
     for await (const chunk of stream) {
       resetIdleTimeout()
       actualModel = chunk.model || actualModel
-      const delta = chunk.choices?.[0]?.delta?.content
-      const text = typeof delta === 'string' ? delta : ''
+      const delta = (chunk.choices?.[0]?.delta ?? {}) as Record<string, unknown>
+      const rawContent = delta.content
+      const rawText = (delta as Record<string, unknown>).text
+      const text =
+        typeof rawContent === 'string'
+          ? rawContent
+          : typeof rawText === 'string'
+            ? rawText
+            : ''
+      // Reasoning tokens come as `reasoning` / `reasoning_details` - ignore them, only `content`/`text` is output.
       if (!text) continue
       if (!hasFirstToken) {
         hasFirstToken = true
