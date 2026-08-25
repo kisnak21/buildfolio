@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowRightIcon,
@@ -8,10 +8,22 @@ import {
 } from '@heroicons/react/24/solid'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
+import AiGenerationProgress from '@/components/dashboard/AiGenerationProgress'
+import AiQuotaStatus from '@/components/dashboard/AiQuotaStatus'
+import AiRetryCountdown from '@/components/dashboard/AiRetryCountdown'
 import IdeaWorkspace from '@/components/dashboard/IdeaWorkspace'
 import Button from '@/components/ui/Button'
 import type { AiIdea } from '@/lib/aiModels'
-import { generateAiContent, type AiIdeasStreamEvent } from '@/lib/api/aiApi'
+import {
+  aiResponseMessage,
+  retryAfterSecondsFrom,
+} from '@/lib/aiErrors'
+import {
+  generateAiContent,
+  getAiQuota,
+  type AiIdeasStreamEvent,
+  type AiQuotaSnapshot,
+} from '@/lib/api/aiApi'
 
 const cardColors = ['bg-primary', 'bg-accentSoft', 'bg-secondary']
 
@@ -37,10 +49,54 @@ const IdeasClient = () => {
   const [generating, setGenerating] = useState(false)
   const [selectedIdeaIndex, setSelectedIdeaIndex] = useState<number | null>(null)
   const [ideaBatch, setIdeaBatch] = useState(0)
+  const [quota, setQuota] = useState<AiQuotaSnapshot | null>(null)
+  const [progressLabel, setProgressLabel] = useState('')
+  const [lastOutcome, setLastOutcome] = useState<'idle' | 'failed' | 'cancelled'>(
+    'idle',
+  )
+  const [retryWaitSeconds, setRetryWaitSeconds] = useState(0)
   const workspaceRef = useRef<HTMLDivElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
 
-  const handleGenerate = async (event: React.FormEvent) => {
-    event.preventDefault()
+  useEffect(() => {
+    let active = true
+    getAiQuota()
+      .then((snapshot) => {
+        if (active) setQuota(snapshot)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const applyQuotaEvent = (data: Record<string, unknown>) => {
+    const readWindow = (value: unknown) => {
+      if (
+        typeof value !== 'object' ||
+        value === null ||
+        typeof (value as Record<string, unknown>).remaining !== 'number' ||
+        typeof (value as Record<string, unknown>).limit !== 'number'
+      ) {
+        return undefined
+      }
+      const window = value as { remaining: number; limit: number }
+      return { remaining: window.remaining, limit: window.limit }
+    }
+    const hourly = readWindow(data.hourly)
+    const daily = readWindow(data.daily)
+    if (hourly && daily) setQuota({ hourly, daily })
+  }
+
+  const refreshQuota = async () => {
+    try {
+      setQuota(await getAiQuota())
+    } catch {
+      // Quota display is informational; generation errors surface separately.
+    }
+  }
+
+  const runGeneration = async () => {
     const technologyList = technologies
       .split(',')
       .map((technology) => technology.trim())
@@ -51,28 +107,33 @@ const IdeasClient = () => {
       return
     }
 
+    const controller = new AbortController()
+    abortRef.current = controller
     setGenerating(true)
     setError('')
-    setGenerationStatus('Generating three project ideas.')
+    setRetryWaitSeconds(0)
+    setLastOutcome('idle')
+    setProgressLabel('Connecting to the AI service.')
     try {
       const result = await generateAiContent('ideas', undefined, {
         interests: interests.trim() || undefined,
         technologies: technologyList,
         experience,
       }, {
+        signal: controller.signal,
         onEvent: (event: AiIdeasStreamEvent) => {
           if (event.event === 'meta' && typeof event.data.model === 'string') {
             const attempt =
               typeof event.data.attempt === 'number' ? event.data.attempt : 1
             const total =
               typeof event.data.total === 'number' ? event.data.total : 1
-            setGenerationStatus(
-              `Generating ideas (${attempt}/${total}).`,
-            )
+            setProgressLabel(`Contacting model ${attempt} of ${total}.`)
           } else if (event.event === 'fallback') {
-            setGenerationStatus('Trying a backup model.')
+            setProgressLabel('The first model stalled. Switching to a backup.')
           } else if (event.event === 'progress') {
-            setGenerationStatus('The AI is drafting ideas.')
+            setProgressLabel('Drafting your three ideas.')
+          } else if (event.event === 'quota') {
+            applyQuotaEvent(event.data)
           }
         },
       })
@@ -81,17 +142,29 @@ const IdeasClient = () => {
         setSelectedIdeaIndex(null)
         setIdeaBatch((current) => current + 1)
         setGenerationStatus('Three project ideas generated.')
+        void refreshQuota()
       }
     } catch (requestError) {
-      const apiError = requestError as {
-        response?: { data?: { message?: string } }
+      if (controller.signal.aborted) {
+        setLastOutcome('cancelled')
+        setGenerationStatus('Idea generation cancelled.')
+      } else {
+        const seconds = retryAfterSecondsFrom(requestError)
+        setRetryWaitSeconds(seconds)
+        setError(
+          aiResponseMessage(
+            requestError,
+            'Could not generate ideas. Please try again.',
+          ),
+        )
+        setGenerationStatus(
+          seconds > 0
+            ? `Rate limited. Retry available in ${seconds} seconds.`
+            : 'Idea generation failed.',
+        )
       }
-      setError(
-        apiError.response?.data?.message ||
-          'Could not generate ideas. Please try again.',
-      )
-      setGenerationStatus('Idea generation failed.')
     } finally {
+      abortRef.current = null
       setGenerating(false)
     }
   }
@@ -124,7 +197,10 @@ const IdeasClient = () => {
 
         <div className='grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-start'>
           <form
-            onSubmit={handleGenerate}
+            onSubmit={(event) => {
+              event.preventDefault()
+              void runGeneration()
+            }}
             aria-busy={generating}
             className='rounded-2xl border-4 border-dark bg-white p-5 shadow-brutal sm:p-7 lg:sticky lg:top-28'
           >
@@ -178,19 +254,58 @@ const IdeasClient = () => {
               </div>
             </div>
 
-            <Button type='submit' fullWidth disabled={generating}>
+            <Button
+              type='submit'
+              fullWidth
+              disabled={generating || retryWaitSeconds > 0}
+            >
               <LightBulbIcon className='h-5 w-5' aria-hidden />
               {generating ? 'Generating ideas...' : 'Generate three ideas'}
             </Button>
             </fieldset>
+            {generating && (
+              <div className='mt-4'>
+                <AiGenerationProgress
+                  label={progressLabel}
+                  onCancel={() => abortRef.current?.abort()}
+                />
+              </div>
+            )}
+            {!generating && lastOutcome !== 'idle' && (
+              <div className='mt-4'>
+                <Button
+                  type='button'
+                  variant='secondary'
+                  size='sm'
+                  onClick={() => void runGeneration()}
+                  className='min-h-11 w-full'
+                >
+                  Retry generation
+                </Button>
+              </div>
+            )}
+            {quota && (
+              <div className='mt-3'>
+                <AiQuotaStatus hourly={quota.hourly} daily={quota.daily} />
+              </div>
+            )}
             <p className='mt-3 text-xs font-semibold leading-relaxed text-gray-500'>
               These fields are sent to OpenRouter according to the server&apos;s data
               collection policy. Limits: 5 generations per hour and 15 per day.
+              Cancelled or failed runs never consume quota.
             </p>
             {error && (
               <p role='alert' className='mt-4 font-bold text-red-600'>
                 {error}
               </p>
+            )}
+            {retryWaitSeconds > 0 && (
+              <div className='mt-2'>
+                <AiRetryCountdown
+                  seconds={retryWaitSeconds}
+                  onFinished={() => setRetryWaitSeconds(0)}
+                />
+              </div>
             )}
             <p role='status' aria-live='polite' className='sr-only'>
               {generationStatus}
@@ -312,6 +427,7 @@ const IdeasClient = () => {
                 ? null
                 : `${ideaBatch}:${selectedIdeaIndex}:${ideas[selectedIdeaIndex].title}`
             }
+            onQuotaSpent={() => void refreshQuota()}
           />
         </div>
       </main>

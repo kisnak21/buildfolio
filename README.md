@@ -338,6 +338,7 @@ Open `http://localhost:3000` in your browser.
 | POST   | `/api/contact`                   | —    | Send contact email                    |
 | POST   | `/api/flags`                     | Yes | Report a project or comment (rate limited, duplicate-pending guarded) |
 | POST   | `/api/ai/generate`               | Yes | Generate descriptions, READMEs, or project ideas (5/hour, 15/day) |
+| GET    | `/api/ai/quota`                  | Yes | Remaining AI generations this hour and today |
 | GET    | `/api/admin/stats`               | Admin | Dashboard stats (incl. 14-day charts) |
 | GET    | `/api/admin/users`               | Admin | User list |
 | PATCH  | `/api/admin/users?id=:id`        | Admin | Verify, role change, ban, suspend, or restore user |

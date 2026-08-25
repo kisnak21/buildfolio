@@ -7,6 +7,7 @@ import GeneratedDocumentPanel, {
   type DocumentStatus,
 } from '@/components/dashboard/GeneratedDocumentPanel'
 import { documentFilename } from '@/lib/documentUtils'
+import { aiResponseMessage, retryAfterSecondsFrom } from '@/lib/aiErrors'
 import type { AiDocumentTask, AiIdea } from '@/lib/aiModels'
 import { generateAiContent } from '@/lib/api/aiApi'
 
@@ -41,15 +42,16 @@ interface DocumentDraft {
   text: string
   status: DocumentStatus
   error: string
+  retryAfterSeconds: number
 }
 
 type IdeaDocuments = Record<AiDocumentTask, DocumentDraft>
 
 const emptyDocuments = (): IdeaDocuments => ({
-  prd: { text: '', status: 'idle', error: '' },
-  design: { text: '', status: 'idle', error: '' },
-  styleGuide: { text: '', status: 'idle', error: '' },
-  readme: { text: '', status: 'idle', error: '' },
+  prd: { text: '', status: 'idle', error: '', retryAfterSeconds: 0 },
+  design: { text: '', status: 'idle', error: '', retryAfterSeconds: 0 },
+  styleGuide: { text: '', status: 'idle', error: '', retryAfterSeconds: 0 },
+  readme: { text: '', status: 'idle', error: '', retryAfterSeconds: 0 },
 })
 
 const ideaHref = (idea: AiIdea) => {
@@ -65,9 +67,10 @@ const ideaHref = (idea: AiIdea) => {
 interface IdeaWorkspaceProps {
   idea: AiIdea | null
   ideaKey: string | null
+  onQuotaSpent?: () => void
 }
 
-const IdeaWorkspace = ({ idea, ideaKey }: IdeaWorkspaceProps) => {
+const IdeaWorkspace = ({ idea, ideaKey, onQuotaSpent }: IdeaWorkspaceProps) => {
   const [activeTask, setActiveTask] = useState<AiDocumentTask>('prd')
   const [documentsByIdea, setDocumentsByIdea] = useState<
     Record<string, IdeaDocuments>
@@ -132,6 +135,7 @@ const IdeaWorkspace = ({ idea, ideaKey }: IdeaWorkspaceProps) => {
     updateDraft(ideaKey, activeTask, {
       status: 'loading',
       error: '',
+      retryAfterSeconds: 0,
     })
 
     try {
@@ -154,24 +158,24 @@ const IdeaWorkspace = ({ idea, ideaKey }: IdeaWorkspaceProps) => {
         text: result.text,
         status: 'success',
         error: '',
+        retryAfterSeconds: 0,
       })
+      onQuotaSpent?.()
     } catch (requestError) {
       if (controller.signal.aborted) {
         updateDraft(ideaKey, activeTask, {
           status: 'cancelled',
           error: `${activeDocument.label} generation was cancelled.`,
+          retryAfterSeconds: 0,
         })
       } else {
-        const apiError = requestError as {
-          response?: { data?: { message?: string } }
-          message?: string
-        }
         updateDraft(ideaKey, activeTask, {
           status: 'error',
-          error:
-            apiError.response?.data?.message ||
-            apiError.message ||
+          error: aiResponseMessage(
+            requestError,
             `Could not generate ${activeDocument.label}. Please try again.`,
+          ),
+          retryAfterSeconds: retryAfterSecondsFrom(requestError),
         })
       }
     } finally {
@@ -283,6 +287,7 @@ const IdeaWorkspace = ({ idea, ideaKey }: IdeaWorkspaceProps) => {
               text={draft.text}
               status={draft.status}
               error={draft.error}
+              retryAfterSeconds={draft.retryAfterSeconds}
               onChange={(text) =>
                 updateDraft(ideaKey, activeTask, {
                   text,

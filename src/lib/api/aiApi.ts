@@ -6,8 +6,18 @@ import type {
   AiTask,
 } from '@/lib/aiModels'
 
+export interface AiQuotaWindow {
+  remaining: number
+  limit: number
+}
+
+export interface AiQuotaSnapshot {
+  hourly: AiQuotaWindow
+  daily: AiQuotaWindow
+}
+
 export interface AiIdeasStreamEvent {
-  event: 'meta' | 'progress' | 'fallback' | 'done' | 'error'
+  event: 'meta' | 'progress' | 'fallback' | 'quota' | 'done' | 'error'
   data: Record<string, unknown>
 }
 
@@ -118,6 +128,14 @@ const generateAiIdeas = async (
     options?.signal?.removeEventListener('abort', abortFromCaller)
     reader?.releaseLock()
   }
+}
+
+export const getAiQuota = async (): Promise<AiQuotaSnapshot> => {
+  const response = await realApiClient.get<{
+    success: boolean
+    data: AiQuotaSnapshot
+  }>('/ai/quota')
+  return response.data.data
 }
 
 export const generateAiContent = async (

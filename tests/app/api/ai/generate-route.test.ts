@@ -23,6 +23,16 @@ vi.mock('@/lib/rateLimit', () => ({
   isDistributedRateLimitConfigured: true,
   rateLimit: mocks.rateLimit,
   rateLimitStatus: mocks.rateLimitStatus,
+  AI_QUOTAS: {
+    hourly: {
+      key: (userId: string) => `ai-success-hour-v2:${userId}`,
+      config: { max: 5, windowMs: 3_600_000 },
+    },
+    daily: {
+      key: (userId: string) => `ai-success-day-v2:${userId}`,
+      config: { max: 15, windowMs: 86_400_000 },
+    },
+  },
 }))
 
 vi.mock('@/lib/services/aiService', () => ({
@@ -162,6 +172,38 @@ describe('AI generation route observability', () => {
     expect(body).toContain('event: meta')
     expect(body).toContain('event: done')
     expect(body).not.toContain('private interests')
+  })
+
+  it('emits a quota event after successful Ideas quota consumption', async () => {
+    mocks.parse.mockReturnValue({
+      task: 'ideas',
+      model: 'stealth/ox-alpha',
+      input: { interests: 'tools' },
+    })
+    mocks.stream.mockImplementation(async function* () {
+      yield {
+        event: 'done',
+        data: {
+          data: {
+            task: 'ideas',
+            ideas: [],
+            model: 'stealth/ox-alpha',
+          },
+        },
+      }
+    })
+
+    const response = await POST(request('ideas'))
+    const requestId = response.headers.get('X-Request-ID')
+    const body = await response.text()
+    const quotaEvent = body
+      .split('\n\n')
+      .find((frame) => frame.startsWith('event: quota'))
+
+    expect(quotaEvent).toBeDefined()
+    expect(quotaEvent).toContain(`"requestId":"${requestId}"`)
+    expect(quotaEvent).toContain('"hourly":{"remaining":4,"limit":5}')
+    expect(quotaEvent).toContain('"daily":{"remaining":4,"limit":15}')
   })
 
   it('returns request IDs and terminal metadata for provider failures', async () => {

@@ -31,6 +31,22 @@ const hasUpstash =
 
 export const isDistributedRateLimitConfigured = hasUpstash
 
+/**
+ * Per-user AI generation quotas. Shared by the generate and quota routes so
+ * limits cannot drift between them. Consumption stays success-only; concurrent
+ * requests can race past the counter until atomic counters land.
+ */
+export const AI_QUOTAS = {
+  hourly: {
+    key: (userId: string) => `ai-success-hour-v2:${userId}`,
+    config: { max: 5, windowMs: 60 * 60 * 1_000 },
+  },
+  daily: {
+    key: (userId: string) => `ai-success-day-v2:${userId}`,
+    config: { max: 15, windowMs: 24 * 60 * 60 * 1_000 },
+  },
+} as const
+
 function toDuration(windowMs: number): Duration {
   return `${windowMs} ms` as Duration
 }

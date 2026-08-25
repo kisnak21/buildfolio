@@ -9,6 +9,7 @@ import {
   PencilSquareIcon,
 } from '@heroicons/react/24/solid'
 import AiGenerationProgress from '@/components/dashboard/AiGenerationProgress'
+import AiRetryCountdown from '@/components/dashboard/AiRetryCountdown'
 import Button from '@/components/ui/Button'
 import { copyText, downloadText } from '@/lib/documentUtils'
 
@@ -26,6 +27,7 @@ interface GeneratedDocumentPanelProps {
   text: string
   status: DocumentStatus
   error: string
+  retryAfterSeconds?: number
   onChange: (value: string) => void
   onGenerate: () => void
   onCancel: () => void
@@ -38,6 +40,7 @@ const GeneratedDocumentPanel = ({
   text,
   status,
   error,
+  retryAfterSeconds = 0,
   onChange,
   onGenerate,
   onCancel,
@@ -107,12 +110,18 @@ const GeneratedDocumentPanel = ({
             type='button'
             variant='secondary'
             size='sm'
+            disabled={retryAfterSeconds > 0}
             onClick={handleGenerate}
             className='mt-3 min-h-11'
           >
             <ArrowPathIcon className='h-4 w-4' aria-hidden />
             Retry {title}
           </Button>
+          {retryAfterSeconds > 0 && (
+            <div className='mt-2'>
+              <AiRetryCountdown seconds={retryAfterSeconds} />
+            </div>
+          )}
         </div>
       )}
 

@@ -10,7 +10,27 @@ interface RequestOptions {
   signal?: AbortSignal
 }
 
+interface ApiResult<T> {
+  data: T
+  headers: Record<string, string>
+}
+
 let redirectingBlockedAccount = false
+
+const TRACKED_HEADERS = [
+  'retry-after',
+  'x-ratelimit-remaining-hour',
+  'x-ratelimit-remaining-day',
+] as const
+
+const trackedHeaders = (res: Response) => {
+  const headers: Record<string, string> = {}
+  for (const name of TRACKED_HEADERS) {
+    const value = res.headers.get(name)
+    if (value !== null) headers[name] = value
+  }
+  return headers
+}
 
 const redirectBlockedAccount = (code: unknown) => {
   if (
@@ -30,7 +50,7 @@ const redirectBlockedAccount = (code: unknown) => {
   })
 }
 
-const request = async <T>(url: string, options: RequestOptions): Promise<{ data: T }> => {
+const request = async <T>(url: string, options: RequestOptions): Promise<ApiResult<T>> => {
   const controller = new AbortController()
   const abortFromCaller = () => controller.abort(options.signal?.reason)
   const timeout = setTimeout(
@@ -52,7 +72,7 @@ const request = async <T>(url: string, options: RequestOptions): Promise<{ data:
       },
     })
 
-    if (res.status === 204) return { data: undefined as T }
+    if (res.status === 204) return { data: undefined as T, headers: {} }
 
     const body: Record<string, unknown> = await res.json().catch(() => ({}))
 
@@ -64,12 +84,12 @@ const request = async <T>(url: string, options: RequestOptions): Promise<{ data:
           : typeof body?.message === 'string'
             ? body.message
             : `Request failed (${res.status})`,
-      ) as Error & { response?: { status: number; data: Record<string, unknown> } }
-      err.response = { status: res.status, data: body }
+      ) as Error & { response?: { status: number; data: Record<string, unknown>; headers?: Record<string, string> } }
+      err.response = { status: res.status, data: body, headers: trackedHeaders(res) }
       throw err
     }
 
-    return { data: body as T }
+    return { data: body as T, headers: trackedHeaders(res) }
   } finally {
     clearTimeout(timeout)
     options.signal?.removeEventListener('abort', abortFromCaller)
@@ -97,8 +117,8 @@ const streamRequest = async (
         : typeof body.message === 'string'
           ? body.message
           : `Request failed (${res.status})`,
-    ) as Error & { response?: { status: number; data: Record<string, unknown> } }
-    err.response = { status: res.status, data: body }
+    ) as Error & { response?: { status: number; data: Record<string, unknown>; headers?: Record<string, string> } }
+    err.response = { status: res.status, data: body, headers: trackedHeaders(res) }
     throw err
   }
 
@@ -108,14 +128,14 @@ const streamRequest = async (
 
 const realApiClient = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- generic defaults preserve axios-like call sites
-  get: <T = any>(url: string): Promise<{ data: T }> =>
+  get: <T = any>(url: string): Promise<ApiResult<T>> =>
     request<T>(url, { method: 'GET' }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   post: <T = any>(
     url: string,
     data?: object,
     options?: { timeoutMs?: number; signal?: AbortSignal },
-  ): Promise<{ data: T }> =>
+  ): Promise<ApiResult<T>> =>
     request<T>(url, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
@@ -133,13 +153,13 @@ const realApiClient = {
       signal: options?.signal,
     }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  patch: <T = any>(url: string, data?: Record<string, unknown>): Promise<{ data: T }> =>
+  patch: <T = any>(url: string, data?: Record<string, unknown>): Promise<ApiResult<T>> =>
     request<T>(url, { method: 'PATCH', body: data ? JSON.stringify(data) : undefined }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  put: <T = any>(url: string, data?: Record<string, unknown>): Promise<{ data: T }> =>
+  put: <T = any>(url: string, data?: Record<string, unknown>): Promise<ApiResult<T>> =>
     request<T>(url, { method: 'PUT', body: data ? JSON.stringify(data) : undefined }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  delete: <T = any>(url: string): Promise<{ data: T }> =>
+  delete: <T = any>(url: string): Promise<ApiResult<T>> =>
     request<T>(url, { method: 'DELETE' }),
 }
 

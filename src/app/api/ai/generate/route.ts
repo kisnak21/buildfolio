@@ -8,6 +8,7 @@ import {
   requireActiveUser,
 } from '@/lib/middleware/authMiddleware'
 import {
+  AI_QUOTAS,
   isDistributedRateLimitConfigured,
   rateLimit,
   rateLimitStatus,
@@ -24,8 +25,6 @@ import { errorStatus, httpError } from '@/lib/apiErrors'
 import logger from '@/lib/logger'
 
 const REQUEST_LIMIT = 20_000
-const HOURLY_QUOTA = { max: 5, windowMs: 60 * 60 * 1_000 }
-const DAILY_QUOTA = { max: 15, windowMs: 24 * 60 * 60 * 1_000 }
 const GLOBAL_MINUTE_QUOTA = { max: 20, windowMs: 60 * 1_000 }
 const GLOBAL_DAY_QUOTA = { max: 50, windowMs: 24 * 60 * 60 * 1_000 }
 const AI_STREAM_DEADLINE_MS = 52_000
@@ -194,8 +193,8 @@ export async function POST(req: NextRequest) {
       'AI generation started',
     )
 
-    const hourlyKey = `ai-success-hour-v2:${user.id}`
-    const dailyKey = `ai-success-day-v2:${user.id}`
+    const hourlyKey = AI_QUOTAS.hourly.key(user.id)
+    const dailyKey = AI_QUOTAS.daily.key(user.id)
     const globalMinuteKey = 'ai-success-global-minute-v2'
     const globalDayKey = 'ai-success-global-day-v2'
     const logQuotaRejection = (reason: string) => {
@@ -213,7 +212,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const hourly = await rateLimitStatus(hourlyKey, HOURLY_QUOTA)
+    const hourly = await rateLimitStatus(hourlyKey, AI_QUOTAS.hourly.config)
     if (!hourly.success) {
       logQuotaRejection('hourly_quota')
       return jsonResponse(
@@ -226,7 +225,7 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const daily = await rateLimitStatus(dailyKey, DAILY_QUOTA)
+    const daily = await rateLimitStatus(dailyKey, AI_QUOTAS.daily.config)
     if (!daily.success) {
       logQuotaRejection('daily_quota')
       return jsonResponse(
@@ -272,8 +271,8 @@ export async function POST(req: NextRequest) {
 
     const consumeSuccessfulQuota = async () => {
       const consumed = await Promise.allSettled([
-        rateLimit(hourlyKey, HOURLY_QUOTA),
-        rateLimit(dailyKey, DAILY_QUOTA),
+        rateLimit(hourlyKey, AI_QUOTAS.hourly.config),
+        rateLimit(dailyKey, AI_QUOTAS.daily.config),
         rateLimit(globalMinuteKey, GLOBAL_MINUTE_QUOTA),
         rateLimit(globalDayKey, GLOBAL_DAY_QUOTA),
       ])
@@ -310,7 +309,10 @@ export async function POST(req: NextRequest) {
           if (req.signal.aborted) generationController.abort()
           else req.signal.addEventListener('abort', abortFromRequest, { once: true })
 
-          const send = (event: AiStreamEvent['event'], data: unknown) => {
+          const send = (
+            event: AiStreamEvent['event'] | 'quota',
+            data: unknown,
+          ) => {
             if (cancelled || controller.desiredSize === null) return
             const enriched =
               typeof data === 'object' && data !== null && !Array.isArray(data)
@@ -331,7 +333,18 @@ export async function POST(req: NextRequest) {
               if (event.event === 'done') completed = true
             }
             if (completed) {
-              await consumeSuccessfulQuota()
+              const { consumedHourly, consumedDaily } =
+                await consumeSuccessfulQuota()
+              send('quota', {
+                hourly: {
+                  remaining: consumedHourly.remaining,
+                  limit: AI_QUOTAS.hourly.config.max,
+                },
+                daily: {
+                  remaining: consumedDaily.remaining,
+                  limit: AI_QUOTAS.daily.config.max,
+                },
+              })
               logger.info(
                 {
                   requestId,

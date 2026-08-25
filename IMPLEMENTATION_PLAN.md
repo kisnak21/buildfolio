@@ -1,6 +1,6 @@
 # Buildfolio Implementation Plan
 
-Status updated: 2026-08-25. Milestones 1 and 6 are complete in the current worktree.
+Status updated: 2026-08-25. Milestones 1, 2, and 6 are complete in the current worktree.
 
 This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, and project-discovery improvements. Model selection remains an internal server concern; users should not choose providers directly.
 
@@ -65,7 +65,9 @@ Capability metadata verified on 2026-08-25: Dots3, Nemotron 3 Super, and GLM 5.2
 
 ## Milestone 2: AI Controls and UX
 
-### Cancel and Retry
+- [x] Complete
+
+### [x] Cancel and Retry
 
 Update `src/lib/api/realApiClient.ts`, `src/lib/api/aiApi.ts`, `src/components/dashboard/ProjectForm.tsx`, and `src/app/dashboard/ideas/IdeasClient.tsx`.
 
@@ -77,7 +79,7 @@ Update `src/lib/api/realApiClient.ts`, `src/lib/api/aiApi.ts`, `src/components/d
 - Preserve the last generation input and add an explicit `Retry` action after failure.
 - Do not automatically retry a user-cancelled request.
 
-### Visible Progress
+### [x] Visible Progress
 
 Create a shared `AiGenerationProgress` component.
 
@@ -87,7 +89,7 @@ Create a shared `AiGenerationProgress` component.
 - Do not display fake percentage completion.
 - Keep `aria-live`, `aria-busy`, keyboard focus, and reduced-motion behavior accessible.
 
-### Quota and Retry-After
+### [x] Quota and Retry-After
 
 Update `src/lib/rateLimit.ts`, `src/app/api/ai/generate/route.ts`, `src/lib/api/realApiClient.ts`, and both AI clients.
 
@@ -302,7 +304,7 @@ Use an authenticated staging session for AI SSE verification and a disposable da
 1. [x] Add test foundation and AI observability.
 2. [x] Migrate description and README to the OpenAI SDK.
 3. [x] Add structured JSON Schema and verify model capability.
-4. Add cancel, retry, visible progress, quota, and Retry-After UX.
+4. [x] Add cancel, retry, visible progress, quota, and Retry-After UX.
 5. Verify backup secrets and complete a manual restore drill.
 6. [x] Expand Project Ideas into the document workspace and move README generation there.
 7. Add draft status, draft APIs, and visibility safeguards.
