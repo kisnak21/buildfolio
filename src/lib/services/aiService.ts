@@ -5,7 +5,9 @@ import {
   AI_MODELS,
   DEFAULT_AI_MODEL,
   PROJECT_CATEGORIES,
+  getModelConfig,
   isAiModelId,
+  isModelConfigured,
   type AiGenerationInput,
   type AiGenerationResult,
   type AiIdea,
@@ -13,11 +15,13 @@ import {
   type AiTask,
 } from '@/lib/aiModels'
 
-const OPENROUTER_BASE_URL =
-  (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(
-    /\/+$/,
-    '',
-  )
+const providerBaseUrl = (value: string) => value.replace(/\/+$/, '')
+const OPENROUTER_BASE_URL = providerBaseUrl(
+  process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
+)
+const GROQ_BASE_URL = providerBaseUrl(
+  process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
+)
 const OPENROUTER_STREAM_IDLE_TIMEOUT_MS = 20_000
 const OPENROUTER_ATTEMPT_TIMEOUT_MS = 22_000
 type JsonRecord = Record<string, unknown>
@@ -29,25 +33,34 @@ const apiError = (
   metadata?: { providerStatus?: number; errorClass?: string },
 ) => Object.assign(new Error(message), { statusCode, ...metadata })
 
-let openRouterClient: OpenAI | undefined
+const aiClients = new Map<string, OpenAI>()
 
-const getOpenRouterClient = () => {
-  const apiKey = process.env.OPENROUTER_API_KEY
+const getModelClient = (model: AiModelId) => {
+  const config = getModelConfig(model)
+  const cached = aiClients.get(config.provider)
+  if (cached) return cached
+
+  const apiKey =
+    config.provider === 'groq'
+      ? process.env.GROQ_API_KEY
+      : process.env.OPENROUTER_API_KEY
   if (!apiKey) throw apiError('AI generation is not configured', 503)
-  if (!openRouterClient) {
-    openRouterClient = new OpenAI({
-      apiKey,
-      baseURL: OPENROUTER_BASE_URL,
+
+  const client = new OpenAI({
+    apiKey,
+    baseURL: config.provider === 'groq' ? GROQ_BASE_URL : OPENROUTER_BASE_URL,
+    ...(config.provider === 'openrouter' && {
       defaultHeaders: {
         'HTTP-Referer':
           process.env.NEXT_PUBLIC_APP_URL || 'https://buildfolio.vercel.app',
         'X-OpenRouter-Title': 'Buildfolio',
       },
-      maxRetries: 0,
-      timeout: OPENROUTER_ATTEMPT_TIMEOUT_MS,
-    })
-  }
-  return openRouterClient
+    }),
+    maxRetries: 0,
+    timeout: OPENROUTER_ATTEMPT_TIMEOUT_MS,
+  })
+  aiClients.set(config.provider, client)
+  return client
 }
 
 const isRecord = (value: unknown): value is JsonRecord =>
@@ -443,7 +456,7 @@ const isTimeoutSignal = (signal: AbortSignal | undefined) =>
   isRecord(signal.reason) &&
   signal.reason.name === 'TimeoutError'
 
-const mapOpenRouterError = (error: unknown) => {
+const mapProviderError = (error: unknown) => {
   if (isRecord(error) && typeof error.statusCode === 'number') return error
   const providerStatus = providerStatusFromError(error)
   const errorClass = errorClassFrom(error)
@@ -472,7 +485,8 @@ const mapOpenRouterError = (error: unknown) => {
 
 const orderedCandidates = (requested: AiModelId, task: AiTask) => {
   const available = AI_MODELS.filter(
-    (model) => task !== 'ideas' || model.supportsJson,
+    (model) =>
+      (task !== 'ideas' || model.supportsJson) && isModelConfigured(model.id),
   ).map((model) => model.id)
   const candidates = available.includes(requested)
     ? [requested, ...available.filter((id) => id !== requested)]
@@ -496,25 +510,26 @@ const responseFormatFor = (task: AiTask, model: AiModelId) => {
   return config?.supportsJson ? { type: 'json_object' } : undefined
 }
 
-const openRouterRequest = (
+const providerRequest = (
   task: AiTask,
   model: AiModelId,
   input: AiGenerationInput,
 ) => {
+  const config = getModelConfig(model)
   const responseFormat = responseFormatFor(task, model)
-  const shouldUseReasoning =
-    model === 'stealth/ox-alpha' && responseFormat === undefined
   return {
     model,
     messages: [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: taskPrompt(task, input) },
     ],
-    provider: {
-      require_parameters: responseFormat !== undefined,
-      data_collection:
-        process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow',
-    },
+    ...(config.provider === 'openrouter' && {
+      provider: {
+        require_parameters: responseFormat !== undefined,
+        data_collection:
+          process.env.OPENROUTER_DATA_COLLECTION === 'deny' ? 'deny' : 'allow',
+      },
+    }),
     stream: true,
     temperature: task === 'ideas' ? 0.85 : task === 'description' ? 0.55 : 0.45,
     max_tokens:
@@ -525,8 +540,10 @@ const openRouterRequest = (
           : task === 'prd'
             ? 2_500
             : 2_200,
-    ...(shouldUseReasoning && {
-      reasoning: { effort: 'low' },
+    ...(config.reasoningEffort && {
+      ...(config.provider === 'groq'
+        ? { reasoning_effort: config.reasoningEffort }
+        : { reasoning: { effort: config.reasoningEffort } }),
     }),
     ...(responseFormat && { response_format: responseFormat }),
   }
@@ -538,7 +555,7 @@ interface OpenRouterTextChunk {
   providerStatus: number
 }
 
-const streamSingleWithOpenRouter = async function* ({
+const streamSingleWithProvider = async function* ({
   task,
   model,
   input,
@@ -576,8 +593,8 @@ const streamSingleWithOpenRouter = async function* ({
   else signal?.addEventListener('abort', abortFromCaller, { once: true })
 
   try {
-    const request = getOpenRouterClient().chat.completions.create(
-      openRouterRequest(task, model, input) as unknown as Parameters<
+    const request = getModelClient(model).chat.completions.create(
+      providerRequest(task, model, input) as unknown as Parameters<
         OpenAI['chat']['completions']['create']
       >[0] & {
         stream: true
@@ -642,7 +659,7 @@ const streamSingleWithOpenRouter = async function* ({
         errorClass: errorClassFrom(error),
       })
     }
-    throw mapOpenRouterError(error)
+    throw mapProviderError(error)
   } finally {
     clearTimeout(idleTimeout)
     clearTimeout(attemptTimeout)
@@ -650,7 +667,7 @@ const streamSingleWithOpenRouter = async function* ({
   }
 }
 
-const generateSingleWithOpenRouter = async ({
+const generateSingleWithProvider = async ({
   task,
   model,
   input,
@@ -668,7 +685,7 @@ const generateSingleWithOpenRouter = async ({
   let text = ''
   let actualModel: string = model
   let providerStatus = 200
-  for await (const chunk of streamSingleWithOpenRouter({
+  for await (const chunk of streamSingleWithProvider({
     task,
     model,
     input,
@@ -708,7 +725,7 @@ const generateSingleWithOpenRouter = async ({
   } as const
 }
 
-export const generateWithOpenRouter = async (params: {
+export const generateWithProviders = async (params: {
   task: AiTask
   model: AiModelId
   input: AiGenerationInput
@@ -716,6 +733,9 @@ export const generateWithOpenRouter = async (params: {
   onTelemetry?: AiTelemetryHandler
 }): Promise<AiGenerationResult> => {
   const candidates = orderedCandidates(params.model, params.task)
+  if (candidates.length === 0) {
+    throw apiError('AI generation is not configured', 503)
+  }
   let lastError: unknown
 
   for (let index = 0; index < candidates.length; index++) {
@@ -730,7 +750,7 @@ export const generateWithOpenRouter = async (params: {
       totalAttempts: candidates.length,
     })
     try {
-      const generated = await generateSingleWithOpenRouter({
+      const generated = await generateSingleWithProvider({
         ...params,
         model: candidate,
         attempt,
@@ -773,7 +793,7 @@ export const generateWithOpenRouter = async (params: {
   throw lastError ?? apiError('AI provider is unavailable. Please try again.', 502)
 }
 
-export async function* streamIdeasWithOpenRouter({
+export async function* streamIdeasWithProviders({
   model,
   input,
   signal,
@@ -785,6 +805,9 @@ export async function* streamIdeasWithOpenRouter({
   onTelemetry?: AiTelemetryHandler
 }): AsyncGenerator<AiStreamEvent> {
   const candidates = orderedCandidates(model, 'ideas')
+  if (candidates.length === 0) {
+    throw apiError('AI generation is not configured', 503)
+  }
   let lastError: unknown
 
   for (let index = 0; index < candidates.length; index++) {
@@ -807,7 +830,7 @@ export async function* streamIdeasWithOpenRouter({
     let actualModel: string = candidate
     let providerStatus = 200
     try {
-      for await (const chunk of streamSingleWithOpenRouter({
+      for await (const chunk of streamSingleWithProvider({
         task: 'ideas',
         model: candidate,
         input,

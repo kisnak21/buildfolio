@@ -17,10 +17,10 @@ vi.mock('openai', () => ({
 
 import {
   IDEAS_JSON_SCHEMA,
-  generateWithOpenRouter,
+  generateWithProviders,
   parseAiRequest,
   parseIdeas,
-  streamIdeasWithOpenRouter,
+  streamIdeasWithProviders,
   type AiTelemetryEvent,
 } from '@/lib/services/aiService'
 
@@ -50,7 +50,7 @@ const validIdeas = {
   ],
 }
 
-const asyncChunks = (texts: string[], model = 'stealth/ox-alpha') => ({
+const asyncChunks = (texts: string[], model = 'openai/gpt-oss-120b') => ({
   async *[Symbol.asyncIterator]() {
     for (const text of texts) {
       yield { model, choices: [{ delta: { content: text } }] }
@@ -60,7 +60,7 @@ const asyncChunks = (texts: string[], model = 'stealth/ox-alpha') => ({
 
 const sdkResponse = (
   texts: string[],
-  { model = 'stealth/ox-alpha', status = 200 } = {},
+  { model = 'openai/gpt-oss-120b', status = 200 } = {},
 ) => ({
   withResponse: vi.fn().mockResolvedValue({
     data: asyncChunks(texts, model),
@@ -82,7 +82,7 @@ describe('AI request parsing', () => {
 
     expect(parsed).toMatchObject({
       task: 'ideas',
-      model: 'dots-studio/dots-3-note-preview:free',
+      model: 'openai/gpt-oss-120b',
       input: {
         interests: 'civic technology',
         technologies: ['TypeScript'],
@@ -211,9 +211,10 @@ describe('Ideas schema and parsing', () => {
   })
 })
 
-describe('OpenRouter SDK generation', () => {
+describe('Provider SDK generation', () => {
   beforeEach(() => {
     vi.stubEnv('OPENROUTER_API_KEY', 'test-key')
+    vi.stubEnv('GROQ_API_KEY', 'test-key')
     sdk.create.mockReset()
   })
 
@@ -221,9 +222,9 @@ describe('OpenRouter SDK generation', () => {
     sdk.create.mockReturnValue(sdkResponse(['A useful ', 'project description.']))
     const telemetry: AiTelemetryEvent[] = []
 
-    const result = await generateWithOpenRouter({
+    const result = await generateWithProviders({
       task: 'description',
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
       input: { title: 'Buildfolio' },
       onTelemetry: (event) => telemetry.push(event),
     })
@@ -231,19 +232,20 @@ describe('OpenRouter SDK generation', () => {
     expect(result).toMatchObject({
       task: 'description',
       text: 'A useful project description.',
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
     })
     const [body, options] = sdk.create.mock.calls[0]
     expect(body).toMatchObject({
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
       stream: true,
-      reasoning: { effort: 'low' },
+      reasoning_effort: 'low',
     })
+    expect(body.provider).toBeUndefined()
     expect(options.signal).toBeInstanceOf(AbortSignal)
     expect(sdk.clientOptions).toMatchObject({
       maxRetries: 0,
       timeout: 22_000,
-      defaultHeaders: { 'X-OpenRouter-Title': 'Buildfolio' },
+      baseURL: 'https://api.groq.com/openai/v1',
     })
     expect(telemetry.map((event) => event.event)).toEqual([
       'attempt_started',
@@ -257,19 +259,23 @@ describe('OpenRouter SDK generation', () => {
   it('uses strict JSON Schema for a verified model', async () => {
     sdk.create.mockReturnValue(
       sdkResponse([JSON.stringify(validIdeas)], {
-        model: 'dots-studio/dots-3-note-preview:free',
+        model: 'z-ai/glm-5.2:free',
       }),
     )
 
-    await generateWithOpenRouter({
+    await generateWithProviders({
       task: 'ideas',
-      model: 'dots-studio/dots-3-note-preview:free',
+      model: 'z-ai/glm-5.2:free',
       input: { interests: 'community tools' },
     })
 
     expect(sdk.create.mock.calls[0][0]).toMatchObject({
-      model: 'dots-studio/dots-3-note-preview:free',
-      provider: { require_parameters: true },
+      model: 'z-ai/glm-5.2:free',
+      provider: {
+        require_parameters: true,
+        data_collection: 'allow',
+      },
+      reasoning: { effort: 'low' },
       response_format: {
         type: 'json_schema',
         json_schema: {
@@ -278,6 +284,89 @@ describe('OpenRouter SDK generation', () => {
           schema: IDEAS_JSON_SCHEMA,
         },
       },
+    })
+  })
+
+  it('falls back to GLM when Groq is not configured', async () => {
+    vi.stubEnv('GROQ_API_KEY', '')
+    sdk.create.mockReturnValue(
+      sdkResponse([JSON.stringify(validIdeas)], {
+        model: 'z-ai/glm-5.2:free',
+      }),
+    )
+    const telemetry: AiTelemetryEvent[] = []
+
+    const result = await generateWithProviders({
+      task: 'ideas',
+      model: 'openai/gpt-oss-120b',
+      input: { interests: 'community tools' },
+      onTelemetry: (event) => telemetry.push(event),
+    })
+
+    expect(result.model).toBe('z-ai/glm-5.2:free')
+    expect(sdk.create).toHaveBeenCalledTimes(1)
+    expect(sdk.clientOptions).toMatchObject({
+      baseURL: 'https://openrouter.ai/api/v1',
+    })
+    expect(telemetry[0]).toMatchObject({
+      event: 'attempt_started',
+      model: 'z-ai/glm-5.2:free',
+    })
+  })
+
+  it('returns 503 when no provider key is configured', async () => {
+    vi.stubEnv('GROQ_API_KEY', '')
+    vi.stubEnv('OPENROUTER_API_KEY', '')
+
+    await expect(
+      generateWithProviders({
+        task: 'description',
+        model: 'openai/gpt-oss-120b',
+        input: { title: 'Buildfolio' },
+      }),
+    ).rejects.toMatchObject({ statusCode: 503 })
+    expect(sdk.create).not.toHaveBeenCalled()
+  })
+
+  it('falls back across providers from Groq to GLM for streaming Ideas', async () => {
+    const providerError = Object.assign(new Error('groq unavailable'), {
+      name: 'APIError',
+      status: 503,
+    })
+    sdk.create
+      .mockReturnValueOnce({
+        withResponse: vi.fn().mockRejectedValue(providerError),
+      })
+      .mockReturnValueOnce(
+        sdkResponse([JSON.stringify(validIdeas)], {
+          model: 'z-ai/glm-5.2:free',
+        }),
+      )
+
+    const events: AiTelemetryEvent[] = []
+    const streamEvents = []
+    for await (const event of streamIdeasWithProviders({
+      model: 'openai/gpt-oss-120b',
+      input: { interests: 'community tools' },
+      onTelemetry: (telemetryEvent) => events.push(telemetryEvent),
+    })) {
+      streamEvents.push(event)
+    }
+
+    expect(streamEvents[0]).toMatchObject({
+      event: 'meta',
+      data: { model: 'openai/gpt-oss-120b', attempt: 1, total: 2 },
+    })
+    expect(streamEvents.some((event) => event.event === 'fallback')).toBe(true)
+    expect(streamEvents.at(-1)).toMatchObject({
+      event: 'done',
+      data: { data: { model: 'z-ai/glm-5.2:free' } },
+    })
+    expect(events.some((event) => event.event === 'fallback')).toBe(true)
+    const fallback = events.find((event) => event.event === 'fallback')
+    expect(fallback).toMatchObject({
+      from: 'openai/gpt-oss-120b',
+      next: 'z-ai/glm-5.2:free',
     })
   })
 
@@ -291,9 +380,9 @@ describe('OpenRouter SDK generation', () => {
     async (task, promptText, maxTokens) => {
       sdk.create.mockReturnValue(sdkResponse(['# Generated document']))
 
-      const result = await generateWithOpenRouter({
+      const result = await generateWithProviders({
         task,
-        model: 'stealth/ox-alpha',
+        model: 'openai/gpt-oss-120b',
         input: {
           title: 'Buildfolio',
           summary: 'A project showcase.',
@@ -310,7 +399,7 @@ describe('OpenRouter SDK generation', () => {
     },
   )
 
-  it('falls back to JSON mode when the schema-capable model fails', async () => {
+  it('falls back to GLM when the schema-capable model fails', async () => {
     const providerError = Object.assign(new Error('provider unavailable'), {
       name: 'APIError',
       status: 503,
@@ -321,24 +410,25 @@ describe('OpenRouter SDK generation', () => {
       })
       .mockReturnValueOnce(
         sdkResponse([JSON.stringify(validIdeas)], {
-          model: 'dots-studio/dots-3-note-preview:free',
+          model: 'z-ai/glm-5.2:free',
         }),
       )
 
     const events: AiTelemetryEvent[] = []
-    const result = await generateWithOpenRouter({
+    const result = await generateWithProviders({
       task: 'ideas',
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
       input: { interests: 'community tools' },
       onTelemetry: (event) => events.push(event),
     })
 
-    expect(result.model).toBe('dots-studio/dots-3-note-preview:free')
+    expect(result.model).toBe('z-ai/glm-5.2:free')
     expect(sdk.create.mock.calls[0][0]).toMatchObject({
-      response_format: { type: 'json_object' },
+      model: 'openai/gpt-oss-120b',
+      reasoning_effort: 'low',
     })
     expect(sdk.create.mock.calls[1][0]).toMatchObject({
-      model: 'dots-studio/dots-3-note-preview:free',
+      model: 'z-ai/glm-5.2:free',
       response_format: {
         type: 'json_schema',
         json_schema: { strict: true },
@@ -363,9 +453,9 @@ describe('OpenRouter SDK generation', () => {
     }))
 
     await expect(
-      generateWithOpenRouter({
+      generateWithProviders({
         task: 'description',
-        model: 'stealth/ox-alpha',
+        model: 'openai/gpt-oss-120b',
         input: { title: 'Buildfolio' },
         signal: controller.signal,
       }),
@@ -378,9 +468,9 @@ describe('OpenRouter SDK generation', () => {
     const events: AiTelemetryEvent[] = []
 
     await expect(
-      generateWithOpenRouter({
+      generateWithProviders({
         task: 'description',
-        model: 'stealth/ox-alpha',
+        model: 'openai/gpt-oss-120b',
         input: { title: 'Buildfolio' },
         onTelemetry: (event) => events.push(event),
       }),
@@ -388,10 +478,10 @@ describe('OpenRouter SDK generation', () => {
       statusCode: 502,
       errorClass: 'EmptyCompletionError',
     })
-    expect(sdk.create).toHaveBeenCalledTimes(3)
+    expect(sdk.create).toHaveBeenCalledTimes(2)
     expect(
       events.filter((event) => event.event === 'attempt_failed'),
-    ).toHaveLength(3)
+    ).toHaveLength(2)
   })
 
   it('stops a stream when the caller aborts after the first token', async () => {
@@ -401,7 +491,7 @@ describe('OpenRouter SDK generation', () => {
         data: {
           async *[Symbol.asyncIterator]() {
             yield {
-              model: 'stealth/ox-alpha',
+              model: 'openai/gpt-oss-120b',
               choices: [{ delta: { content: 'Partial' } }],
             }
             if (options.signal.aborted) {
@@ -424,9 +514,9 @@ describe('OpenRouter SDK generation', () => {
     }))
 
     await expect(
-      generateWithOpenRouter({
+      generateWithProviders({
         task: 'description',
-        model: 'stealth/ox-alpha',
+        model: 'openai/gpt-oss-120b',
         input: { title: 'Buildfolio' },
         signal: controller.signal,
         onTelemetry: (event) => {
@@ -444,17 +534,17 @@ describe('OpenRouter SDK generation', () => {
       .mockReturnValueOnce(sdkResponse([JSON.stringify(malformed)]))
       .mockReturnValueOnce(
         sdkResponse([JSON.stringify(validIdeas)], {
-          model: 'dots-studio/dots-3-note-preview:free',
+          model: 'z-ai/glm-5.2:free',
         }),
       )
 
-    const result = await generateWithOpenRouter({
+    const result = await generateWithProviders({
       task: 'ideas',
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
       input: { interests: 'community tools' },
     })
 
-    expect(result.model).toBe('dots-studio/dots-3-note-preview:free')
+    expect(result.model).toBe('z-ai/glm-5.2:free')
     expect(sdk.create).toHaveBeenCalledTimes(2)
   })
 
@@ -473,13 +563,13 @@ describe('OpenRouter SDK generation', () => {
       }))
       .mockReturnValueOnce(
         sdkResponse(['Fallback description.'], {
-          model: 'dots-studio/dots-3-note-preview:free',
+          model: 'z-ai/glm-5.2:free',
         }),
       )
 
-    const generation = generateWithOpenRouter({
+    const generation = generateWithProviders({
       task: 'description',
-      model: 'stealth/ox-alpha',
+      model: 'openai/gpt-oss-120b',
       input: { title: 'Buildfolio' },
     })
     await vi.advanceTimersByTimeAsync(22_000)
@@ -487,7 +577,7 @@ describe('OpenRouter SDK generation', () => {
     await expect(generation).resolves.toMatchObject({
       task: 'description',
       text: 'Fallback description.',
-      model: 'dots-studio/dots-3-note-preview:free',
+      model: 'z-ai/glm-5.2:free',
     })
     vi.useRealTimers()
   })
@@ -498,8 +588,8 @@ describe('OpenRouter SDK generation', () => {
     )
 
     const events = []
-    for await (const event of streamIdeasWithOpenRouter({
-      model: 'stealth/ox-alpha',
+    for await (const event of streamIdeasWithProviders({
+      model: 'openai/gpt-oss-120b',
       input: { interests: 'community tools' },
     })) {
       events.push(event)
@@ -525,8 +615,8 @@ describe('OpenRouter SDK generation', () => {
     }))
     const telemetry: AiTelemetryEvent[] = []
 
-    const stream = streamIdeasWithOpenRouter({
-      model: 'stealth/ox-alpha',
+    const stream = streamIdeasWithProviders({
+      model: 'openai/gpt-oss-120b',
       input: { interests: 'community tools' },
       signal: controller.signal,
       onTelemetry: (event) => telemetry.push(event),

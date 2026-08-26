@@ -1,57 +1,27 @@
-// Structured-output flags follow the active OpenRouter endpoint metadata.
-// Ordered by latency/reliability - fastest JSON-capable models first.
-// Ox Alpha (reasoning, slow) is last fallback only due to frequent 22s timeouts.
+export type AiModelProvider = 'groq' | 'openrouter'
+
 export const AI_MODELS = [
   {
-    id: 'dots-studio/dots-3-note-preview:free',
-    name: 'Dots3 Note',
-    note: 'Balanced writing and reasoning',
+    id: 'openai/gpt-oss-120b',
+    name: 'GPT-OSS 120B',
+    note: 'Primary fast reasoning model via Groq',
+    provider: 'groq',
     supportsJson: true,
     supportsJsonSchema: true,
-  },
-  {
-    id: 'google/gemma-4-26b-a4b-it:free',
-    name: 'Gemma 4 26B',
-    note: 'Fast concise drafts',
-    supportsJson: true,
-    supportsJsonSchema: false,
-  },
-  {
-    id: 'nvidia/nemotron-3-super-120b-a12b:free',
-    name: 'Nemotron 3 Super',
-    note: 'Strong structured output',
-    supportsJson: true,
-    supportsJsonSchema: true,
+    reasoningEffort: 'low',
   },
   {
     id: 'z-ai/glm-5.2:free',
     name: 'GLM 5.2',
-    note: 'Detailed technical copy',
+    note: 'Fallback technical reasoning via OpenRouter',
+    provider: 'openrouter',
     supportsJson: true,
     supportsJsonSchema: true,
-  },
-  {
-    id: 'google/gemma-4-31b-it:free',
-    name: 'Gemma 4 31B',
-    note: 'Reliable structured drafts',
-    supportsJson: true,
-    supportsJsonSchema: false,
-  },
-  {
-    id: 'nvidia/nemotron-3.5-lightning:free',
-    name: 'Nemotron 3.5 Lightning',
-    note: 'Fast direct drafts (no JSON)',
-    supportsJson: false,
-    supportsJsonSchema: false,
-  },
-  {
-    id: 'stealth/ox-alpha',
-    name: 'Ox Alpha',
-    note: 'Free long-context reasoning (slow fallback)',
-    supportsJson: true,
-    supportsJsonSchema: false,
+    reasoningEffort: 'low',
   },
 ] as const
+
+export type AiModelConfig = (typeof AI_MODELS)[number]
 
 export const PROJECT_CATEGORIES = [
   'SaaS',
@@ -65,6 +35,18 @@ export const PROJECT_CATEGORIES = [
 export type AiModelId = (typeof AI_MODELS)[number]['id']
 export type AiDocumentTask = 'prd' | 'design' | 'styleGuide' | 'readme'
 export type AiTask = 'description' | 'ideas' | AiDocumentTask
+
+export const getModelConfig = (id: AiModelId): AiModelConfig =>
+  AI_MODELS.find((model) => model.id === id) as AiModelConfig
+
+export const isModelConfigured = (id: AiModelId): boolean => {
+  const provider = getModelConfig(id).provider
+  const apiKey =
+    provider === 'groq'
+      ? process.env.GROQ_API_KEY
+      : process.env.OPENROUTER_API_KEY
+  return Boolean(apiKey)
+}
 
 export interface AiGenerationInput {
   title?: string
