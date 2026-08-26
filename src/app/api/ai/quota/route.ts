@@ -16,19 +16,6 @@ const withRequestId = <T extends Response>(response: T, requestId: string) => {
 
 export async function GET(req: NextRequest) {
   const requestId = randomUUID()
-  if (process.env.AI_GENERATION_ENABLED !== 'true') {
-    return withRequestId(
-      NextResponse.json(
-        {
-          success: false,
-          message: 'AI generation is coming soon. No quota is consumed.',
-        },
-        { status: 503 },
-      ),
-      requestId,
-    )
-  }
-
   const { user, error } = await requireActiveUser(req)
   if (error || !user) {
     return withRequestId(

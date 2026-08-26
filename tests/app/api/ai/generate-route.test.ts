@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({
@@ -52,7 +52,6 @@ const request = () =>
 
 describe('AI generation route', () => {
   beforeEach(() => {
-    vi.stubEnv('AI_GENERATION_ENABLED', 'false')
     mocks.assertSameOrigin.mockClear()
     mocks.requireActiveUser.mockReset()
     mocks.rateLimit.mockReset()
@@ -61,21 +60,7 @@ describe('AI generation route', () => {
     mocks.parseAiRequest.mockReset()
   })
 
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('returns Coming Soon without touching auth when disabled', async () => {
-    const response = await POST(request())
-    const body = await response.json()
-
-    expect(response.status).toBe(503)
-    expect(response.headers.get('X-Request-ID')).toMatch(/^[0-9a-f-]{36}$/)
-    expect(body.message).toMatch(/coming soon/i)
-    expect(body.success).toBe(false)
-    expect(mocks.requireActiveUser).not.toHaveBeenCalled()
-  })
-
-  it('runs authenticated generation and consumes quota when enabled', async () => {
-    vi.stubEnv('AI_GENERATION_ENABLED', 'true')
+  it('runs authenticated generation and consumes quota', async () => {
     mocks.requireActiveUser.mockResolvedValue({
       user: { id: 'user-1' },
       error: null,

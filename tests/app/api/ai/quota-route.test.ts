@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({
@@ -31,26 +31,11 @@ const request = () => new NextRequest('http://localhost:3001/api/ai/quota')
 
 describe('AI quota route', () => {
   beforeEach(() => {
-    vi.stubEnv('AI_GENERATION_ENABLED', 'false')
     mocks.requireActiveUser.mockReset()
     mocks.rateLimitStatus.mockReset()
   })
 
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('returns Coming Soon without touching auth when disabled', async () => {
-    const response = await GET(request())
-    const body = await response.json()
-
-    expect(response.status).toBe(503)
-    expect(response.headers.get('X-Request-ID')).toMatch(/^[0-9a-f-]{36}$/)
-    expect(body.message).toMatch(/coming soon/i)
-    expect(body.success).toBe(false)
-    expect(mocks.requireActiveUser).not.toHaveBeenCalled()
-  })
-
-  it('returns authenticated quota when enabled', async () => {
-    vi.stubEnv('AI_GENERATION_ENABLED', 'true')
+  it('returns authenticated quota', async () => {
     mocks.requireActiveUser.mockResolvedValue({
       user: { id: 'user-1' },
       error: null,

@@ -43,17 +43,6 @@ const jsonResponse = (
   requestId: string,
 ) => withRequestId(NextResponse.json(body, init), requestId)
 
-const comingSoon = (requestId: string) =>
-  jsonResponse(
-    {
-      success: false,
-      message:
-        'AI generation is coming soon. No generations are consumed.',
-    },
-    { status: 503 },
-    requestId,
-  )
-
 const errorClass = (error: unknown) =>
   typeof error === 'object' &&
   error !== null &&
@@ -88,10 +77,6 @@ const readLimitedBody = async (req: NextRequest) => {
 
 export async function POST(req: NextRequest) {
   const requestId = randomUUID()
-  if (process.env.AI_GENERATION_ENABLED !== 'true') {
-    return comingSoon(requestId)
-  }
-
   const requestStartedAt = performance.now()
   const requestStartedAtIso = new Date().toISOString()
   let observedTask: AiTask | undefined
