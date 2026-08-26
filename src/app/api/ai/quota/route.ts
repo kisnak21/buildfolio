@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { AI_GENERATION_PAUSED } from '@/lib/aiAvailability'
 import { requireActiveUser } from '@/lib/middleware/authMiddleware'
 import {
   AI_QUOTAS,
@@ -16,6 +17,19 @@ const withRequestId = <T extends Response>(response: T, requestId: string) => {
 
 export async function GET(req: NextRequest) {
   const requestId = randomUUID()
+  if (AI_GENERATION_PAUSED) {
+    return withRequestId(
+      NextResponse.json(
+        {
+          success: false,
+          message: 'AI generation is coming soon. No quota is consumed.',
+        },
+        { status: 503 },
+      ),
+      requestId,
+    )
+  }
+
   const { user, error } = await requireActiveUser(req)
   if (error || !user) {
     return withRequestId(

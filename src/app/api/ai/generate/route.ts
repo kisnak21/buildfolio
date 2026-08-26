@@ -4,6 +4,7 @@ export const maxDuration = 60
 import { randomUUID } from 'node:crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import type { AiTask } from '@/lib/aiModels'
+import { AI_GENERATION_PAUSED } from '@/lib/aiAvailability'
 import { errorStatus, httpError } from '@/lib/apiErrors'
 import logger from '@/lib/logger'
 import {
@@ -42,6 +43,16 @@ const jsonResponse = (
   init: ResponseInit,
   requestId: string,
 ) => withRequestId(NextResponse.json(body, init), requestId)
+
+const comingSoon = (requestId: string) =>
+  jsonResponse(
+    {
+      success: false,
+      message: 'AI generation is coming soon. No generations are consumed.',
+    },
+    { status: 503 },
+    requestId,
+  )
 
 const errorClass = (error: unknown) =>
   typeof error === 'object' &&
@@ -85,6 +96,8 @@ const readLimitedBody = async (req: NextRequest) => {
 
 export async function POST(req: NextRequest) {
   const requestId = randomUUID()
+  if (AI_GENERATION_PAUSED) return comingSoon(requestId)
+
   const requestStartedAt = performance.now()
   const requestStartedAtIso = new Date().toISOString()
   let observedTask: AiTask | undefined
