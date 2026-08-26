@@ -7,7 +7,6 @@ import {
   PROJECT_CATEGORIES,
   getModelConfig,
   isAiModelId,
-  isModelConfigured,
   type AiGenerationInput,
   type AiGenerationResult,
   type AiIdea,
@@ -22,8 +21,8 @@ const OPENROUTER_BASE_URL = providerBaseUrl(
 const GROQ_BASE_URL = providerBaseUrl(
   process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1',
 )
-const OPENROUTER_STREAM_IDLE_TIMEOUT_MS = 20_000
-const OPENROUTER_ATTEMPT_TIMEOUT_MS = 22_000
+const AI_STREAM_IDLE_TIMEOUT_MS = 20_000
+const AI_ATTEMPT_TIMEOUT_MS = 22_000
 type JsonRecord = Record<string, unknown>
 const DOCUMENT_TASKS = ['prd', 'design', 'styleGuide', 'readme'] as const
 
@@ -57,7 +56,7 @@ const getModelClient = (model: AiModelId) => {
       },
     }),
     maxRetries: 0,
-    timeout: OPENROUTER_ATTEMPT_TIMEOUT_MS,
+    timeout: AI_ATTEMPT_TIMEOUT_MS,
   })
   aiClients.set(config.provider, client)
   return client
@@ -484,9 +483,17 @@ const mapProviderError = (error: unknown) => {
 }
 
 const orderedCandidates = (requested: AiModelId, task: AiTask) => {
+  const isConfigured = (model: AiModelId) => {
+    const provider = getModelConfig(model).provider
+    return Boolean(
+      provider === 'groq'
+        ? process.env.GROQ_API_KEY
+        : process.env.OPENROUTER_API_KEY,
+    )
+  }
   const available = AI_MODELS.filter(
     (model) =>
-      (task !== 'ideas' || model.supportsJson) && isModelConfigured(model.id),
+      (task !== 'ideas' || model.supportsJson) && isConfigured(model.id),
   ).map((model) => model.id)
   const candidates = available.includes(requested)
     ? [requested, ...available.filter((id) => id !== requested)]
@@ -575,17 +582,17 @@ const streamSingleWithProvider = async function* ({
   const startedAt = performance.now()
   let idleTimeout = setTimeout(
     () => controller.abort(),
-    OPENROUTER_STREAM_IDLE_TIMEOUT_MS,
+    AI_STREAM_IDLE_TIMEOUT_MS,
   )
   const attemptTimeout = setTimeout(
     () => controller.abort(),
-    OPENROUTER_ATTEMPT_TIMEOUT_MS,
+    AI_ATTEMPT_TIMEOUT_MS,
   )
   const resetIdleTimeout = () => {
     clearTimeout(idleTimeout)
     idleTimeout = setTimeout(
       () => controller.abort(),
-      OPENROUTER_STREAM_IDLE_TIMEOUT_MS,
+      AI_STREAM_IDLE_TIMEOUT_MS,
     )
   }
 

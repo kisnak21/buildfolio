@@ -39,15 +39,6 @@ export type AiTask = 'description' | 'ideas' | AiDocumentTask
 export const getModelConfig = (id: AiModelId): AiModelConfig =>
   AI_MODELS.find((model) => model.id === id) as AiModelConfig
 
-export const isModelConfigured = (id: AiModelId): boolean => {
-  const provider = getModelConfig(id).provider
-  const apiKey =
-    provider === 'groq'
-      ? process.env.GROQ_API_KEY
-      : process.env.OPENROUTER_API_KEY
-  return Boolean(apiKey)
-}
-
 export interface AiGenerationInput {
   title?: string
   summary?: string
