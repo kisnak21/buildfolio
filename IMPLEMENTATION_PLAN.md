@@ -1,6 +1,6 @@
 # Buildfolio Implementation Plan
 
-Status updated: 2026-08-26. AI generation is paused — Ideas and document workspace are Coming Soon while alternative models are evaluated. Routing stays, no quota consumed.
+Status updated: 2026-08-26. AI generation is paused — Ideas and document workspace are Coming Soon while the selected Groq-primary model rebase is implemented and verified. Routing stays, no quota consumed.
 
 This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, and project-discovery improvements. Model selection remains an internal server concern; users should not choose providers directly.
 
@@ -17,7 +17,52 @@ This plan covers the next reliability, AI UX, Ideas Workspace, draft-project, an
 
 > AI generation disabled at the API layer (`POST /api/ai/generate` and `GET /api/ai/quota` now return `503 Coming Soon`). Free-model timeouts / empty completions under OpenRouter require alternative-model evaluation before re-enabling. Keep the implementation for rebase.
 
-- [ ] Paused — code preserved for alternative-model rebase
+- [ ] Paused — rebase to the selected two-model provider setup, then verify in staging
+
+### Selected Provider Rebase
+
+Decision confirmed on 2026-08-26: use exactly two active models. Model and provider selection remain server-side implementation details.
+
+- Primary: direct Groq API with `openai/gpt-oss-120b` on the free/developer tier initially.
+- Fallback: `z-ai/glm-5.2:free` through OpenRouter.
+- Remove Dots3, Gemma, Nemotron, and Ox Alpha from the active model configuration rather than retaining commented entries.
+- Keep AI routes in Coming Soon mode until both providers pass authenticated staging verification.
+- Re-enable generation only after structured output, streaming, fallback, timeout, and quota behavior pass the rollout gate.
+
+Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
+
+- Add provider metadata so each model resolves to either `groq` or `openrouter`.
+- Make `openai/gpt-oss-120b` the default model and preserve `z-ai/glm-5.2:free` as the only fallback.
+- Keep JSON and JSON Schema capability metadata enabled for both models.
+- Replace the single-provider client with cached server-only clients per provider.
+- Configure Groq with `GROQ_API_KEY` and optional `GROQ_BASE_URL`, defaulting to `https://api.groq.com/openai/v1`.
+- Keep the existing OpenRouter key, base URL, attribution headers, and data-collection policy for the GLM fallback.
+- Build one shared request shape, then add only provider-specific fields:
+  - Groq uses `reasoning_effort` and must not receive the OpenRouter `provider` block.
+  - OpenRouter retains provider parameter filtering and uses its normalized `reasoning` options.
+- Start with low reasoning effort to protect the Ideas completion-token budget; adjust the GLM request only if its endpoint rejects or ignores that setting.
+- Filter models whose provider key is not configured. Use the configured fallback when possible and return `503` when neither provider is configured.
+- Preserve the current streaming parser, server-side Ideas validation, telemetry, cancellation, fallback events, and shared attempt/idle timeouts.
+- Rename OpenRouter-specific internal function names where they become provider-neutral; keep public API behavior unchanged.
+
+Update `tests/lib/services/aiService.test.ts`, `README.md`, and the AI route tests where model metadata is asserted.
+
+- Replace test fixtures that reference removed models.
+- Test that Groq requests omit OpenRouter fields and send the correct reasoning parameter.
+- Test that OpenRouter GLM requests retain `require_parameters` for structured output.
+- Test Groq-to-GLM fallback for streaming and non-streaming tasks.
+- Test operation with only one provider configured and the `503` result when neither key exists.
+- Keep coverage for redaction, abort, timeout, empty completion, malformed structured output, SSE metadata, and terminal events.
+- Document both server-only API keys and the two-model fallback policy without exposing provider choice to users.
+
+Staging rollout gate:
+
+- Confirm Groq accepts the strict Ideas JSON Schema and returns exactly three server-validated ideas.
+- Confirm first-token and total latency remain inside the existing 20-second idle and 22-second attempt timeouts.
+- Confirm GLM accepts the chosen reasoning configuration and produces complete JSON within the Ideas token budget; increase the budget only if representative prompts prove truncation.
+- Force a Groq failure and verify the request falls back once to GLM with correct telemetry and SSE progress.
+- Verify successful generations consume quota once, while failed, timed-out, and cancelled attempts consume none.
+- Check aggregate Groq developer-tier limits against the application quota of five generations per hour and fifteen per day per user.
 
 ### Observability
 
@@ -63,7 +108,7 @@ Update `src/lib/aiModels.ts` and `src/lib/services/aiService.ts`.
 - Continue server-side validation because JSON Schema alone cannot guarantee unique titles.
 - Verify structured-output support for every configured fallback model before enabling it.
 
-Capability metadata verified on 2026-08-25: Dots3, Nemotron 3 Super, and GLM 5.2 advertise `structured_outputs`; Ox Alpha and both Gemma endpoints use JSON mode.
+Historical capability metadata verified on 2026-08-25: Dots3, Nemotron 3 Super, and GLM 5.2 advertise `structured_outputs`; Ox Alpha and both Gemma endpoints use JSON mode. The selected rebase removes all of these except GLM 5.2 and adds Groq-hosted GPT-OSS 120B with strict structured-output support.
 
 ## Milestone 2: AI Controls and UX — Paused (Coming Soon)
 
@@ -307,9 +352,10 @@ Use an authenticated staging session for AI SSE verification and a disposable da
 2. [x] Migrate description and README to the OpenAI SDK.
 3. [x] Add structured JSON Schema and verify model capability.
 4. [x] Add cancel, retry, visible progress, quota, and Retry-After UX.
-5. Verify backup secrets and complete a manual restore drill.
-6. [x] Expand Project Ideas into the document workspace and move README generation there.
-7. Add draft status, draft APIs, and visibility safeguards.
-8. Move search and filters server-side.
-9. Correct bookmark data loading and add card actions.
-10. Add share UI and then public API documentation.
+5. Rebase AI generation to direct Groq with OpenRouter GLM fallback, pass the staging rollout gate, and re-enable the routes.
+6. Verify backup secrets and complete a manual restore drill.
+7. [x] Expand Project Ideas into the document workspace and move README generation there.
+8. Add draft status, draft APIs, and visibility safeguards.
+9. Move search and filters server-side.
+10. Correct bookmark data loading and add card actions.
+11. Add share UI and then public API documentation.
