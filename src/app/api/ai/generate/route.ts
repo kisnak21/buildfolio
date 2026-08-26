@@ -53,6 +53,14 @@ const errorClass = (error: unknown) =>
       ? error.name.slice(0, 80) || 'Error'
       : 'UnknownError'
 
+const retryAfterSeconds = (error: unknown) =>
+  typeof error === 'object' &&
+  error !== null &&
+  'retryAfterSeconds' in error &&
+  typeof error.retryAfterSeconds === 'number'
+    ? Math.max(1, Math.ceil(error.retryAfterSeconds))
+    : undefined
+
 const readLimitedBody = async (req: NextRequest) => {
   if (!req.body) return ''
   const reader = req.body.getReader()
@@ -351,6 +359,7 @@ export async function POST(req: NextRequest) {
           } catch (streamError) {
             if (!req.signal.aborted && !cancelled) {
               const status = errorStatus(streamError)
+              const retryAfter = retryAfterSeconds(streamError)
               logger.warn(
                 {
                   requestId,
@@ -374,6 +383,8 @@ export async function POST(req: NextRequest) {
               send('error', {
                 message:
                   httpError(streamError).message || 'AI generation failed',
+                status,
+                ...(retryAfter ? { retryAfterSeconds: retryAfter } : {}),
               })
             }
           } finally {
@@ -473,6 +484,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (routeError: unknown) {
     const status = errorStatus(routeError)
+    const retryAfter = retryAfterSeconds(routeError)
     logger.warn(
       {
         requestId,
@@ -498,7 +510,12 @@ export async function POST(req: NextRequest) {
             ? 'AI generation failed'
             : httpError(routeError).message || 'AI generation failed',
       },
-      { status },
+      {
+        status,
+        ...(retryAfter && {
+          headers: { 'Retry-After': String(retryAfter) },
+        }),
+      },
       requestId,
     )
   }

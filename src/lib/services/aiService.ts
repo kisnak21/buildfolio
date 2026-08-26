@@ -29,7 +29,11 @@ const DOCUMENT_TASKS = ['prd', 'design', 'styleGuide', 'readme'] as const
 const apiError = (
   message: string,
   statusCode: number,
-  metadata?: { providerStatus?: number; errorClass?: string },
+  metadata?: {
+    providerStatus?: number
+    errorClass?: string
+    retryAfterSeconds?: number
+  },
 ) => Object.assign(new Error(message), { statusCode, ...metadata })
 
 const aiClients = new Map<string, OpenAI>()
@@ -455,16 +459,45 @@ const isTimeoutSignal = (signal: AbortSignal | undefined) =>
   isRecord(signal.reason) &&
   signal.reason.name === 'TimeoutError'
 
+const parseRetryAfter = (value: string | null | undefined) => {
+  if (!value) return undefined
+  const seconds = Number(value)
+  if (Number.isFinite(seconds) && seconds > 0) return Math.ceil(seconds)
+  const retryAt = Date.parse(value)
+  if (!Number.isFinite(retryAt)) return undefined
+  return Math.max(1, Math.ceil((retryAt - Date.now()) / 1_000))
+}
+
+const providerRetryAfterSeconds = (error: unknown) => {
+  if (!isRecord(error)) return undefined
+  const headers = error.headers
+  if (headers instanceof Headers) {
+    return parseRetryAfter(headers.get('retry-after'))
+  }
+  if (!isRecord(headers)) return undefined
+  const entry = Object.entries(headers).find(
+    ([key]) => key.toLowerCase() === 'retry-after',
+  )
+  return typeof entry?.[1] === 'string'
+    ? parseRetryAfter(entry[1])
+    : undefined
+}
+
 const mapProviderError = (error: unknown) => {
   if (isRecord(error) && typeof error.statusCode === 'number') return error
   const providerStatus = providerStatusFromError(error)
   const errorClass = errorClassFrom(error)
 
   if (providerStatus === 429) {
-    return apiError('Free AI models are busy. Please try again shortly.', 429, {
-      providerStatus,
-      errorClass,
-    })
+    return apiError(
+      'AI capacity is temporarily busy. Please try again shortly.',
+      429,
+      {
+        providerStatus,
+        errorClass,
+        retryAfterSeconds: providerRetryAfterSeconds(error) ?? 15,
+      },
+    )
   }
   if (
     errorClass === 'AbortError' ||
