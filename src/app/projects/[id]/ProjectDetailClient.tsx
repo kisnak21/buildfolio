@@ -7,7 +7,11 @@ import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
 import { fetchLikedProjects, syncLike, selectIsLiked } from '@/store/redux/likesSlice'
-import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
+import {
+  addBookmark,
+  fetchBookmarks,
+  removeBookmark,
+} from '@/store/redux/bookmarksSlice'
 import {
   fetchComments,
   addComment,
@@ -17,6 +21,7 @@ import {
 import { getProjectById } from '@/lib/api/projectsApi'
 import type { NormalizedProject } from '@/lib/api/projectsApi'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
+import { shareProject } from '@/lib/shareProject'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -30,6 +35,7 @@ import {
   HeartIcon as HeartOutline,
   BookmarkIcon as BookmarkOutline,
   FlagIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline'
 import {
   HeartIcon as HeartSolid,
@@ -89,7 +95,10 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
         if (mounted) setLoading(false)
       })
 
-    if (currentUser?.id) dispatch(fetchLikedProjects())
+    if (currentUser?.id) {
+      dispatch(fetchLikedProjects())
+      dispatch(fetchBookmarks())
+    }
 
     return () => {
       mounted = false
@@ -122,8 +131,29 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
     } else {
       const result = await dispatch(addBookmark({ project_id: id }))
       if (addBookmark.fulfilled.match(result)) {
+        await dispatch(fetchBookmarks())
         dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
       }
+    }
+  }
+
+  const handleShare = async () => {
+    if (!project) return
+    try {
+      const result = await shareProject({
+        title: project.title,
+        description: project.description,
+        url: window.location.href,
+      })
+      dispatch(
+        showToast({
+          message: result === 'copied' ? 'Project link copied.' : 'Project shared.',
+          type: 'success',
+        }),
+      )
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      dispatch(showToast({ message: 'Could not share project.', type: 'error' }))
     }
   }
 
@@ -269,6 +299,15 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
                     <BookmarkOutline className='w-5 h-5 text-dark' />
                   )}
                   <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+                </button>
+
+                <button
+                  type='button'
+                  onClick={() => void handleShare()}
+                  className='btn-brutal flex min-h-11 items-center gap-2 rounded-xl border-2 border-dark bg-white px-5 py-3 text-sm font-bold shadow-brutal-sm hover:bg-secondary'
+                >
+                  <ShareIcon className='h-5 w-5' aria-hidden />
+                  Share
                 </button>
 
                 <div className='flex items-center gap-4 ml-auto'>

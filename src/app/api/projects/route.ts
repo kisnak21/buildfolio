@@ -12,10 +12,23 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || undefined
     const category = searchParams.get('category') || undefined
+    const technology = searchParams.get('technology') || undefined
     const sort = searchParams.get('sort') || undefined
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
-    const result = await getAllProjects({ search, category, sort, page, limit })
+    const parsedPage = Number.parseInt(searchParams.get('page') || '1', 10)
+    const parsedLimit = Number.parseInt(searchParams.get('limit') || '20', 10)
+    const page = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1
+    const limit =
+      Number.isFinite(parsedLimit) && parsedLimit > 0
+        ? Math.min(parsedLimit, 100)
+        : 20
+    const result = await getAllProjects({
+      search,
+      category,
+      technology,
+      sort,
+      page,
+      limit,
+    })
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination }, { headers: publicCacheHeaders })
   } catch (err) {
     return NextResponse.json(

@@ -1,5 +1,6 @@
 import prisma from '@/lib/db'
 import { publicProjectWhere } from '@/lib/visibility'
+import { normalizeProject, projectSelect } from '@/lib/services/projectService'
 
 export const getBookmarksByUser = async (userId: string) => {
   const bookmarks = await prisma.bookmark.findMany({
@@ -10,32 +11,16 @@ export const getBookmarksByUser = async (userId: string) => {
       userId: true,
       projectId: true,
       createdAt: true,
-      project: {
-        select: {
-          title: true,
-          slug: true,
-          description: true,
-          likes: true,
-          githubUrl: true,
-          liveUrl: true,
-          user: { select: { name: true } },
-        },
-      },
+      project: { select: projectSelect },
     },
   })
 
-  return bookmarks.map((b) => ({
-    id: b.id,
-    user_id: b.userId,
-    project_id: b.projectId,
-    created_at: b.createdAt,
-    title: b.project.title,
-    slug: b.project.slug,
-    description: b.project.description,
-    likes: b.project.likes,
-    github_url: b.project.githubUrl,
-    live_url: b.project.liveUrl,
-    author_name: b.project.user.name,
+  return bookmarks.map((bookmark) => ({
+    id: bookmark.id,
+    user_id: bookmark.userId,
+    project_id: bookmark.projectId,
+    created_at: bookmark.createdAt.toISOString(),
+    project: normalizeProject(bookmark.project),
   }))
 }
 

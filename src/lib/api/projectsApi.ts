@@ -52,13 +52,21 @@ interface ApiError {
 }
 
 export const getProjects = async (
-  params: { page?: number; limit?: number; search?: string; category?: string; sort?: string } = {},
+  params: {
+    page?: number
+    limit?: number
+    search?: string
+    category?: string
+    technology?: string
+    sort?: string
+  } = {},
 ): Promise<{ items: NormalizedProject[]; pagination: Pagination }> => {
   const queryParams = new URLSearchParams()
   if (params.page) queryParams.set('page', String(params.page))
   if (params.limit) queryParams.set('limit', String(params.limit))
   if (params.search) queryParams.set('search', params.search)
   if (params.category) queryParams.set('category', params.category)
+  if (params.technology) queryParams.set('technology', params.technology)
   if (params.sort) queryParams.set('sort', params.sort)
 
   const response = await realApiClient.get(`/projects?${queryParams.toString()}`)

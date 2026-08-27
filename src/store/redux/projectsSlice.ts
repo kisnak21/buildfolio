@@ -56,7 +56,14 @@ interface ProjectsState {
 // Async thunks
 export const fetchProjects = createAsyncThunk<
   { items: Project[]; pagination: ProjectsState['pagination'] },
-  { page?: number; limit?: number; search?: string; category?: string; sort?: string } | void,
+  {
+    page?: number
+    limit?: number
+    search?: string
+    category?: string
+    technology?: string
+    sort?: string
+  } | void,
   { rejectValue: string }
 >('projects/fetchAll', async (params, { rejectWithValue }) => {
   try {

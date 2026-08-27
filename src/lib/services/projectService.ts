@@ -3,7 +3,7 @@ import type { Prisma } from '@/generated/prisma/client'
 import type { RawProject } from '@/lib/shapes'
 import { activeUserWhere, publicProjectWhere } from '@/lib/visibility'
 
-const projectSelect = {
+export const projectSelect = {
   id: true,
   title: true,
   slug: true,
@@ -27,7 +27,7 @@ const projectSelect = {
 
 type ProjectRow = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>
 
-const normalizeProject = (p: ProjectRow): RawProject => ({
+export const normalizeProject = (p: ProjectRow): RawProject => ({
   id: p.id,
   title: p.title,
   slug: p.slug,
@@ -74,12 +74,14 @@ export const getTechnologyStats = async (): Promise<{ name: string; count: numbe
 export const getAllProjects = async ({
   search,
   category,
+  technology,
   sort,
   page = 1,
   limit = 20,
 }: {
   search?: string
   category?: string
+  technology?: string
   sort?: string
   page?: number
   limit?: number
@@ -95,6 +97,12 @@ export const getAllProjects = async ({
 
   if (category) {
     where.category = { name: category }
+  }
+
+  if (technology) {
+    where.technologies = {
+      some: { technology: { name: technology } },
+    }
   }
 
   if (sort === 'home') {
