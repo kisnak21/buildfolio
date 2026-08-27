@@ -32,16 +32,31 @@ export const getAdminStats = async () => {
     categoryDist,
   ] = await Promise.all([
     prisma.user.count(),
-    prisma.project.count(),
-    prisma.comment.count(),
-    prisma.bookmark.count(),
-    prisma.project.aggregate({ _sum: { likes: true } }),
-    prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.project.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.comment.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.bookmark.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.project.count({ where: { status: 'PUBLISHED' } }),
+    prisma.comment.count({ where: { project: { status: 'PUBLISHED' } } }),
+    prisma.bookmark.count({ where: { project: { status: 'PUBLISHED' } } }),
     prisma.project.aggregate({
-      where: { createdAt: { gte: weekAgo } },
+      where: { status: 'PUBLISHED' },
+      _sum: { likes: true },
+    }),
+    prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.project.count({
+      where: { createdAt: { gte: weekAgo }, status: 'PUBLISHED' },
+    }),
+    prisma.comment.count({
+      where: {
+        createdAt: { gte: weekAgo },
+        project: { status: 'PUBLISHED' },
+      },
+    }),
+    prisma.bookmark.count({
+      where: {
+        createdAt: { gte: weekAgo },
+        project: { status: 'PUBLISHED' },
+      },
+    }),
+    prisma.project.aggregate({
+      where: { createdAt: { gte: weekAgo }, status: 'PUBLISHED' },
       _sum: { likes: true },
     }),
     prisma.$queryRaw<
@@ -49,7 +64,7 @@ export const getAdminStats = async () => {
     >`SELECT d::date AS day, count(u.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN users u ON u.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
     prisma.$queryRaw<
       { day: Date; count: number }[]
-    >`SELECT d::date AS day, count(p.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN projects p ON p.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
+    >`SELECT d::date AS day, count(p.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN projects p ON p.created_at::date = d::date AND p.status = 'PUBLISHED' GROUP BY d::date ORDER BY d::date ASC`,
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -62,7 +77,12 @@ export const getAdminStats = async () => {
       },
     }),
     prisma.category.findMany({
-      select: { name: true, _count: { select: { projects: true } } },
+      select: {
+        name: true,
+        _count: {
+          select: { projects: { where: { status: 'PUBLISHED' } } },
+        },
+      },
       orderBy: { projects: { _count: 'desc' } },
     }),
   ])
@@ -417,7 +437,7 @@ export const listAdminProjects = async ({
   page?: number
   limit?: number
 } = {}) => {
-  const where: Prisma.ProjectWhereInput = {}
+  const where: Prisma.ProjectWhereInput = { status: 'PUBLISHED' }
   if (search) {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },

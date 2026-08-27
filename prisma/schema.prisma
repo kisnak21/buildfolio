@@ -56,6 +56,11 @@ model Technology {
   @@map("technologies")
 }
 
+enum ProjectStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model Project {
   id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title        String              @db.VarChar(255)
@@ -65,6 +70,7 @@ model Project {
   githubUrl    String?             @map("github_url")
   liveUrl      String?             @map("live_url")
   likes        Int                 @default(0)
+  status       ProjectStatus       @default(PUBLISHED)
   userId       String              @map("user_id") @db.Uuid
   categoryId   String?             @map("category_id") @db.Uuid
   hiddenAt     DateTime?           @map("hidden_at") @db.Timestamptz(6)
@@ -80,6 +86,7 @@ model Project {
   projectLikes ProjectLike[]
 
   @@index([userId])
+  @@index([userId, status])
   @@index([categoryId])
   @@index([hiddenAt])
   @@index([featuredAt])

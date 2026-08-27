@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
-import { addProject } from '@/store/redux/projectsSlice'
+import { addDraftProject, addProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -54,6 +54,17 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
     }
   }
 
+  const handleSaveDraft = async (projectData: ProjectFormData) => {
+    setSubmitError('')
+    const result = await dispatch(addDraftProject(projectData))
+    if (addDraftProject.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Draft saved.', type: 'success' }))
+      router.push('/dashboard')
+    } else {
+      setSubmitError(result.payload || 'Failed to save draft.')
+    }
+  }
+
   return (
     <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
       <Header />
@@ -70,7 +81,8 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
         <ProjectForm
           initialValues={initialIdea}
           onSubmit={handleSubmit}
-          submitLabel='Create Project'
+          onSaveDraft={handleSaveDraft}
+          submitLabel='Publish Project'
         />
       </main>
       <Footer />

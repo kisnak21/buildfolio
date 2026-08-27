@@ -41,7 +41,16 @@ const DashboardClient = () => {
   const userProjects = projects.filter(
     (p) => p.user_id === currentUser?.id,
   )
-  const totalLikes = userProjects.reduce((sum, p) => sum + (p.likes || 0), 0)
+  const publishedProjects = userProjects.filter(
+    (project) => project.status === 'PUBLISHED',
+  )
+  const draftProjects = userProjects.filter(
+    (project) => project.status === 'DRAFT',
+  )
+  const totalLikes = publishedProjects.reduce(
+    (sum, project) => sum + (project.likes || 0),
+    0,
+  )
   const totalBookmarks = bookmarks.length
 
   const handleConfirmDelete = async () => {
@@ -86,10 +95,14 @@ const DashboardClient = () => {
         </div>
 
         {/* Stats */}
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-12'>
+        <div className='grid grid-cols-1 gap-6 mb-12 sm:grid-cols-2 lg:grid-cols-4'>
           <div className='bg-primary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-dark mb-1'>Total Projects</p>
-            <p className='text-5xl font-black'>{userProjects.length}</p>
+            <p className='font-bold text-dark mb-1'>Published</p>
+            <p className='text-5xl font-black'>{publishedProjects.length}</p>
+          </div>
+          <div className='bg-secondary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+            <p className='font-bold text-dark mb-1'>Drafts</p>
+            <p className='text-5xl font-black'>{draftProjects.length}</p>
           </div>
           <div className='bg-purpleSoft text-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
             <p className='font-bold text-white mb-1'>Likes Received</p>
@@ -138,6 +151,11 @@ const DashboardClient = () => {
                       <td className='p-4 font-bold text-dark'>
                         <div className='flex flex-wrap items-center gap-2'>
                           {project.title}
+                          {project.status === 'DRAFT' && (
+                            <span className='rounded-md border-2 border-dark bg-secondary px-2 py-0.5 text-xs font-black uppercase'>
+                              Draft
+                            </span>
+                          )}
                           {project.hiddenAt && (
                             <span
                               className='rounded-md border-2 border-dark bg-red-200 px-2 py-0.5 text-xs font-black uppercase'

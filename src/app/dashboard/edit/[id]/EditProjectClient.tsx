@@ -3,7 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
-import { fetchMyProjects, updateProject } from '@/store/redux/projectsSlice'
+import {
+  fetchMyProjects,
+  publishDraft,
+  updateProject,
+} from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -45,10 +49,42 @@ const EditProjectClient = () => {
       }),
     )
     if (updateProject.fulfilled.match(result)) {
-      dispatch(showToast({ message: 'Project updated successfully!', type: 'success' }))
+      if (project.status === 'DRAFT') {
+        const published = await dispatch(publishDraft(project.id))
+        if (!publishDraft.fulfilled.match(published)) {
+          setSubmitError(published.payload || 'Failed to publish project.')
+          return
+        }
+      }
+      dispatch(showToast({ message: project.status === 'DRAFT' ? 'Project published.' : 'Project updated successfully!', type: 'success' }))
       router.push('/dashboard')
     } else {
       setSubmitError(result.payload || 'Failed to update project.')
+    }
+  }
+
+  const handleSaveDraft = async (projectData: ProjectFormData) => {
+    setSubmitError('')
+    if (!project) return
+    const result = await dispatch(
+      updateProject({
+        id: project.id,
+        updatedFields: {
+          title: projectData.title,
+          description: projectData.description,
+          github: projectData.github,
+          live: projectData.live,
+          technologies: projectData.technologies,
+          category: projectData.category,
+          thumbnail: projectData.thumbnail,
+        },
+      }),
+    )
+    if (updateProject.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Draft updated.', type: 'success' }))
+      router.push('/dashboard')
+    } else {
+      setSubmitError(result.payload || 'Failed to update draft.')
     }
   }
 
@@ -94,7 +130,8 @@ const EditProjectClient = () => {
         <ProjectForm
           initialValues={project}
           onSubmit={handleSubmit}
-          submitLabel='Save Changes'
+          onSaveDraft={project.status === 'DRAFT' ? handleSaveDraft : undefined}
+          submitLabel={project.status === 'DRAFT' ? 'Publish Project' : 'Save Changes'}
         />
       </main>
       <Footer />

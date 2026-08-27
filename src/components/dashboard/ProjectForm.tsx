@@ -32,12 +32,14 @@ interface ProjectFormProps {
     thumbnail?: string | null
   }
   onSubmit: (data: ProjectFormData) => Promise<void>
+  onSaveDraft?: (data: ProjectFormData) => Promise<void>
   submitLabel: string
 }
 
 const ProjectForm = ({
   initialValues,
   onSubmit,
+  onSaveDraft,
   submitLabel,
 }: ProjectFormProps) => {
   const [title, setTitle] = useState(initialValues?.title || '')
@@ -50,7 +52,6 @@ const ProjectForm = ({
   const [technologies, setTechnologies] = useState(
     initialValues?.technologies?.join(', ') || '',
   )
-  const [author, setAuthor] = useState(initialValues?.author || '')
   const [github, setGithub] = useState(initialValues?.github || '')
   const [live, setLive] = useState(initialValues?.live || '')
   const [thumbnail, setThumbnail] = useState(initialValues?.thumbnail || '')
@@ -58,33 +59,45 @@ const ProjectForm = ({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const formData = (): ProjectFormData => ({
+    title: title.trim(),
+    description: description.trim(),
+    category,
+    technologies: technologies
+      .split(',')
+      .map((technology) => technology.trim())
+      .filter(Boolean),
+    github: github.trim(),
+    live: live.trim(),
+    thumbnail,
+  })
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     if (submitting) return
     const newErrors: Record<string, string> = {}
-
     if (!title.trim()) newErrors.title = 'Title is required.'
     if (!description.trim()) newErrors.description = 'Description is required.'
-    if (!author.trim()) newErrors.author = 'Author is required.'
-
     setErrors(newErrors)
     if (Object.keys(newErrors).length > 0) return
-
     setSubmitting(true)
     try {
-      await onSubmit({
-        title: title.trim(),
-        description: description.trim(),
-        category,
-        technologies: technologies
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        author: author.trim(),
-        github: github.trim(),
-        live: live.trim(),
-        thumbnail,
-      })
+      await onSubmit(formData())
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleSaveDraft = async () => {
+    if (!onSaveDraft || submitting) return
+    if (!title.trim()) {
+      setErrors({ title: 'Add a title before saving this draft.' })
+      return
+    }
+    setErrors({})
+    setSubmitting(true)
+    try {
+      await onSaveDraft(formData())
     } finally {
       setSubmitting(false)
     }
@@ -159,23 +172,13 @@ const ProjectForm = ({
         onChange={(e) => setTechnologies(e.target.value)}
       />
 
-      <div className='grid md:grid-cols-2 gap-4'>
-        <Input
-          label='Author name'
-          id='author'
-          placeholder='John Doe'
-          value={author}
-          onChange={(e) => setAuthor(e.target.value)}
-          error={errors.author}
-        />
-        <Input
-          label='GitHub URL'
-          id='github'
-          placeholder='https://github.com/...'
-          value={github}
-          onChange={(e) => setGithub(e.target.value)}
-        />
-      </div>
+      <Input
+        label='GitHub URL'
+        id='github'
+        placeholder='https://github.com/...'
+        value={github}
+        onChange={(e) => setGithub(e.target.value)}
+      />
 
       <Input
         label='Live URL'
@@ -235,19 +238,20 @@ const ProjectForm = ({
         )}
       </div>
 
-      <div className='pt-6'>
+      <div className='flex flex-col gap-3 pt-6 sm:flex-row'>
+        {onSaveDraft && (
+          <Button
+            type='button'
+            fullWidth
+            variant='secondary'
+            disabled={submitting}
+            onClick={() => void handleSaveDraft()}
+          >
+            Save as draft
+          </Button>
+        )}
         <Button type='submit' fullWidth variant='primary' disabled={submitting}>
-          {submitting ? (
-            <>
-              <span
-                aria-hidden
-                className='inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2 align-middle'
-              />
-              {submitLabel.startsWith('Create') ? 'Creating…' : 'Saving…'}
-            </>
-          ) : (
-            submitLabel
-          )}
+          {submitting ? 'Saving...' : submitLabel}
         </Button>
       </div>
       </fieldset>
