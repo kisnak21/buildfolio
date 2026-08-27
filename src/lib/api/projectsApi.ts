@@ -81,6 +81,28 @@ export const getMyProjects = async (): Promise<NormalizedProject[]> => {
   return response.data.data.map(normalizeProject)
 }
 
+export const createDraftProject = async (
+  project: Omit<CreateProjectInput, 'slug' | 'user_id'>,
+): Promise<NormalizedProject> => {
+  const response = await realApiClient.post('/projects/drafts', {
+    title: project.title,
+    description: project.description,
+    thumbnail: project.thumbnail || null,
+    github_url: project.github || project.github_url || null,
+    live_url: project.live || project.live_url || null,
+    category: project.category,
+    technologies: project.technologies || [],
+  })
+  return normalizeProject(response.data.data)
+}
+
+export const publishProject = async (
+  id: string | number,
+): Promise<NormalizedProject> => {
+  const response = await realApiClient.post(`/projects/${id}/publish`, {})
+  return normalizeProject(response.data.data)
+}
+
 export const createProject = async (project: CreateProjectInput): Promise<NormalizedProject> => {
   const response = await realApiClient.post('/projects', {
     title: project.title,

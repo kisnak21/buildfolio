@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
 import type { RawProject } from '@/lib/shapes'
@@ -12,6 +13,7 @@ export const projectSelect = {
   githubUrl: true,
   liveUrl: true,
   likes: true,
+  status: true,
   userId: true,
   categoryId: true,
   featuredAt: true,
@@ -40,6 +42,7 @@ export const normalizeProject = (p: ProjectRow): RawProject => ({
   technologies: p.technologies?.map((pt) => pt.technology.name) ?? [],
   author_name: p.user?.name ?? undefined,
   likes: p.likes,
+  status: p.status,
   user_id: p.userId,
   category_id: p.categoryId,
   featured_at: p.featuredAt?.toISOString() ?? null,
@@ -306,6 +309,96 @@ export const createProject = async ({
     }),
   )
 
+  return normalizeProject(project)
+}
+
+export const createDraftProject = async ({
+  title,
+  description = '',
+  thumbnail,
+  github_url,
+  live_url,
+  user_id,
+  category,
+  technologies,
+}: {
+  title: string
+  description?: string
+  thumbnail?: string
+  github_url?: string
+  live_url?: string
+  user_id: string
+  category?: string
+  technologies?: string[]
+}) => {
+  const trimmedTitle = title.trim()
+  if (!trimmedTitle || trimmedTitle.length > 255) {
+    throw Object.assign(new Error('Draft title must be 1-255 characters'), {
+      statusCode: 400,
+    })
+  }
+  if (description.length > 10000) {
+    throw Object.assign(
+      new Error('Description must be at most 10000 characters'),
+      { statusCode: 400 },
+    )
+  }
+  assertSafeUrl(github_url, 'Github URL')
+  assertSafeUrl(live_url, 'Live URL')
+  const technologyIds = technologies?.length
+    ? await resolveTechnologies(technologies)
+    : []
+  const categoryRecord = category
+    ? await prisma.category.findUnique({ where: { name: category } })
+    : null
+  const slugBase =
+    trimmedTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 180) || 'draft'
+
+  const project = await prisma.project.create({
+    data: {
+      title: trimmedTitle,
+      slug: `${slugBase}-draft-${randomUUID()}`,
+      description,
+      thumbnail: thumbnail ?? null,
+      githubUrl: github_url ?? null,
+      liveUrl: live_url ?? null,
+      status: 'DRAFT',
+      userId: user_id,
+      categoryId: categoryRecord?.id ?? null,
+      technologies: {
+        create: technologyIds.map((technologyId) => ({
+          technology: { connect: { id: technologyId } },
+        })),
+      },
+    },
+    select: projectSelect,
+  })
+  return normalizeProject(project)
+}
+
+export const publishDraftProject = async (id: string, userId: string) => {
+  const existing = await prisma.project.findFirst({
+    where: { id, userId, status: 'DRAFT' },
+    select: { title: true, description: true },
+  })
+  if (!existing) {
+    throw Object.assign(new Error('Draft not found'), { statusCode: 404 })
+  }
+  if (!existing.title.trim() || !existing.description.trim()) {
+    throw Object.assign(
+      new Error('Title and description are required before publishing'),
+      { statusCode: 400 },
+    )
+  }
+  const project = await prisma.project.update({
+    where: { id },
+    data: { status: 'PUBLISHED' },
+    select: projectSelect,
+  })
   return normalizeProject(project)
 }
 

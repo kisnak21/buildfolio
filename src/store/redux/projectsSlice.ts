@@ -3,6 +3,8 @@ import {
   getProjects,
   getMyProjects,
   createProject,
+  createDraftProject,
+  publishProject,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
   likeProject as likeProjectApi,
@@ -21,6 +23,7 @@ interface Project {
   technologies: string[]
   author: string
   likes: number
+  status: 'DRAFT' | 'PUBLISHED'
   user_id: string | number | null
   category_id: string | number | null
   featuredAt: string | null
@@ -96,6 +99,30 @@ export const addProject = createAsyncThunk<Project, NewProjectInput, { rejectVal
     }
   },
 )
+
+export const addDraftProject = createAsyncThunk<
+  Project,
+  Omit<NewProjectInput, 'slug' | 'user_id'>,
+  { rejectValue: string }
+>('projects/addDraft', async (project, { rejectWithValue }) => {
+  try {
+    return await createDraftProject(project)
+  } catch {
+    return rejectWithValue('Failed to save draft. Please try again.')
+  }
+})
+
+export const publishDraft = createAsyncThunk<
+  Project,
+  string | number,
+  { rejectValue: string }
+>('projects/publishDraft', async (id, { rejectWithValue }) => {
+  try {
+    return await publishProject(id)
+  } catch {
+    return rejectWithValue('Failed to publish project. Please try again.')
+  }
+})
 
 export const updateProject = createAsyncThunk<Project, { id: string | number; updatedFields: Partial<Project> }, { rejectValue: string }>(
   'projects/update',
@@ -185,7 +212,23 @@ const projectsSlice = createSlice({
         state.error = action.payload ?? null
       })
 
-    // updateProject
+    builder
+      .addCase(addDraftProject.fulfilled, (state, action) => {
+        state.items.unshift(action.payload)
+      })
+      .addCase(addDraftProject.rejected, (state, action) => {
+        state.error = action.payload ?? null
+      })
+      .addCase(publishDraft.fulfilled, (state, action) => {
+        const index = state.items.findIndex((project) =>
+          String(project.id) === String(action.payload.id),
+        )
+        if (index !== -1) state.items[index] = action.payload
+      })
+      .addCase(publishDraft.rejected, (state, action) => {
+        state.error = action.payload ?? null
+      })
+
     builder
       .addCase(updateProject.fulfilled, (state, action) => {
         const index = state.items.findIndex((p) => p.id === action.payload.id)
