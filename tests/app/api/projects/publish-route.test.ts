@@ -2,28 +2,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({
-  publishProject: vi.fn(),
+  publishDraftProject: vi.fn(),
   requireActiveUser: vi.fn(),
   assertSameOrigin: vi.fn(),
   rateLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/services/projectService', () => ({
-  publishProject: mocks.publishProject,
+  publishDraftProject: mocks.publishDraftProject,
 }))
 vi.mock('@/lib/middleware/authMiddleware', () => ({
   requireActiveUser: mocks.requireActiveUser,
   assertSameOrigin: mocks.assertSameOrigin,
 }))
-vi.mock('@/lib/rateLimit', () => ({
-  rateLimit: mocks.rateLimit,
-}))
-
+vi.mock('@/lib/rateLimit', () => ({ rateLimit: mocks.rateLimit }))
 import { POST } from '@/app/api/projects/[id]/publish/route'
 
 describe('publish project route', () => {
   beforeEach(() => {
-    mocks.publishProject.mockResolvedValue({ id: 'project-1', status: 'PUBLISHED' })
+    mocks.publishDraftProject.mockResolvedValue({ id: 'project-1', status: 'PUBLISHED' })
     mocks.requireActiveUser.mockResolvedValue({ user: { id: 'user-1' }, error: null })
     mocks.assertSameOrigin.mockReturnValue(null)
     mocks.rateLimit.mockResolvedValue({ success: true, resetInMs: 0 })
@@ -40,6 +37,6 @@ describe('publish project route', () => {
 
     expect(response.status).toBe(200)
     expect(body.data).toEqual({ id: 'project-1', status: 'PUBLISHED' })
-    expect(mocks.publishProject).toHaveBeenCalledWith('project-1', 'user-1')
+    expect(mocks.publishDraftProject).toHaveBeenCalledWith('project-1', 'user-1')
   })
 })

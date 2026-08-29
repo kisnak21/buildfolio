@@ -1,9 +1,10 @@
+import { randomUUID } from 'node:crypto'
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
 import type { ProjectStatus, RawProject } from '@/lib/shapes'
 import { activeUserWhere, publicProjectWhere } from '@/lib/visibility'
 
-const projectSelect = {
+export const projectSelect = {
   id: true,
   title: true,
   slug: true,
@@ -12,13 +13,13 @@ const projectSelect = {
   githubUrl: true,
   liveUrl: true,
   likes: true,
+  status: true,
   userId: true,
   categoryId: true,
   featuredAt: true,
   hiddenAt: true,
   hiddenReason: true,
   createdAt: true,
-  status: true,
   user: { select: { name: true, username: true } },
   category: { select: { name: true } },
   technologies: {
@@ -28,7 +29,7 @@ const projectSelect = {
 
 type ProjectRow = Prisma.ProjectGetPayload<{ select: typeof projectSelect }>
 
-const normalizeProject = (p: ProjectRow): RawProject => ({
+export const normalizeProject = (p: ProjectRow): RawProject => ({
   id: p.id,
   title: p.title,
   slug: p.slug,
@@ -237,13 +238,13 @@ export const getProjectsByAuthor = async (author: string) => {
   const rows = await prisma.project.findMany({
     where: {
       ...publicProjectWhere(),
-        user: {
-          is: {
-            ...activeUserWhere(),
-            OR: [
-              { name: { equals: author, mode: 'insensitive' } },
-              { username: { equals: author, mode: 'insensitive' } },
-            ],
+      user: {
+        is: {
+          ...activeUserWhere(),
+          OR: [
+            { name: { equals: author, mode: 'insensitive' } },
+            { username: { equals: author, mode: 'insensitive' } },
+          ],
         },
       },
     },
@@ -416,45 +417,106 @@ export const createProject = async ({
   return normalizeProject(project)
 }
 
-export const publishProject = async (id: string, userId: string) => {
-  const existing = await prisma.project.findUnique({
-    where: { id },
-    select: { ...projectSelect, status: true },
-  })
-
-  if (!existing) {
-    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
-  }
-  if (existing.userId !== userId) {
-    throw Object.assign(new Error('Forbidden: you do not own this project'), {
-      statusCode: 403,
+export const createDraftProject = async ({
+  title,
+  description = '',
+  thumbnail,
+  github_url,
+  live_url,
+  user_id,
+  category,
+  technologies,
+}: {
+  title: string
+  description?: string
+  thumbnail?: string
+  github_url?: string
+  live_url?: string
+  user_id: string
+  category?: string
+  technologies?: string[]
+}) => {
+  const trimmedTitle = title.trim()
+  const normalizedDescription = description.trim()
+  const normalizedThumbnail = normalizeThumbnail(thumbnail)
+  const normalizedGithubUrl = normalizeOptionalUrl(github_url, 'Github URL')
+  const normalizedLiveUrl = normalizeOptionalUrl(live_url, 'Live URL')
+  if (!trimmedTitle || trimmedTitle.length > 255) {
+    throw Object.assign(new Error('Draft title must be 1-255 characters'), {
+      statusCode: 400,
     })
   }
-  if (existing.status === 'PUBLISHED') return normalizeProject(existing)
-
-  if (
-    !existing.title.trim() ||
-    existing.title.length > 255 ||
-    !existing.slug.trim() ||
-    existing.slug.length > 255 ||
-    !existing.description.trim() ||
-    existing.description.length > 10000
-  ) {
+  if (normalizedDescription.length > 10000) {
     throw Object.assign(
-      new Error('Title, slug, and description are required before publishing'),
+      new Error('Description must be at most 10000 characters'),
+      { statusCode: 400 },
+    )
+  }
+  const technologyNames = normalizeTechnologyNames(technologies)
+  const technologyIds = technologyNames.length
+    ? await resolveTechnologies(technologyNames)
+    : []
+  const categoryRecord = category
+    ? await prisma.category.findUnique({ where: { name: category } })
+    : null
+  const slugBase =
+    trimmedTitle
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 180) || 'draft'
+
+  const project = await prisma.project.create({
+    data: {
+      title: trimmedTitle,
+      slug: `${slugBase}-draft-${randomUUID()}`,
+      description: normalizedDescription,
+      thumbnail: normalizedThumbnail ?? null,
+      githubUrl: normalizedGithubUrl ?? null,
+      liveUrl: normalizedLiveUrl ?? null,
+      status: 'DRAFT',
+      userId: user_id,
+      categoryId: categoryRecord?.id ?? null,
+      technologies: {
+        create: technologyIds.map((technologyId) => ({
+          technology: { connect: { id: technologyId } },
+        })),
+      },
+    },
+    select: projectSelect,
+  })
+  return normalizeProject(project)
+}
+
+export const publishDraftProject = async (id: string, userId: string) => {
+  const existing = await prisma.project.findFirst({
+    where: { id, userId, status: 'DRAFT' },
+    select: {
+      title: true,
+      description: true,
+      thumbnail: true,
+      githubUrl: true,
+      liveUrl: true,
+    },
+  })
+  if (!existing) {
+    throw Object.assign(new Error('Draft not found'), { statusCode: 404 })
+  }
+  if (!existing.title.trim() || !existing.description.trim()) {
+    throw Object.assign(
+      new Error('Title and description are required before publishing'),
       { statusCode: 400 },
     )
   }
   normalizeOptionalUrl(existing.githubUrl ?? undefined, 'Github URL')
   normalizeOptionalUrl(existing.liveUrl ?? undefined, 'Live URL')
   normalizeThumbnail(existing.thumbnail ?? undefined)
-
-  const updated = await prisma.project.update({
+  const project = await prisma.project.update({
     where: { id },
     data: { status: 'PUBLISHED' },
     select: projectSelect,
   })
-  return normalizeProject(updated)
+  return normalizeProject(project)
 }
 
 export const updateProject = async (
@@ -492,7 +554,7 @@ export const updateProject = async (
   }
   const existing = await prisma.project.findUnique({
     where: { id },
-    select: { title: true, slug: true, description: true },
+    select: { title: true, slug: true, description: true, status: true },
   })
   if (!existing) {
     throw Object.assign(new Error('Project not found'), { statusCode: 404 })
@@ -504,9 +566,13 @@ export const updateProject = async (
   const nextTitle = normalizedTitle ?? existing.title.trim()
   const nextSlug = normalizedSlug ?? existing.slug.trim()
   const nextDescription = normalizedDescription ?? existing.description.trim()
-  if (!nextTitle || !nextSlug || !nextDescription) {
+  if (!nextTitle || !nextSlug || (existing.status === 'PUBLISHED' && !nextDescription)) {
     throw Object.assign(
-      new Error('Title, slug, and description are required'),
+      new Error(
+        existing.status === 'DRAFT'
+          ? 'Title and slug are required'
+          : 'Title, slug, and description are required',
+      ),
       { statusCode: 400 },
     )
   }

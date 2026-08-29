@@ -33,15 +33,30 @@ export const getAdminStats = async () => {
   ] = await Promise.all([
     prisma.user.count(),
     prisma.project.count({ where: { status: 'PUBLISHED' } }),
-    prisma.comment.count(),
-    prisma.bookmark.count(),
-    prisma.project.aggregate({ where: { status: 'PUBLISHED' }, _sum: { likes: true } }),
-    prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.project.count({ where: { status: 'PUBLISHED', createdAt: { gte: weekAgo } } }),
-    prisma.comment.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.bookmark.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.comment.count({ where: { project: { status: 'PUBLISHED' } } }),
+    prisma.bookmark.count({ where: { project: { status: 'PUBLISHED' } } }),
     prisma.project.aggregate({
-      where: { status: 'PUBLISHED', createdAt: { gte: weekAgo } },
+      where: { status: 'PUBLISHED' },
+      _sum: { likes: true },
+    }),
+    prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.project.count({
+      where: { createdAt: { gte: weekAgo }, status: 'PUBLISHED' },
+    }),
+    prisma.comment.count({
+      where: {
+        createdAt: { gte: weekAgo },
+        project: { status: 'PUBLISHED' },
+      },
+    }),
+    prisma.bookmark.count({
+      where: {
+        createdAt: { gte: weekAgo },
+        project: { status: 'PUBLISHED' },
+      },
+    }),
+    prisma.project.aggregate({
+      where: { createdAt: { gte: weekAgo }, status: 'PUBLISHED' },
       _sum: { likes: true },
     }),
     prisma.$queryRaw<
@@ -64,7 +79,9 @@ export const getAdminStats = async () => {
     prisma.category.findMany({
       select: {
         name: true,
-        _count: { select: { projects: { where: { status: 'PUBLISHED' } } } },
+        _count: {
+          select: { projects: { where: { status: 'PUBLISHED' } } },
+        },
       },
       orderBy: { projects: { _count: 'desc' } },
     }),
@@ -420,7 +437,7 @@ export const listAdminProjects = async ({
   page?: number
   limit?: number
 } = {}) => {
-  const where: Prisma.ProjectWhereInput = {}
+  const where: Prisma.ProjectWhereInput = { status: 'PUBLISHED' }
   if (search) {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },

@@ -1,13 +1,27 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
-import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
-import { BookmarkIcon as BookmarkOutline } from '@heroicons/react/24/outline'
-import { HeartIcon as HeartSolid, BookmarkIcon as BookmarkSolid, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
-import ShareButton from '@/components/ui/ShareButton'
+import { shareProject } from '@/lib/shareProject'
+import {
+  BookmarkIcon as BookmarkOutline,
+  HeartIcon as HeartOutline,
+  ShareIcon,
+} from '@heroicons/react/24/outline'
+import {
+  BookmarkIcon as BookmarkSolid,
+  HeartIcon as HeartSolid,
+  RocketLaunchIcon,
+  CpuChipIcon,
+  GlobeAltIcon,
+  DevicePhoneMobileIcon,
+  LockOpenIcon,
+  PuzzlePieceIcon,
+  CodeBracketIcon,
+} from '@heroicons/react/24/solid'
 
 interface Project {
   id: string | number
@@ -26,9 +40,10 @@ interface Project {
 interface ProjectCardProps {
   project: Project
   onLike: (id: string, likes: number) => void
-  onBookmark?: (id: string) => void
   isLiked?: boolean
   isBookmarked?: boolean
+  bookmarkPending?: boolean
+  onBookmark?: (id: string) => void
 }
 
 
@@ -48,9 +63,10 @@ const getCategoryIcon = (category: string) => {
 const ProjectCard = ({
   project,
   onLike,
-  onBookmark,
   isLiked = false,
   isBookmarked = false,
+  bookmarkPending = false,
+  onBookmark,
 }: ProjectCardProps) => {
   const {
     id,
@@ -64,7 +80,22 @@ const ProjectCard = ({
   } = project
 
   const router = useRouter()
+  const [shareStatus, setShareStatus] = useState('')
   const catColor = getCategoryColor(category)
+  const handleShare = async () => {
+    try {
+      const result = await shareProject({
+        title,
+        description,
+        url: `${window.location.origin}/projects/${id}`,
+      })
+      setShareStatus(result === 'copied' ? 'Link copied' : 'Shared')
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return
+      setShareStatus('Share failed')
+    }
+    window.setTimeout(() => setShareStatus(''), 2_000)
+  }
   const isLightText = isCategoryLightText(category) ? 'text-white' : 'text-dark'
 
   return (
@@ -93,50 +124,43 @@ const ProjectCard = ({
           {category || 'Uncategorized'}
         </div>
         
-        {/* Like Button */}
-        <div className='absolute top-3 right-3 flex gap-2'>
+        {onBookmark && (
           <button
             type='button'
-            onClick={(e) => {
-              e.stopPropagation()
-              onLike(String(id), likes)
+            onClick={(event) => {
+              event.stopPropagation()
+              onBookmark(String(id))
             }}
-            aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
-            aria-pressed={isLiked}
-            className='inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-pink-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark'
+            disabled={bookmarkPending}
+            aria-label={
+              isBookmarked ? `Remove ${title} from bookmarks` : `Bookmark ${title}`
+            }
+            aria-pressed={isBookmarked}
+            className='absolute right-14 top-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-yellow-100 disabled:cursor-wait disabled:opacity-60'
           >
-            {isLiked ? (
-              <HeartSolid className='w-5 h-5 text-primary' />
+            {isBookmarked ? (
+              <BookmarkSolid className='h-5 w-5 text-dark' />
             ) : (
-              <HeartOutline className='w-5 h-5 text-dark' />
+              <BookmarkOutline className='h-5 w-5 text-dark' />
             )}
           </button>
-          {onBookmark && (
-            <button
-              type='button'
-              onClick={(e) => {
-                e.stopPropagation()
-                onBookmark(String(id))
-              }}
-              aria-label={isBookmarked ? `Remove ${title} bookmark` : `Bookmark ${title}`}
-              aria-pressed={isBookmarked}
-              className='inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-yellow-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark'
-            >
-              {isBookmarked ? (
-                <BookmarkSolid className='w-5 h-5 text-dark' />
-              ) : (
-                <BookmarkOutline className='w-5 h-5 text-dark' />
-              )}
-            </button>
+        )}
+        <button
+          type='button'
+          onClick={(e) => {
+            e.stopPropagation()
+            onLike(String(id), likes)
+          }}
+          aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
+          aria-pressed={isLiked}
+          className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
+        >
+          {isLiked ? (
+            <HeartSolid className='w-5 h-5 text-primary' />
+          ) : (
+            <HeartOutline className='w-5 h-5 text-dark' />
           )}
-          <ShareButton
-            compact
-            url={`/projects/${id}`}
-            title={title}
-            text={description}
-            className='rounded-xl'
-          />
-        </div>
+          </button>
       </div>
 
       <div className='p-5 flex flex-col flex-1'>
@@ -180,6 +204,18 @@ const ProjectCard = ({
             <span className='text-sm font-bold text-dark hover:underline'>{author}</span>
           </Link>
           <div className='flex items-center gap-3'>
+            <button
+              type='button'
+              onClick={(event) => {
+                event.stopPropagation()
+                void handleShare()
+              }}
+              aria-label={`Share ${title}`}
+              className='flex min-h-10 items-center gap-1 rounded-lg border-2 border-dark bg-white px-2 font-bold text-sm shadow-brutal-sm hover:bg-secondary'
+            >
+              <ShareIcon className='h-4 w-4' aria-hidden />
+              <span>{shareStatus || 'Share'}</span>
+            </button>
             <div className='flex items-center gap-1 font-bold text-sm'>
               <HeartSolid className='w-5 h-5 text-primary' />
               {likes}

@@ -2,28 +2,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 const mocks = vi.hoisted(() => ({
-  createProject: vi.fn(),
+  createDraftProject: vi.fn(),
   requireActiveUser: vi.fn(),
   assertSameOrigin: vi.fn(),
   rateLimit: vi.fn(),
 }))
 
 vi.mock('@/lib/services/projectService', () => ({
-  createProject: mocks.createProject,
+  createDraftProject: mocks.createDraftProject,
 }))
 vi.mock('@/lib/middleware/authMiddleware', () => ({
   requireActiveUser: mocks.requireActiveUser,
   assertSameOrigin: mocks.assertSameOrigin,
 }))
-vi.mock('@/lib/rateLimit', () => ({
-  rateLimit: mocks.rateLimit,
-}))
-
+vi.mock('@/lib/rateLimit', () => ({ rateLimit: mocks.rateLimit }))
 import { POST } from '@/app/api/projects/drafts/route'
 
 describe('draft project route', () => {
   beforeEach(() => {
-    mocks.createProject.mockResolvedValue({ id: 'project-1', status: 'DRAFT' })
+    mocks.createDraftProject.mockResolvedValue({ id: 'project-1', status: 'DRAFT' })
     mocks.requireActiveUser.mockResolvedValue({ user: { id: 'user-1' }, error: null })
     mocks.assertSameOrigin.mockReturnValue(null)
     mocks.rateLimit.mockResolvedValue({ success: true, resetInMs: 0 })
@@ -46,8 +43,8 @@ describe('draft project route', () => {
 
     expect(response.status).toBe(201)
     expect(body.data).toEqual({ id: 'project-1', status: 'DRAFT' })
-    expect(mocks.createProject).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: 'user-1', status: 'DRAFT' }),
+    expect(mocks.createDraftProject).toHaveBeenCalledWith(
+      expect.objectContaining({ user_id: 'user-1' }),
     )
   })
 })

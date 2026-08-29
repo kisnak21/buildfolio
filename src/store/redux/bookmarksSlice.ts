@@ -1,59 +1,52 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSelector, createSlice } from '@reduxjs/toolkit'
 import {
   getUserBookmarks,
   addBookmark as addBookmarkApi,
   removeBookmark as removeBookmarkApi,
-} from '../../lib/api/bookmarksApi'
-import type { Bookmark } from '../../lib/api/bookmarksApi'
+  type BookmarkRecord,
+} from '@/lib/api/bookmarksApi'
 import { loginUser, logoutUser } from './authSlice'
 import { likeProject } from './projectsSlice'
 
-export const fetchBookmarks = createAsyncThunk<Bookmark[], string, { rejectValue: string }>(
-  'bookmarks/fetchAll',
-  async (_userId, { rejectWithValue }) => {
-    try {
-      return await getUserBookmarks()
-    } catch {
-      return rejectWithValue('Failed to load bookmarks.')
-    }
-  },
-)
+export const fetchBookmarks = createAsyncThunk<
+  BookmarkRecord[],
+  string,
+  { rejectValue: string }
+>('bookmarks/fetchAll', async (_userId, { rejectWithValue }) => {
+  try {
+    return await getUserBookmarks()
+  } catch {
+    return rejectWithValue('Failed to load bookmarks.')
+  }
+})
 
 export const addBookmark = createAsyncThunk<
-  Bookmark,
+  BookmarkRecord,
   { project_id: string | number; userId: string },
   { rejectValue: string }
->(
-  'bookmarks/add',
-  async ({ project_id }, { rejectWithValue }) => {
-    try {
-      return await addBookmarkApi({
-        project_id: String(project_id),
-      })
-    } catch {
-      return rejectWithValue('Failed to add bookmark.')
-    }
-  },
-)
+>('bookmarks/add', async ({ project_id }, { rejectWithValue }) => {
+  try {
+    return await addBookmarkApi({ project_id: String(project_id) })
+  } catch {
+    return rejectWithValue('Failed to add bookmark.')
+  }
+})
 
 export const removeBookmark = createAsyncThunk<
   string,
   { bookmarkId: string; userId: string },
   { rejectValue: string }
->(
-  'bookmarks/remove',
-  async ({ bookmarkId }, { rejectWithValue }) => {
-    try {
-      await removeBookmarkApi(bookmarkId)
-      return bookmarkId
-    } catch {
-      return rejectWithValue('Failed to remove bookmark.')
-    }
-  },
-)
+>('bookmarks/remove', async ({ bookmarkId }, { rejectWithValue }) => {
+  try {
+    await removeBookmarkApi(bookmarkId)
+    return bookmarkId
+  } catch {
+    return rejectWithValue('Failed to remove bookmark.')
+  }
+})
 
 interface BookmarksState {
-  items: Bookmark[]
+  items: BookmarkRecord[]
   loading: boolean
   error: string | null
   activeUserId: string | null
@@ -117,14 +110,33 @@ const bookmarksSlice = createSlice({
       .addCase(addBookmark.pending, (state, action) => {
         const userId = action.meta.arg.userId
         if (!state.activeUserId) state.activeUserId = userId
+        if (state.activeUserId === userId) {
+          state.loading = false
+          state.requestId = null
+        }
       })
       .addCase(addBookmark.fulfilled, (state, action) => {
         if (state.activeUserId !== action.meta.arg.userId) return
         state.items.push(action.payload)
       })
+      .addCase(addBookmark.rejected, (state, action) => {
+        if (state.activeUserId !== action.meta.arg.userId) return
+        state.error = action.payload ?? null
+      })
+      .addCase(removeBookmark.pending, (state, action) => {
+        if (state.activeUserId !== action.meta.arg.userId) return
+        state.loading = false
+        state.requestId = null
+      })
       .addCase(removeBookmark.fulfilled, (state, action) => {
         if (state.activeUserId !== action.meta.arg.userId) return
-        state.items = state.items.filter((b) => b.id !== action.payload)
+        state.items = state.items.filter(
+          (bookmark) => bookmark.id !== action.payload,
+        )
+      })
+      .addCase(removeBookmark.rejected, (state, action) => {
+        if (state.activeUserId !== action.meta.arg.userId) return
+        state.error = action.payload ?? null
       })
       .addCase(likeProject.fulfilled, (state, action) => {
         if (state.activeUserId !== action.meta.arg.userId) return
@@ -137,3 +149,18 @@ const bookmarksSlice = createSlice({
 })
 
 export default bookmarksSlice.reducer
+
+const selectBookmarks = (state: { bookmarks: BookmarksState }) =>
+  state.bookmarks.items
+
+export const selectBookmarkedProjectIds = createSelector(
+  [selectBookmarks],
+  (bookmarks) => bookmarks.map((bookmark) => bookmark.project_id),
+)
+
+export const selectBookmarkByProjectId = (projectId: string | number) =>
+  createSelector([selectBookmarks], (bookmarks) =>
+    bookmarks.find(
+      (bookmark) => bookmark.project_id === String(projectId),
+    ),
+  )

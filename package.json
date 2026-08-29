@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:ai:integration": "vitest run tests/integration/aiProviders.integration.test.ts",
     "test:watch": "vitest",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",

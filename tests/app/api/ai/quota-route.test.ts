@@ -5,8 +5,8 @@ import { GET } from '@/app/api/ai/quota/route'
 
 const request = () => new NextRequest('http://localhost:3001/api/ai/quota')
 
-describe('AI quota route — coming soon', () => {
-  it('returns 503 coming soon with X-Request-ID', async () => {
+describe('AI quota route while paused', () => {
+  it('returns 503 Coming Soon with X-Request-ID', async () => {
     const response = await GET(request())
     const body = await response.json()
 

@@ -250,6 +250,9 @@ GOOGLE_CLIENT_SECRET=your_google_oauth_client_secret
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000
 CONTACT_RECIPIENT_EMAIL=you@yourdomain.com
+GROQ_API_KEY=your_groq_api_key
+# Optional: defaults to https://api.groq.com/openai/v1
+GROQ_BASE_URL=https://api.groq.com/openai/v1
 OPENROUTER_API_KEY=your_openrouter_api_key
 OPENROUTER_DATA_COLLECTION=allow
 CRON_SECRET=generate_a_long_random_secret
@@ -261,9 +264,18 @@ RESOLVED_FLAG_RETENTION_DAYS=90
 >
 > Email is sent via [Resend](https://resend.com). Add your sending domain in the Resend dashboard and verify the DNS records (SPF/DKIM/DMARC), or omit `RESEND_FROM_EMAIL` to fall back to `onboarding@resend.dev`. Rate limiting is backed by [Upstash Redis](https://upstash.com) when `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` are set (in-memory fallback otherwise). `CONTACT_RECIPIENT_EMAIL` is the inbox that receives contact-form emails.
 >
-> `OPENROUTER_API_KEY` is server-only. `OPENROUTER_DATA_COLLECTION` defaults to `allow` so free models remain available; set it to `deny` only when your selected providers support that policy. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
+> `GROQ_API_KEY` and `OPENROUTER_API_KEY` are server-only. Groq runs `openai/gpt-oss-120b` as the primary model, while OpenRouter provides `z-ai/glm-5.2:free` as the fallback. `GROQ_BASE_URL` is optional and defaults to Groq's OpenAI-compatible endpoint. `OPENROUTER_DATA_COLLECTION` defaults to `allow` so the free fallback remains available; set it to `deny` only when the selected provider supports that policy. `CRON_SECRET` is sent by Vercel Cron as a Bearer token and must never use a `NEXT_PUBLIC_` prefix. Generate it with `openssl rand -hex 32`. Retention values are optional and constrained to 30-3650 days.
 >
-> AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day successful-generation limits, one OpenRouter key is capped at 20 successful requests/minute and 50/day by the application. The IP ingress limiter still limits repeated failed attempts.
+> AI generation fails closed in production unless Upstash is configured. In addition to the per-user 5/hour and 15/day successful-generation limits, shared AI capacity is capped at 20 successful requests/minute and 50/day by the application. The IP ingress limiter still limits repeated failed attempts.
+
+Run real-provider validation only against development or staging credentials:
+
+```powershell
+$env:RUN_AI_INTEGRATION='true'
+npm run test:ai:integration
+```
+
+The integration test consumes one request from each provider and remains skipped during the normal `npm test` suite.
 
 ### Database Setup
 

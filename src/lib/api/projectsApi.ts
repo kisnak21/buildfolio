@@ -83,25 +83,30 @@ export const getMyProjects = async (): Promise<NormalizedProject[]> => {
   return response.data.data.map(normalizeProject)
 }
 
-export const createProject = async (project: CreateProjectInput): Promise<NormalizedProject> => {
-  const response = await realApiClient.post('/projects', {
+export const createDraftProject = async (
+  project: Omit<CreateProjectInput, 'slug' | 'user_id'>,
+): Promise<NormalizedProject> => {
+  const response = await realApiClient.post('/projects/drafts', {
     title: project.title,
-    slug: project.slug,
     description: project.description,
     thumbnail: project.thumbnail || null,
     github_url: project.github || project.github_url || null,
     live_url: project.live || project.live_url || null,
-    category_id: project.category_id || null,
     category: project.category,
     technologies: project.technologies || [],
   })
   return normalizeProject(response.data.data)
 }
 
-export const createDraftProject = async (
-  project: Omit<CreateProjectInput, 'user_id'> & { user_id?: string | number },
+export const publishProject = async (
+  id: string | number,
 ): Promise<NormalizedProject> => {
-  const response = await realApiClient.post('/projects/drafts', {
+  const response = await realApiClient.post(`/projects/${id}/publish`, {})
+  return normalizeProject(response.data.data)
+}
+
+export const createProject = async (project: CreateProjectInput): Promise<NormalizedProject> => {
+  const response = await realApiClient.post('/projects', {
     title: project.title,
     slug: project.slug,
     description: project.description,
@@ -121,18 +126,13 @@ export const updateProject = async (id: string | number, updatedFields: UpdatePr
     slug: updatedFields.slug,
     description: updatedFields.description,
     thumbnail: updatedFields.thumbnail,
-    github_url: updatedFields.github || updatedFields.github_url,
-    live_url: updatedFields.live || updatedFields.live_url,
+    github_url: updatedFields.github ?? updatedFields.github_url,
+    live_url: updatedFields.live ?? updatedFields.live_url,
     category_id: updatedFields.category_id,
     category: updatedFields.category,
     technologies: updatedFields.technologies,
     likes: updatedFields.likes,
   })
-  return normalizeProject(response.data.data)
-}
-
-export const publishProject = async (id: string | number): Promise<NormalizedProject> => {
-  const response = await realApiClient.post(`/projects/${id}/publish`)
   return normalizeProject(response.data.data)
 }
 

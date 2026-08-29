@@ -10,8 +10,8 @@ const request = () =>
     body: JSON.stringify({ task: 'description', input: { title: 'Test' } }),
   })
 
-describe('AI generation route — coming soon', () => {
-  it('returns 503 coming soon with X-Request-ID', async () => {
+describe('AI generation route while paused', () => {
+  it('returns 503 Coming Soon with X-Request-ID', async () => {
     const response = await POST(request())
     const body = await response.json()
 

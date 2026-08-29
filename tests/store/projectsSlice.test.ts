@@ -4,7 +4,7 @@ import projectsReducer, {
   fetchMyProjects,
   fetchProjects,
   likeProject,
-  publishProject,
+  publishDraft,
   type Project,
   updateProject,
 } from '@/store/redux/projectsSlice'
@@ -91,7 +91,7 @@ describe('projects state boundaries', () => {
     )
     state = projectsReducer(
       state,
-      publishProject.fulfilled(
+      publishDraft.fulfilled(
         updatedProject,
         'publish-old-account',
         { id: project.id, userId: 'user-1' },

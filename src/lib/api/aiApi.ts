@@ -29,11 +29,25 @@ interface AiGenerationOptions {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const streamError = (message: string) => {
+const streamError = (
+  message: string,
+  status = 502,
+  retryAfterSeconds?: number,
+) => {
   const error = new Error(message) as Error & {
-    response?: { status: number; data: Record<string, unknown> }
+    response?: {
+      status: number
+      data: Record<string, unknown>
+      headers?: Record<string, string>
+    }
   }
-  error.response = { status: 502, data: { message } }
+  error.response = {
+    status,
+    data: { message },
+    ...(retryAfterSeconds
+      ? { headers: { 'retry-after': String(retryAfterSeconds) } }
+      : {}),
+  }
   return error
 }
 
@@ -88,7 +102,13 @@ const generateAiIdeas = async (
           typeof parsed.message === 'string'
             ? parsed.message
             : 'AI generation failed.'
-        throw streamError(message)
+        const status =
+          typeof parsed.status === 'number' ? parsed.status : 502
+        const retryAfterSeconds =
+          typeof parsed.retryAfterSeconds === 'number'
+            ? parsed.retryAfterSeconds
+            : undefined
+        throw streamError(message, status, retryAfterSeconds)
       }
       if (event === 'done') {
         const data = parsed.data

@@ -1,36 +1,14 @@
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
 import { publicProjectWhere } from '@/lib/visibility'
-
-const bookmarkProjectSelect = {
-  id: true,
-  title: true,
-  slug: true,
-  description: true,
-  thumbnail: true,
-  likes: true,
-  githubUrl: true,
-  liveUrl: true,
-  userId: true,
-  categoryId: true,
-  featuredAt: true,
-  hiddenAt: true,
-  hiddenReason: true,
-  status: true,
-  createdAt: true,
-  user: { select: { name: true, username: true } },
-  category: { select: { name: true } },
-  technologies: {
-    select: { technology: { select: { name: true } } },
-  },
-} as const
+import { projectSelect } from '@/lib/services/projectService'
 
 const bookmarkSelect = {
   id: true,
   userId: true,
   projectId: true,
   createdAt: true,
-  project: { select: bookmarkProjectSelect },
+  project: { select: projectSelect },
 } as const
 
 type BookmarkRow = Prisma.BookmarkGetPayload<{ select: typeof bookmarkSelect }>
@@ -39,7 +17,7 @@ const normalizeBookmark = (b: BookmarkRow) => ({
   id: b.id,
   user_id: b.userId,
   project_id: b.projectId,
-  created_at: b.createdAt,
+  created_at: b.createdAt.toISOString(),
   project: {
     id: b.project.id,
     title: b.project.title,

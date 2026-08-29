@@ -57,47 +57,45 @@ const ProjectForm = ({
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
 
-  const validate = () => {
-    if (submitting) return
-    const newErrors: Record<string, string> = {}
-
-    if (!title.trim()) newErrors.title = 'Title is required.'
-    if (!description.trim()) newErrors.description = 'Description is required.'
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  const getProjectData = (): ProjectFormData => ({
+  const formData = (): ProjectFormData => ({
     title: title.trim(),
     description: description.trim(),
     category,
     technologies: technologies
       .split(',')
-      .map((t) => t.trim())
+      .map((technology) => technology.trim())
       .filter(Boolean),
     github: github.trim(),
     live: live.trim(),
     thumbnail,
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validate()) return
-
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (submitting) return
+    const newErrors: Record<string, string> = {}
+    if (!title.trim()) newErrors.title = 'Title is required.'
+    if (!description.trim()) newErrors.description = 'Description is required.'
+    setErrors(newErrors)
+    if (Object.keys(newErrors).length > 0) return
     setSubmitting(true)
     try {
-      await onSubmit(getProjectData())
+      await onSubmit(formData())
     } finally {
       setSubmitting(false)
     }
   }
 
   const handleSaveDraft = async () => {
-    if (!onSaveDraft || !validate()) return
+    if (!onSaveDraft || submitting) return
+    if (!title.trim()) {
+      setErrors({ title: 'Add a title before saving this draft.' })
+      return
+    }
+    setErrors({})
     setSubmitting(true)
     try {
-      await onSaveDraft(getProjectData())
+      await onSaveDraft(formData())
     } finally {
       setSubmitting(false)
     }
@@ -110,75 +108,75 @@ const ProjectForm = ({
       className='bg-accentSoft border-4 border-dark rounded-2xl p-8 max-w-2xl shadow-brutal-lg'
     >
       <fieldset disabled={submitting} className='contents'>
-        <Input
-          label='Project Title'
-          id='title'
-          placeholder='E.g. DevFlow'
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          error={errors.title}
+      <Input
+        label='Project Title'
+        id='title'
+        placeholder='E.g. DevFlow'
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+        error={errors.title}
+      />
+
+      <div className='mb-5'>
+        <label
+          htmlFor='category'
+          className='block font-bold text-dark mb-2'
+        >
+          Category
+        </label>
+        <select
+          id='category'
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className='input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-bold text-dark shadow-brutal-sm cursor-pointer appearance-none'
+        >
+          {categoryOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className='mb-5'>
+        <label
+          htmlFor='description'
+          className='block font-bold text-dark mb-2'
+        >
+          Description
+        </label>
+        <textarea
+          id='description'
+          rows={3}
+          placeholder='What does this project do?'
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className={`input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none ${
+            errors.description
+              ? 'border-red-500 shadow-brutal-danger'
+              : ''
+          }`}
         />
+        {errors.description && (
+          <p className='text-sm font-bold text-red-600 mt-2'>{errors.description}</p>
+        )}
+      </div>
 
-        <div className='mb-5'>
-          <label
-            htmlFor='category'
-            className='block font-bold text-dark mb-2'
-          >
-            Category
-          </label>
-          <select
-            id='category'
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className='input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-bold text-dark shadow-brutal-sm cursor-pointer appearance-none'
-          >
-            {categoryOptions.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </div>
+      <Input
+        label='Technologies (comma separated)'
+        id='technologies'
+        placeholder='React, TypeScript, PostgreSQL'
+        value={technologies}
+        onChange={(e) => setTechnologies(e.target.value)}
+      />
 
-        <div className='mb-5'>
-          <label
-            htmlFor='description'
-            className='block font-bold text-dark mb-2'
-          >
-            Description
-          </label>
-          <textarea
-            id='description'
-            rows={3}
-            placeholder='What does this project do?'
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className={`input-brutal w-full bg-white border-2 border-dark rounded-xl px-4 py-3 font-medium text-dark shadow-brutal-sm resize-none ${
-              errors.description
-                ? 'border-red-500 shadow-brutal-danger'
-                : ''
-            }`}
-          />
-          {errors.description && (
-            <p className='text-sm font-bold text-red-600 mt-2'>{errors.description}</p>
-          )}
-        </div>
-
-        <Input
-          label='Technologies (comma separated)'
-          id='technologies'
-          placeholder='React, TypeScript, PostgreSQL'
-          value={technologies}
-          onChange={(e) => setTechnologies(e.target.value)}
-        />
-
-        <Input
-          label='GitHub URL'
-          id='github'
-          placeholder='https://github.com/...'
-          value={github}
-          onChange={(e) => setGithub(e.target.value)}
-        />
+      <Input
+        label='GitHub URL'
+        id='github'
+        placeholder='https://github.com/...'
+        value={github}
+        onChange={(e) => setGithub(e.target.value)}
+      />
 
         <Input
           label='Live URL'
@@ -189,9 +187,7 @@ const ProjectForm = ({
         />
 
         <div className='mb-5'>
-          <label className='block font-bold text-dark mb-2'>
-            Thumbnail
-          </label>
+          <label className='block font-bold text-dark mb-2'>Thumbnail</label>
           {thumbnail && (
             <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-3 shadow-brutal-sm'>
               <Image
@@ -211,9 +207,7 @@ const ProjectForm = ({
                 setUploadError('')
               }
             }}
-            onUploadError={(error: Error) => {
-              setUploadError(error.message)
-            }}
+            onUploadError={(error: Error) => setUploadError(error.message)}
             appearance={{
               container: 'w-full',
               button:
@@ -238,33 +232,22 @@ const ProjectForm = ({
           )}
         </div>
 
-        <div className='pt-6'>
-          <Button type='submit' fullWidth variant='primary' disabled={submitting}>
-            {submitting ? (
-              <>
-                <span
-                  aria-hidden
-                  className='inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2 align-middle'
-                />
-                {submitLabel.startsWith('Create') ? 'Creating…' : 'Saving…'}
-              </>
-            ) : (
-              submitLabel
-            )}
+      <div className='flex flex-col gap-3 pt-6 sm:flex-row'>
+        {onSaveDraft && (
+          <Button
+            type='button'
+            fullWidth
+            variant='secondary'
+            disabled={submitting}
+            onClick={() => void handleSaveDraft()}
+          >
+            Save as draft
           </Button>
-          {onSaveDraft && (
-            <Button
-              type='button'
-              fullWidth
-              variant='secondary'
-              disabled={submitting}
-              onClick={handleSaveDraft}
-              className='mt-3'
-            >
-              Save as draft
-            </Button>
-          )}
-        </div>
+        )}
+        <Button type='submit' fullWidth variant='primary' disabled={submitting}>
+          {submitting ? 'Saving...' : submitLabel}
+        </Button>
+      </div>
       </fieldset>
     </form>
   )

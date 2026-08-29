@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAppDispatch, useAppSelector } from '@/store/redux/hooks'
-import { fetchMyProjects, publishProject } from '@/store/redux/projectsSlice'
+import { fetchMyProjects, publishDraft } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -30,9 +30,9 @@ const DraftsClient = () => {
   const handlePublish = async () => {
     if (!publishTarget || !currentUser?.id) return
     const result = await dispatch(
-      publishProject({ id: publishTarget.id, userId: String(currentUser.id) }),
+      publishDraft({ id: publishTarget.id, userId: String(currentUser.id) }),
     )
-    if (publishProject.fulfilled.match(result)) {
+    if (publishDraft.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project published successfully.', type: 'success' }))
       setPublishTarget(null)
       setPublishError('')

@@ -1,20 +1,45 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const db = vi.hoisted(() => ({
+  $transaction: vi.fn(),
   project: {
     count: vi.fn(),
     findMany: vi.fn(),
+    findUnique: vi.fn(),
+    update: vi.fn(),
   },
 }))
 
 vi.mock('@/lib/db', () => ({ default: db }))
 
-import { getAllProjects } from '@/lib/services/projectService'
+import { getAllProjects, updateProject } from '@/lib/services/projectService'
+
+const projectRow = {
+  id: 'project-1',
+  title: 'Draft project',
+  slug: 'draft-project',
+  description: '',
+  thumbnail: null,
+  githubUrl: null,
+  liveUrl: null,
+  likes: 0,
+  status: 'DRAFT',
+  userId: 'user-1',
+  categoryId: null,
+  featuredAt: null,
+  hiddenAt: null,
+  hiddenReason: null,
+  createdAt: new Date('2026-08-28T00:00:00.000Z'),
+  user: { name: 'Owner', username: 'owner' },
+  category: null,
+  technologies: [],
+}
 
 describe('project catalog query', () => {
   beforeEach(() => {
     db.project.count.mockResolvedValue(0)
     db.project.findMany.mockResolvedValue([])
+    db.$transaction.mockImplementation(async (operation) => operation(db))
   })
 
   it('applies search, category, technology, author, and pagination in the database query', async () => {
@@ -76,5 +101,24 @@ describe('project catalog query', () => {
     expect(findCall.take).toBe(6)
     expect(findCall.orderBy).toEqual([{ likes: 'desc' }, { id: 'asc' }])
     expect(result.pagination).toMatchObject({ page: 2, limit: 6, total: 0, totalPages: 0 })
+  })
+
+  it('allows an incomplete draft to be saved without a description', async () => {
+    db.project.findUnique.mockResolvedValue({
+      title: projectRow.title,
+      slug: projectRow.slug,
+      description: projectRow.description,
+      status: 'DRAFT',
+    })
+    db.project.update.mockResolvedValue(projectRow)
+
+    const result = await updateProject('project-1', { description: '' })
+
+    expect(result.status).toBe('DRAFT')
+    expect(db.project.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ description: '' }),
+      }),
+    )
   })
 })
