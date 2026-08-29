@@ -52,13 +52,23 @@ interface ApiError {
 }
 
 export const getProjects = async (
-  params: { page?: number; limit?: number; search?: string; category?: string; sort?: string } = {},
+  params: {
+    page?: number
+    limit?: number
+    search?: string
+    category?: string
+    technology?: string
+    author?: string
+    sort?: string
+  } = {},
 ): Promise<{ items: NormalizedProject[]; pagination: Pagination }> => {
   const queryParams = new URLSearchParams()
   if (params.page) queryParams.set('page', String(params.page))
   if (params.limit) queryParams.set('limit', String(params.limit))
   if (params.search) queryParams.set('search', params.search)
   if (params.category) queryParams.set('category', params.category)
+  if (params.technology) queryParams.set('technology', params.technology)
+  if (params.author) queryParams.set('author', params.author)
   if (params.sort) queryParams.set('sort', params.sort)
 
   const response = await realApiClient.get(`/projects?${queryParams.toString()}`)
@@ -81,7 +91,23 @@ export const createProject = async (project: CreateProjectInput): Promise<Normal
     thumbnail: project.thumbnail || null,
     github_url: project.github || project.github_url || null,
     live_url: project.live || project.live_url || null,
-    user_id: project.user_id,
+    category_id: project.category_id || null,
+    category: project.category,
+    technologies: project.technologies || [],
+  })
+  return normalizeProject(response.data.data)
+}
+
+export const createDraftProject = async (
+  project: Omit<CreateProjectInput, 'user_id'> & { user_id?: string | number },
+): Promise<NormalizedProject> => {
+  const response = await realApiClient.post('/projects/drafts', {
+    title: project.title,
+    slug: project.slug,
+    description: project.description,
+    thumbnail: project.thumbnail || null,
+    github_url: project.github || project.github_url || null,
+    live_url: project.live || project.live_url || null,
     category_id: project.category_id || null,
     category: project.category,
     technologies: project.technologies || [],
@@ -102,6 +128,11 @@ export const updateProject = async (id: string | number, updatedFields: UpdatePr
     technologies: updatedFields.technologies,
     likes: updatedFields.likes,
   })
+  return normalizeProject(response.data.data)
+}
+
+export const publishProject = async (id: string | number): Promise<NormalizedProject> => {
+  const response = await realApiClient.post(`/projects/${id}/publish`)
   return normalizeProject(response.data.data)
 }
 

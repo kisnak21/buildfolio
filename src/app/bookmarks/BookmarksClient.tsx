@@ -3,46 +3,57 @@
 import { useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
-import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
-import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
+import { likeProject } from '@/store/redux/projectsSlice'
+import { fetchBookmarks, removeBookmark } from '@/store/redux/bookmarksSlice'
 import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import EmptyState from '@/components/ui/EmptyState'
 import { buttonClass } from '@/components/ui/buttonClass'
+import { showToast } from '@/store/redux/toastSlice'
 
 const BookmarksClient = () => {
   const dispatch = useAppDispatch()
   const router = useRouter()
 
-  const { items: bookmarks, loading } = useAppSelector(
+  const { items: bookmarks, loading, error } = useAppSelector(
     (state) => state.bookmarks,
   )
-  const allProjects = useAppSelector((state) => state.projects.items)
   const currentUser = useAppSelector((state) => state.auth.currentUser)
   const likedProjectIds = useAppSelector(selectLikedProjectIds)
 
   useEffect(() => {
-    if (allProjects.length === 0) {
-      dispatch(fetchProjects())
-    }
     if (currentUser?.id) {
-      dispatch(fetchBookmarks())
-      dispatch(fetchLikedProjects())
+      dispatch(fetchBookmarks(String(currentUser.id)))
+      dispatch(fetchLikedProjects(String(currentUser.id)))
     }
-  }, [dispatch, allProjects.length, currentUser?.id])
+  }, [dispatch, currentUser?.id])
 
-  const bookmarkedProjectIds = bookmarks.map((b) => b.project_id)
-  const bookmarkedProjects = allProjects.filter((p) =>
-    bookmarkedProjectIds.includes(String(p.id)),
-  )
+  const bookmarkedProjects = bookmarks.map((bookmark) => bookmark.project)
 
   const handleLike = async (id: string) => {
-    const result = await dispatch(likeProject(id))
-    const likedProject = allProjects.find((p) => p.id === id)
+    const userId = currentUser?.id
+    if (!userId) {
+      router.push('/login')
+      return
+    }
+    const result = await dispatch(likeProject({ id, userId: String(userId) }))
+    const likedProject = bookmarkedProjects.find((p) => p.id === id)
     if (likeProject.fulfilled.match(result) && likedProject) {
-      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
+      dispatch(syncLike({ project: likedProject, liked: result.payload.liked, likes: result.payload.likes, userId: String(userId) }))
+    }
+  }
+
+  const handleBookmark = async (id: string) => {
+    const userId = currentUser?.id
+    const bookmark = bookmarks.find((item) => String(item.project_id) === id)
+    if (!bookmark || !userId) return
+    const result = await dispatch(
+      removeBookmark({ bookmarkId: bookmark.id, userId: String(userId) }),
+    )
+    if (removeBookmark.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
     }
   }
 
@@ -57,7 +68,20 @@ const BookmarksClient = () => {
 
         {loading && <p className='text-sm font-bold text-gray-600'>Loading bookmarks...</p>}
 
-        {!loading && bookmarkedProjects.length === 0 && (
+        {error && !loading && (
+          <div className='bg-dangerSoft border-4 border-dark rounded-2xl p-5 shadow-brutal'>
+            <p className='font-bold'>{error}</p>
+            <button
+              type='button'
+               onClick={() => currentUser?.id && dispatch(fetchBookmarks(String(currentUser.id)))}
+              className={`${buttonClass('primary', 'sm')} mt-4 min-h-11`}
+            >
+              Try again
+            </button>
+          </div>
+        )}
+
+        {!loading && !error && bookmarkedProjects.length === 0 && (
           <EmptyState
             title='No bookmarks yet.'
             action={
@@ -71,7 +95,7 @@ const BookmarksClient = () => {
           />
         )}
 
-        {!loading && bookmarkedProjects.length > 0 && (
+        {!loading && !error && bookmarkedProjects.length > 0 && (
           <>
             <p className='text-sm font-bold text-gray-600 mb-6'>
               {bookmarkedProjects.length} saved
@@ -81,8 +105,10 @@ const BookmarksClient = () => {
                 <ProjectCard
                   key={project.id}
                   project={project}
-                  onLike={handleLike}
-                  isLiked={likedProjectIds.includes(String(project.id))}
+                   onLike={handleLike}
+                   onBookmark={handleBookmark}
+                   isBookmarked
+                   isLiked={likedProjectIds.includes(String(project.id))}
                 />
               ))}
             </div>

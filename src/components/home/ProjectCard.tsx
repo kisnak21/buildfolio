@@ -5,7 +5,9 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline'
-import { HeartIcon as HeartSolid, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
+import { BookmarkIcon as BookmarkOutline } from '@heroicons/react/24/outline'
+import { HeartIcon as HeartSolid, BookmarkIcon as BookmarkSolid, RocketLaunchIcon, CpuChipIcon, GlobeAltIcon, DevicePhoneMobileIcon, LockOpenIcon, PuzzlePieceIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
+import ShareButton from '@/components/ui/ShareButton'
 
 interface Project {
   id: string | number
@@ -14,6 +16,7 @@ interface Project {
   category: string
   technologies: string[]
   author: string
+  authorUsername?: string
   likes: number
   github: string
   live: string
@@ -23,7 +26,9 @@ interface Project {
 interface ProjectCardProps {
   project: Project
   onLike: (id: string, likes: number) => void
+  onBookmark?: (id: string) => void
   isLiked?: boolean
+  isBookmarked?: boolean
 }
 
 
@@ -40,7 +45,13 @@ const getCategoryIcon = (category: string) => {
   return map[category] || <CodeBracketIcon />
 }
 
-const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => {
+const ProjectCard = ({
+  project,
+  onLike,
+  onBookmark,
+  isLiked = false,
+  isBookmarked = false,
+}: ProjectCardProps) => {
   const {
     id,
     title,
@@ -83,21 +94,49 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
         </div>
         
         {/* Like Button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onLike(String(id), likes)
-          }}
-          aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
-          aria-pressed={isLiked}
-          className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
-        >
-          {isLiked ? (
-            <HeartSolid className='w-5 h-5 text-primary' />
-          ) : (
-            <HeartOutline className='w-5 h-5 text-dark' />
+        <div className='absolute top-3 right-3 flex gap-2'>
+          <button
+            type='button'
+            onClick={(e) => {
+              e.stopPropagation()
+              onLike(String(id), likes)
+            }}
+            aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
+            aria-pressed={isLiked}
+            className='inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-pink-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark'
+          >
+            {isLiked ? (
+              <HeartSolid className='w-5 h-5 text-primary' />
+            ) : (
+              <HeartOutline className='w-5 h-5 text-dark' />
+            )}
+          </button>
+          {onBookmark && (
+            <button
+              type='button'
+              onClick={(e) => {
+                e.stopPropagation()
+                onBookmark(String(id))
+              }}
+              aria-label={isBookmarked ? `Remove ${title} bookmark` : `Bookmark ${title}`}
+              aria-pressed={isBookmarked}
+              className='inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-yellow-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-dark'
+            >
+              {isBookmarked ? (
+                <BookmarkSolid className='w-5 h-5 text-dark' />
+              ) : (
+                <BookmarkOutline className='w-5 h-5 text-dark' />
+              )}
+            </button>
           )}
-        </button>
+          <ShareButton
+            compact
+            url={`/projects/${id}`}
+            title={title}
+            text={description}
+            className='rounded-xl'
+          />
+        </div>
       </div>
 
       <div className='p-5 flex flex-col flex-1'>
@@ -126,7 +165,7 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
         {/* Footer Card */}
         <div className='mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed'>
           <Link
-            href={`/u/${author}`}
+            href={`/u/${encodeURIComponent(project.authorUsername || author)}`}
             onClick={(e) => e.stopPropagation()}
             className='flex items-center gap-2 hover:opacity-80 transition-opacity'
           >
@@ -140,9 +179,11 @@ const ProjectCard = ({ project, onLike, isLiked = false }: ProjectCardProps) => 
             />
             <span className='text-sm font-bold text-dark hover:underline'>{author}</span>
           </Link>
-          <div className='flex items-center gap-1 font-bold text-sm'>
-            <HeartSolid className='w-5 h-5 text-primary' />
-            {likes}
+          <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-1 font-bold text-sm'>
+              <HeartSolid className='w-5 h-5 text-primary' />
+              {likes}
+            </div>
           </div>
         </div>
       </div>

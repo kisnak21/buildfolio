@@ -1,19 +1,43 @@
 import realApiClient from './realApiClient'
+import { normalizeProject, type NormalizedProject, type RawProject } from './projectsApi'
 
-export const getUserBookmarks = async () => {
-  const response = await realApiClient.get('/bookmarks')
-  return response.data.data
+export interface Bookmark {
+  id: string
+  user_id: string
+  project_id: string
+  created_at: string
+  project: NormalizedProject
+}
+
+interface RawBookmark {
+  id: string
+  user_id: string
+  project_id: string
+  created_at: string
+  project: RawProject
+}
+
+export const getUserBookmarks = async (): Promise<Bookmark[]> => {
+  const response = await realApiClient.get<{ data: RawBookmark[] }>('/bookmarks')
+  return response.data.data.map((bookmark) => ({
+    ...bookmark,
+    project: normalizeProject(bookmark.project),
+  }))
 }
 
 export const addBookmark = async ({
   project_id,
 }: {
   project_id: string
-}) => {
-  const response = await realApiClient.post('/bookmarks', {
+}): Promise<Bookmark> => {
+  const response = await realApiClient.post<{ data: RawBookmark }>('/bookmarks', {
     project_id,
   })
-  return response.data.data
+  const bookmark = response.data.data
+  return {
+    ...bookmark,
+    project: normalizeProject(bookmark.project),
+  }
 }
 
 export const removeBookmark = async (id: string) => {

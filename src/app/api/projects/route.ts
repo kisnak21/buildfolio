@@ -6,16 +6,37 @@ import { requireActiveUser, assertSameOrigin } from '@/lib/middleware/authMiddle
 import { dbErrorMessage, type ErrorLike } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { publicCacheHeaders } from '@/lib/api/cacheHeaders'
+import { isAllowedParam, parsePositiveInteger } from '@/lib/requestParams'
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') || undefined
     const category = searchParams.get('category') || undefined
+    const technology = searchParams.get('technology') || undefined
+    const author = searchParams.get('author') || undefined
     const sort = searchParams.get('sort') || undefined
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100)
-    const result = await getAllProjects({ search, category, sort, page, limit })
+    const page = parsePositiveInteger(searchParams.get('page'), 1)
+    const limit = parsePositiveInteger(searchParams.get('limit'), 20, 100)
+    if (
+      page === null ||
+      limit === null ||
+      !isAllowedParam(sort, ['newest', 'likes', 'oldest', 'title', 'featured', 'home'] as const)
+    ) {
+      return NextResponse.json(
+        { success: false, message: 'Invalid pagination or sort filter' },
+        { status: 400 },
+      )
+    }
+    const result = await getAllProjects({
+      search: search?.slice(0, 200),
+      category: category?.slice(0, 100),
+      technology: technology?.slice(0, 100),
+      author: author?.slice(0, 255),
+      sort,
+      page,
+      limit,
+    })
     return NextResponse.json({ success: true, data: result.data, pagination: result.pagination }, { headers: publicCacheHeaders })
   } catch (err) {
     return NextResponse.json(

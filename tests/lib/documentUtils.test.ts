@@ -32,6 +32,33 @@ describe('document utilities', () => {
     expect(writeText).toHaveBeenCalledWith('# PRD')
   })
 
+  it('falls back to a temporary textarea when clipboard permissions fail', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('Permission denied'))
+    const select = vi.fn()
+    const remove = vi.fn()
+    const appendChild = vi.fn()
+    const textarea = {
+      value: '',
+      style: {},
+      setAttribute: vi.fn(),
+      select,
+      remove,
+    }
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => textarea),
+      body: { appendChild },
+      execCommand: vi.fn().mockReturnValue(true),
+    })
+
+    await copyText('copied text')
+
+    expect(writeText).toHaveBeenCalledWith('copied text')
+    expect(appendChild).toHaveBeenCalledWith(textarea)
+    expect(select).toHaveBeenCalledOnce()
+    expect(remove).toHaveBeenCalledOnce()
+  })
+
   it('downloads UTF-8 Markdown and cleans up its object URL', async () => {
     const click = vi.fn()
     const anchor = { href: '', download: '', click }

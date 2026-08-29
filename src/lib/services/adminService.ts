@@ -32,24 +32,24 @@ export const getAdminStats = async () => {
     categoryDist,
   ] = await Promise.all([
     prisma.user.count(),
-    prisma.project.count(),
+    prisma.project.count({ where: { status: 'PUBLISHED' } }),
     prisma.comment.count(),
     prisma.bookmark.count(),
-    prisma.project.aggregate({ _sum: { likes: true } }),
+    prisma.project.aggregate({ where: { status: 'PUBLISHED' }, _sum: { likes: true } }),
     prisma.user.count({ where: { createdAt: { gte: weekAgo } } }),
-    prisma.project.count({ where: { createdAt: { gte: weekAgo } } }),
+    prisma.project.count({ where: { status: 'PUBLISHED', createdAt: { gte: weekAgo } } }),
     prisma.comment.count({ where: { createdAt: { gte: weekAgo } } }),
     prisma.bookmark.count({ where: { createdAt: { gte: weekAgo } } }),
     prisma.project.aggregate({
-      where: { createdAt: { gte: weekAgo } },
+      where: { status: 'PUBLISHED', createdAt: { gte: weekAgo } },
       _sum: { likes: true },
     }),
     prisma.$queryRaw<
       { day: Date; count: number }[]
     >`SELECT d::date AS day, count(u.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN users u ON u.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
-    prisma.$queryRaw<
+       prisma.$queryRaw<
       { day: Date; count: number }[]
-    >`SELECT d::date AS day, count(p.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN projects p ON p.created_at::date = d::date GROUP BY d::date ORDER BY d::date ASC`,
+    >`SELECT d::date AS day, count(p.id)::int AS count FROM generate_series(current_date - 13, current_date, interval '1 day') AS d LEFT JOIN projects p ON p.created_at::date = d::date AND p.status = 'PUBLISHED' GROUP BY d::date ORDER BY d::date ASC`,
     prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -62,7 +62,10 @@ export const getAdminStats = async () => {
       },
     }),
     prisma.category.findMany({
-      select: { name: true, _count: { select: { projects: true } } },
+      select: {
+        name: true,
+        _count: { select: { projects: { where: { status: 'PUBLISHED' } } } },
+      },
       orderBy: { projects: { _count: 'desc' } },
     }),
   ])
@@ -143,7 +146,7 @@ export const listAdminUsers = async ({
         suspendedUntil: true,
         moderationReason: true,
         createdAt: true,
-        _count: { select: { projects: true } },
+       _count: { select: { projects: { where: { status: 'PUBLISHED' } } } },
       },
     }),
   ])
@@ -217,7 +220,7 @@ export const updateAdminUser = async (
         suspendedUntil: true,
         moderationReason: true,
         createdAt: true,
-        _count: { select: { projects: true } },
+        _count: { select: { projects: { where: { status: 'PUBLISHED' } } } },
       },
     })
   })
@@ -340,7 +343,7 @@ export const moderateAdminUser = async ({
         bannedAt: true,
         suspendedUntil: true,
         moderationReason: true,
-        _count: { select: { projects: true } },
+        _count: { select: { projects: { where: { status: 'PUBLISHED' } } } },
       },
     })
 
@@ -413,7 +416,7 @@ export const listAdminProjects = async ({
 }: {
   search?: string
   category?: string
-  status?: 'visible' | 'hidden' | 'featured'
+  status?: 'visible' | 'hidden' | 'featured' | 'draft'
   page?: number
   limit?: number
 } = {}) => {
@@ -427,12 +430,20 @@ export const listAdminProjects = async ({
   if (category) {
     where.category = { name: category }
   }
-  if (status === 'visible') where.hiddenAt = null
-  if (status === 'hidden') where.hiddenAt = { not: null }
+  if (status === 'visible') {
+    where.status = 'PUBLISHED'
+    where.hiddenAt = null
+  }
+  if (status === 'hidden') {
+    where.status = 'PUBLISHED'
+    where.hiddenAt = { not: null }
+  }
   if (status === 'featured') {
+    where.status = 'PUBLISHED'
     where.hiddenAt = null
     where.featuredAt = { not: null }
   }
+  if (status === 'draft') where.status = 'DRAFT'
 
   const [total, rows] = await Promise.all([
     prisma.project.count({ where }),
@@ -448,7 +459,8 @@ export const listAdminProjects = async ({
         createdAt: true,
         hiddenAt: true,
         hiddenReason: true,
-        featuredAt: true,
+         featuredAt: true,
+         status: true,
         user: { select: { name: true } },
         category: { select: { name: true } },
       },
@@ -465,6 +477,7 @@ export const listAdminProjects = async ({
       hiddenAt: p.hiddenAt,
       hiddenReason: p.hiddenReason,
       featuredAt: p.featuredAt,
+      status: p.status,
       createdAt: p.createdAt,
     })),
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
@@ -511,13 +524,18 @@ export const moderateAdminProject = async ({
 
   const current = await prisma.project.findUnique({
     where: { id },
-    select: { id: true, title: true, hiddenAt: true, featuredAt: true },
+    select: { id: true, title: true, status: true, hiddenAt: true, featuredAt: true },
   })
   if (!current) {
     throw Object.assign(new Error('Project not found'), { statusCode: 404 })
   }
   if (featured === true && current.hiddenAt && hidden !== false) {
     throw Object.assign(new Error('Unhide the project before featuring it'), {
+      statusCode: 400,
+    })
+  }
+  if (featured === true && current.status !== 'PUBLISHED') {
+    throw Object.assign(new Error('Draft projects cannot be featured'), {
       statusCode: 400,
     })
   }
@@ -557,7 +575,8 @@ export const moderateAdminProject = async ({
         createdAt: true,
         hiddenAt: true,
         hiddenReason: true,
-        featuredAt: true,
+         featuredAt: true,
+         status: true,
         user: { select: { name: true } },
         category: { select: { name: true } },
       },
@@ -600,6 +619,7 @@ export const moderateAdminProject = async ({
     hiddenAt: project.hiddenAt,
     hiddenReason: project.hiddenReason,
     featuredAt: project.featuredAt,
+    status: project.status,
   }
 }
 

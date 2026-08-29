@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
-import { addProject } from '@/store/redux/projectsSlice'
+import { addProject, saveDraftProject } from '@/store/redux/projectsSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -24,7 +24,7 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
   const { currentUser } = useAppSelector((state) => state.auth)
   const [submitError, setSubmitError] = useState('')
 
-  const handleSubmit = async (projectData: ProjectFormData) => {
+  const submitProject = async (projectData: ProjectFormData, draft: boolean) => {
     setSubmitError('')
     if (!currentUser?.id) {
       setSubmitError('You must be logged in to create a project.')
@@ -37,22 +37,37 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
         .replace(/[^a-z0-9-]/g, '') +
       '-' +
       Date.now()
-    const result = await dispatch(
-      addProject({
-        ...projectData,
-        slug,
-        github: projectData.github,
-        live: projectData.live,
-        user_id: currentUser.id,
-      }),
-    )
-    if (addProject.fulfilled.match(result)) {
-      dispatch(showToast({ message: 'Project created successfully!', type: 'success' }))
+    const payload = {
+      ...projectData,
+      slug,
+      github: projectData.github,
+      live: projectData.live,
+      user_id: currentUser.id,
+    }
+    const result = draft
+      ? await dispatch(saveDraftProject(payload))
+      : await dispatch(addProject(payload))
+    if (draft ? saveDraftProject.fulfilled.match(result) : addProject.fulfilled.match(result)) {
+      dispatch(
+        showToast({
+          message: draft ? 'Draft saved successfully!' : 'Project created successfully!',
+          type: 'success',
+        }),
+      )
       router.push('/dashboard')
     } else {
-      setSubmitError(result.payload || 'Failed to create project.')
+      setSubmitError(
+        typeof result.payload === 'string'
+          ? result.payload
+          : draft
+            ? 'Failed to save draft.'
+            : 'Failed to create project.',
+      )
     }
   }
+
+  const handleSubmit = (projectData: ProjectFormData) => submitProject(projectData, false)
+  const handleSaveDraft = (projectData: ProjectFormData) => submitProject(projectData, true)
 
   return (
     <div className='bg-bgMain text-dark min-h-screen flex flex-col'>
@@ -70,6 +85,7 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
         <ProjectForm
           initialValues={initialIdea}
           onSubmit={handleSubmit}
+          onSaveDraft={handleSaveDraft}
           submitLabel='Create Project'
         />
       </main>

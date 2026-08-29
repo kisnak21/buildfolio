@@ -1,6 +1,6 @@
 import prisma from '@/lib/db'
 import type { Prisma } from '@/generated/prisma/client'
-import type { RawProject } from '@/lib/shapes'
+import type { ProjectStatus, RawProject } from '@/lib/shapes'
 import { activeUserWhere, publicProjectWhere } from '@/lib/visibility'
 
 const projectSelect = {
@@ -18,7 +18,8 @@ const projectSelect = {
   hiddenAt: true,
   hiddenReason: true,
   createdAt: true,
-  user: { select: { name: true } },
+  status: true,
+  user: { select: { name: true, username: true } },
   category: { select: { name: true } },
   technologies: {
     select: { technology: { select: { name: true } } },
@@ -39,12 +40,14 @@ const normalizeProject = (p: ProjectRow): RawProject => ({
   category: p.category?.name ?? undefined,
   technologies: p.technologies?.map((pt) => pt.technology.name) ?? [],
   author_name: p.user?.name ?? undefined,
+  author_username: p.user?.username ?? undefined,
   likes: p.likes,
   user_id: p.userId,
   category_id: p.categoryId,
   featured_at: p.featuredAt?.toISOString() ?? null,
   hidden_at: p.hiddenAt?.toISOString() ?? null,
   hidden_reason: p.hiddenReason,
+  status: p.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
   created_at: p.createdAt.toISOString(),
   createdAt: p.createdAt.toISOString(),
 })
@@ -74,22 +77,40 @@ export const getTechnologyStats = async (): Promise<{ name: string; count: numbe
 export const getAllProjects = async ({
   search,
   category,
+  technology,
+  author,
   sort,
   page = 1,
   limit = 20,
 }: {
   search?: string
   category?: string
+  technology?: string
+  author?: string
   sort?: string
   page?: number
   limit?: number
 } = {}) => {
+  const safePage = Number.isFinite(page) ? Math.max(1, Math.floor(page)) : 1
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(1, Math.floor(limit)), 100)
+    : 20
   const where: Prisma.ProjectWhereInput = publicProjectWhere()
 
   if (search) {
     where.OR = [
       { title: { contains: search, mode: 'insensitive' } },
       { description: { contains: search, mode: 'insensitive' } },
+      {
+        user: {
+          is: {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { username: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+        },
+      },
     ]
   }
 
@@ -97,31 +118,54 @@ export const getAllProjects = async ({
     where.category = { name: category }
   }
 
+  if (technology) {
+    where.technologies = {
+      some: {
+        technology: { name: { equals: technology, mode: 'insensitive' } },
+      },
+    }
+  }
+
+  if (author) {
+    where.AND = [
+      {
+        user: {
+          is: {
+            OR: [
+              { name: { equals: author, mode: 'insensitive' } },
+              { username: { equals: author, mode: 'insensitive' } },
+            ],
+          },
+        },
+      },
+    ]
+  }
+
   if (sort === 'home') {
     const [total, pinnedRows, favoriteRows] = await Promise.all([
       prisma.project.count({ where }),
       prisma.project.findMany({
         where: { ...where, featuredAt: { not: null } },
-        orderBy: { featuredAt: 'desc' },
+        orderBy: [{ featuredAt: 'desc' }, { id: 'asc' }],
         take: 3,
         select: projectSelect,
       }),
       prisma.project.findMany({
         where: { ...where, featuredAt: null },
-        orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }],
-        take: Math.max(limit, 6),
+        orderBy: [{ likes: 'desc' }, { createdAt: 'desc' }, { id: 'asc' }],
+        take: Math.max(safeLimit, 6),
         select: projectSelect,
       }),
     ])
     return {
       data: [...pinnedRows, ...favoriteRows]
-        .slice(0, limit)
+        .slice(0, safeLimit)
         .map(normalizeProject),
       pagination: {
         page: 1,
-        limit,
+        limit: safeLimit,
         total,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(total / safeLimit),
       },
     }
   }
@@ -132,22 +176,23 @@ export const getAllProjects = async ({
           { featuredAt: { sort: 'desc', nulls: 'last' } },
           { likes: 'desc' },
           { createdAt: 'desc' },
+          { id: 'asc' },
         ]
       : sort === 'likes'
-        ? [{ likes: 'desc' }]
+        ? [{ likes: 'desc' }, { id: 'asc' }]
       : sort === 'oldest'
-        ? [{ createdAt: 'asc' }]
+        ? [{ createdAt: 'asc' }, { id: 'asc' }]
         : sort === 'title'
-          ? [{ title: 'asc' }]
-          : [{ createdAt: 'desc' }]
+          ? [{ title: 'asc' }, { id: 'asc' }]
+          : [{ createdAt: 'desc' }, { id: 'asc' }]
 
   const [total, rows] = await Promise.all([
     prisma.project.count({ where }),
     prisma.project.findMany({
       where,
       orderBy,
-      skip: (page - 1) * limit,
-      take: limit,
+      skip: (safePage - 1) * safeLimit,
+      take: safeLimit,
       select: projectSelect,
     }),
   ])
@@ -155,10 +200,10 @@ export const getAllProjects = async ({
   return {
     data: rows.map(normalizeProject),
     pagination: {
-      page,
-      limit,
+      page: safePage,
+      limit: safeLimit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / safeLimit),
     },
   }
 }
@@ -192,10 +237,13 @@ export const getProjectsByAuthor = async (author: string) => {
   const rows = await prisma.project.findMany({
     where: {
       ...publicProjectWhere(),
-      user: {
-        is: {
-          ...activeUserWhere(),
-          name: { equals: author, mode: 'insensitive' },
+        user: {
+          is: {
+            ...activeUserWhere(),
+            OR: [
+              { name: { equals: author, mode: 'insensitive' } },
+              { username: { equals: author, mode: 'insensitive' } },
+            ],
         },
       },
     },
@@ -218,8 +266,11 @@ export const getLikedProjectsByUser = async (userId: string) => {
   return likes.map((l) => normalizeProject(l.project))
 }
 
-const assertSafeUrl = (url: string | undefined, field: string) => {
-  if (!url || url === '#') return
+const assertSafeUrl = (url: unknown, field: string) => {
+  if (url === undefined || url === null || url === '#') return
+  if (typeof url !== 'string') {
+    throw Object.assign(new Error(`${field} must be a valid http(s) URL`), { statusCode: 400 })
+  }
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -229,6 +280,62 @@ const assertSafeUrl = (url: string | undefined, field: string) => {
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
     throw Object.assign(new Error(`${field} must be a valid http(s) URL`), { statusCode: 400 })
   }
+}
+
+const normalizeOptionalUrl = (value: unknown, field: string): string | null | undefined => {
+  if (value === undefined) return undefined
+  if (value === null || value === '' || value === '#') return null
+  if (typeof value !== 'string') {
+    throw Object.assign(new Error(`${field} must be a valid http(s) URL`), { statusCode: 400 })
+  }
+  assertSafeUrl(value, field)
+  return value.trim()
+}
+
+const THUMBNAIL_HOSTS = new Set([
+  'api.dicebear.com',
+  'images.unsplash.com',
+  'utfs.io',
+])
+
+const normalizeThumbnail = (value: unknown): string | null | undefined => {
+  if (value === undefined) return undefined
+  if (value === null || value === '') return null
+  if (typeof value !== 'string' || value.length > 2048) {
+    throw Object.assign(new Error('Thumbnail must be a valid image URL'), { statusCode: 400 })
+  }
+
+  let parsed: URL
+  try {
+    parsed = new URL(value)
+  } catch {
+    throw Object.assign(new Error('Thumbnail must be a valid image URL'), { statusCode: 400 })
+  }
+  if (
+    parsed.protocol !== 'https:' ||
+    parsed.username ||
+    parsed.password ||
+    !THUMBNAIL_HOSTS.has(parsed.hostname)
+  ) {
+    throw Object.assign(new Error('Thumbnail host is not allowed'), { statusCode: 400 })
+  }
+  return parsed.toString()
+}
+
+const normalizeTechnologyNames = (technologies: unknown): string[] => {
+  if (technologies === undefined || technologies === null) return []
+  if (!Array.isArray(technologies) || technologies.some((technology) => typeof technology !== 'string')) {
+    throw Object.assign(new Error('Technologies must be a list of strings'), { statusCode: 400 })
+  }
+
+  const names = Array.from(new Set(technologies.map((technology) => technology.trim()).filter(Boolean)))
+  if (names.length > 20) {
+    throw Object.assign(new Error('A project can have at most 20 technologies'), { statusCode: 400 })
+  }
+  if (names.some((name) => name.length > 100)) {
+    throw Object.assign(new Error('Technology names must be at most 100 characters'), { statusCode: 400 })
+  }
+  return names
 }
 
 export const createProject = async ({
@@ -242,32 +349,39 @@ export const createProject = async ({
   category_id,
   category, // Accept category name
   technologies,
+  status,
 }: {
   title: string
   slug: string
   description: string
-  thumbnail?: string
-  github_url?: string
-  live_url?: string
+  thumbnail?: string | null
+  github_url?: string | null
+  live_url?: string | null
   user_id: string
   category_id?: string
   category?: string
   technologies?: string[]
+  status?: ProjectStatus
 }) => {
-  if (!title || title.length > 255) {
+  const normalizedTitle = typeof title === 'string' ? title.trim() : ''
+  const normalizedSlug = typeof slug === 'string' ? slug.trim() : ''
+  const normalizedDescription = typeof description === 'string' ? description.trim() : ''
+  const normalizedThumbnail = normalizeThumbnail(thumbnail)
+  const normalizedGithubUrl = normalizeOptionalUrl(github_url, 'Github URL')
+  const normalizedLiveUrl = normalizeOptionalUrl(live_url, 'Live URL')
+
+  if (!normalizedTitle || normalizedTitle.length > 255) {
     throw Object.assign(new Error('Title must be 1-255 characters'), { statusCode: 400 })
   }
-  if (!slug || slug.length > 255) {
+  if (!normalizedSlug || normalizedSlug.length > 255) {
     throw Object.assign(new Error('Slug must be 1-255 characters'), { statusCode: 400 })
   }
-  if (!description || description.length > 10000) {
+  if (!normalizedDescription || normalizedDescription.length > 10000) {
     throw Object.assign(new Error('Description must be 1-10000 characters'), { statusCode: 400 })
   }
-  assertSafeUrl(github_url, 'Github URL')
-  assertSafeUrl(live_url, 'Live URL')
-
-  const techConnects = technologies?.length
-    ? await resolveTechnologies(technologies)
+  const techNames = normalizeTechnologyNames(technologies)
+  const techConnects = techNames.length
+    ? await resolveTechnologies(techNames)
     : []
 
   // Resolve category name to ID if category_id is not provided
@@ -280,14 +394,15 @@ export const createProject = async ({
   const project = await prisma.$transaction(async (tx) =>
     tx.project.create({
       data: {
-        title,
-        slug,
-        description,
-        thumbnail: thumbnail ?? null,
-        githubUrl: github_url ?? null,
-        liveUrl: live_url ?? null,
+        title: normalizedTitle,
+        slug: normalizedSlug,
+        description: normalizedDescription,
+        thumbnail: normalizedThumbnail ?? null,
+        githubUrl: normalizedGithubUrl ?? null,
+        liveUrl: normalizedLiveUrl ?? null,
         userId: user_id,
         categoryId: finalCategoryId ?? null,
+        status: status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
         technologies: {
           create: techConnects.map((techId) => ({
             technology: { connect: { id: techId } },
@@ -299,6 +414,47 @@ export const createProject = async ({
   )
 
   return normalizeProject(project)
+}
+
+export const publishProject = async (id: string, userId: string) => {
+  const existing = await prisma.project.findUnique({
+    where: { id },
+    select: { ...projectSelect, status: true },
+  })
+
+  if (!existing) {
+    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
+  }
+  if (existing.userId !== userId) {
+    throw Object.assign(new Error('Forbidden: you do not own this project'), {
+      statusCode: 403,
+    })
+  }
+  if (existing.status === 'PUBLISHED') return normalizeProject(existing)
+
+  if (
+    !existing.title.trim() ||
+    existing.title.length > 255 ||
+    !existing.slug.trim() ||
+    existing.slug.length > 255 ||
+    !existing.description.trim() ||
+    existing.description.length > 10000
+  ) {
+    throw Object.assign(
+      new Error('Title, slug, and description are required before publishing'),
+      { statusCode: 400 },
+    )
+  }
+  normalizeOptionalUrl(existing.githubUrl ?? undefined, 'Github URL')
+  normalizeOptionalUrl(existing.liveUrl ?? undefined, 'Live URL')
+  normalizeThumbnail(existing.thumbnail ?? undefined)
+
+  const updated = await prisma.project.update({
+    where: { id },
+    data: { status: 'PUBLISHED' },
+    select: projectSelect,
+  })
+  return normalizeProject(updated)
 }
 
 export const updateProject = async (
@@ -317,34 +473,55 @@ export const updateProject = async (
     title?: string
     slug?: string
     description?: string
-    thumbnail?: string
-    github_url?: string
-    live_url?: string
+    thumbnail?: string | null
+    github_url?: string | null
+    live_url?: string | null
     category_id?: string
     category?: string
     technologies?: string[]
   },
 ) => {
-  if (title !== undefined && title.length > 255) {
+  if (title !== undefined && (typeof title !== 'string' || title.length > 255)) {
     throw Object.assign(new Error('Title must be at most 255 characters'), { statusCode: 400 })
   }
-  if (slug !== undefined && slug.length > 255) {
+  if (slug !== undefined && (typeof slug !== 'string' || slug.length > 255)) {
     throw Object.assign(new Error('Slug must be at most 255 characters'), { statusCode: 400 })
   }
-  if (description !== undefined && description.length > 10000) {
+  if (description !== undefined && (typeof description !== 'string' || description.length > 10000)) {
     throw Object.assign(new Error('Description must be at most 10000 characters'), { statusCode: 400 })
   }
-  assertSafeUrl(github_url, 'Github URL')
-  assertSafeUrl(live_url, 'Live URL')
-  const techUpdate =
-    technologies !== undefined
-      ? {
-          deleteMany: {},
-          create: (await resolveTechnologies(technologies)).map((techId) => ({
-            technology: { connect: { id: techId } },
-          })),
-        }
-      : undefined
+  const existing = await prisma.project.findUnique({
+    where: { id },
+    select: { title: true, slug: true, description: true },
+  })
+  if (!existing) {
+    throw Object.assign(new Error('Project not found'), { statusCode: 404 })
+  }
+
+  const normalizedTitle = title === undefined ? undefined : title.trim()
+  const normalizedSlug = slug === undefined ? undefined : slug.trim()
+  const normalizedDescription = description === undefined ? undefined : description.trim()
+  const nextTitle = normalizedTitle ?? existing.title.trim()
+  const nextSlug = normalizedSlug ?? existing.slug.trim()
+  const nextDescription = normalizedDescription ?? existing.description.trim()
+  if (!nextTitle || !nextSlug || !nextDescription) {
+    throw Object.assign(
+      new Error('Title, slug, and description are required'),
+      { statusCode: 400 },
+    )
+  }
+  const normalizedGithubUrl = normalizeOptionalUrl(github_url, 'Github URL')
+  const normalizedLiveUrl = normalizeOptionalUrl(live_url, 'Live URL')
+  const normalizedThumbnail = normalizeThumbnail(thumbnail)
+  const techNames = technologies !== undefined ? normalizeTechnologyNames(technologies) : undefined
+  const techUpdate = techNames
+    ? {
+        deleteMany: {},
+        create: (await resolveTechnologies(techNames)).map((techId) => ({
+          technology: { connect: { id: techId } },
+        })),
+      }
+    : undefined
 
   // Resolve category name to ID if needed
   let finalCategoryId = category_id
@@ -357,12 +534,12 @@ export const updateProject = async (
     tx.project.update({
       where: { id },
       data: {
-        ...(title !== undefined && { title }),
-        ...(slug !== undefined && { slug }),
-        ...(description !== undefined && { description }),
-        ...(thumbnail !== undefined && { thumbnail }),
-        ...(github_url !== undefined && { githubUrl: github_url }),
-        ...(live_url !== undefined && { liveUrl: live_url }),
+        ...(normalizedTitle !== undefined && { title: normalizedTitle }),
+        ...(normalizedSlug !== undefined && { slug: normalizedSlug }),
+        ...(normalizedDescription !== undefined && { description: normalizedDescription }),
+        ...(normalizedThumbnail !== undefined && { thumbnail: normalizedThumbnail }),
+        ...(normalizedGithubUrl !== undefined && { githubUrl: normalizedGithubUrl }),
+        ...(normalizedLiveUrl !== undefined && { liveUrl: normalizedLiveUrl }),
         ...(finalCategoryId !== undefined && { categoryId: finalCategoryId }),
         ...(techUpdate && { technologies: techUpdate }),
       },

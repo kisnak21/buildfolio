@@ -12,6 +12,7 @@ export interface RawProject {
   category?: string
   technologies?: string[]
   author_name?: string
+  author_username?: string
   author?: string
   likes?: number
   user_id?: string | number | null
@@ -19,9 +20,12 @@ export interface RawProject {
   featured_at?: string | null
   hidden_at?: string | null
   hidden_reason?: string | null
+  status?: ProjectStatus
   created_at?: string | null
   createdAt?: string | null
 }
+
+export type ProjectStatus = 'DRAFT' | 'PUBLISHED'
 
 export interface ClientProject {
   id: string | number
@@ -34,12 +38,14 @@ export interface ClientProject {
   category: string
   technologies: string[]
   author: string
+  authorUsername?: string
   likes: number
   user_id: string | number | null
   category_id: string | number | null
   featuredAt: string | null
   hiddenAt: string | null
   hiddenReason: string | null
+  status: ProjectStatus
   createdAt: string | null
 }
 
@@ -54,11 +60,13 @@ export const toClientProject = (p: RawProject): ClientProject => ({
   category: p.category_name || p.category || '',
   technologies: Array.isArray(p.technologies) ? p.technologies : [],
   author: p.author_name || p.author || '',
+  authorUsername: p.author_username,
   likes: p.likes || 0,
   user_id: p.user_id || null,
   category_id: p.category_id || null,
   featuredAt: p.featured_at || null,
   hiddenAt: p.hidden_at || null,
   hiddenReason: p.hidden_reason || null,
+  status: p.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
   createdAt: p.created_at || p.createdAt || null,
 })

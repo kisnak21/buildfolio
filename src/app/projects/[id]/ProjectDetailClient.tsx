@@ -7,7 +7,7 @@ import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { likeProject as likeProjectThunk } from '@/store/redux/projectsSlice'
 import { fetchLikedProjects, syncLike, selectIsLiked } from '@/store/redux/likesSlice'
-import { addBookmark, removeBookmark } from '@/store/redux/bookmarksSlice'
+import { addBookmark, fetchBookmarks, removeBookmark } from '@/store/redux/bookmarksSlice'
 import {
   fetchComments,
   addComment,
@@ -23,6 +23,7 @@ import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import ProjectDetailSkeleton from '@/components/ui/ProjectDetailSkeleton'
 import EmptyState from '@/components/ui/EmptyState'
+import ShareButton from '@/components/ui/ShareButton'
 import ReportModal, {
   type ReportTarget,
 } from '@/components/ReportModal'
@@ -89,7 +90,10 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
         if (mounted) setLoading(false)
       })
 
-    if (currentUser?.id) dispatch(fetchLikedProjects())
+    if (currentUser?.id) {
+      dispatch(fetchLikedProjects(String(currentUser.id)))
+      dispatch(fetchBookmarks(String(currentUser.id)))
+    }
 
     return () => {
       mounted = false
@@ -99,10 +103,13 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
 
   const handleLike = async () => {
     if (!currentUser) return router.push('/login')
-    const result = await dispatch(likeProjectThunk(id))
+    const result = await dispatch(
+      likeProjectThunk({ id, userId: String(currentUser.id) }),
+    )
     if (likeProjectThunk.fulfilled.match(result)) {
-      const liked = result.payload?.liked
-      if (project) dispatch(syncLike({ project, liked }))
+      const { liked, likes } = result.payload
+      setProject((current) => (current ? { ...current, likes } : current))
+      if (project) dispatch(syncLike({ project, liked, likes, userId: String(currentUser.id) }))
       dispatch(
         showToast({
           message: liked ? 'You liked this project!' : 'You removed your like.',
@@ -115,12 +122,16 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   const handleBookmark = async () => {
     if (!currentUser) return router.push('/login')
     if (isBookmarked) {
-      const result = await dispatch(removeBookmark({ bookmarkId: existingBookmark.id }))
+      const result = await dispatch(
+        removeBookmark({ bookmarkId: existingBookmark.id, userId: String(currentUser.id) }),
+      )
       if (removeBookmark.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
       }
     } else {
-      const result = await dispatch(addBookmark({ project_id: id }))
+      const result = await dispatch(
+        addBookmark({ project_id: id, userId: String(currentUser.id) }),
+      )
       if (addBookmark.fulfilled.match(result)) {
         dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
       }
@@ -144,7 +155,7 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
   }
 
   const handleDeleteComment = async (commentId: string) => {
-    const result = await dispatch(deleteComment(commentId))
+    const result = await dispatch(deleteComment({ id: commentId, projectId: id }))
     if (deleteComment.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Comment deleted.', type: 'info' }))
     }
@@ -174,7 +185,7 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
         ) : (
           <>
             <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-8 shadow-brutal relative'>
-              <button
+                 <button
                 onClick={() => openReport({ type: 'project', id })}
                 disabled={reportedSet.has(id)}
                 className='absolute top-4 right-4 flex items-center gap-1.5 text-xs font-black border-2 border-dark bg-white px-3 py-1.5 rounded-lg hover:bg-warningSoft transition-colors disabled:opacity-40 disabled:hover:bg-white'
@@ -268,10 +279,16 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
                   ) : (
                     <BookmarkOutline className='w-5 h-5 text-dark' />
                   )}
-                  <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
-                </button>
+                   <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>
+                 </button>
 
-                <div className='flex items-center gap-4 ml-auto'>
+                 <ShareButton
+                   url={`/projects/${id}`}
+                   title={project.title}
+                   text={project.description}
+                 />
+
+                 <div className='flex items-center gap-4 ml-auto'>
                   {project.github && project.github !== '#' && (
                     <a
                       href={project.github}

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
-import { fetchMyProjects, deleteProject } from '@/store/redux/projectsSlice'
+import { fetchMyProjects, deleteProject, publishProject } from '@/store/redux/projectsSlice'
 import { fetchBookmarks } from '@/store/redux/bookmarksSlice'
 import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
@@ -15,43 +15,60 @@ import { LightBulbIcon, PlusIcon } from '@heroicons/react/24/solid'
 const DashboardClient = () => {
   const dispatch = useAppDispatch()
   const {
-    items: projects,
-    loading,
-    error,
+    ownedItems: projects,
+    ownedLoading: loading,
+    ownedError: error,
   } = useAppSelector((state) => state.projects)
   const { currentUser, bookmarks } = useAppSelector((state) => ({
     currentUser: state.auth.currentUser,
     bookmarks: state.bookmarks.items,
   }))
-  const bookmarkLoading = useAppSelector((state) => state.bookmarks.loading)
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string | number; title?: string } | null>(null)
   const [deleteError, setDeleteError] = useState('')
+  const [publishTarget, setPublishTarget] = useState<{ id: string | number; title?: string } | null>(null)
+  const [publishError, setPublishError] = useState('')
 
   useEffect(() => {
-    if (currentUser?.id) dispatch(fetchMyProjects())
+    if (currentUser?.id) dispatch(fetchMyProjects(String(currentUser.id)))
   }, [dispatch, currentUser?.id])
 
   useEffect(() => {
-    if (currentUser?.id && bookmarks.length === 0 && !bookmarkLoading) {
-      dispatch(fetchBookmarks())
+    if (currentUser?.id) {
+      dispatch(fetchBookmarks(String(currentUser.id)))
     }
-  }, [dispatch, currentUser?.id, bookmarks.length, bookmarkLoading])
+  }, [dispatch, currentUser?.id])
 
   const userProjects = projects.filter(
-    (p) => p.user_id === currentUser?.id,
+    (p) => String(p.user_id) === String(currentUser?.id),
   )
   const totalLikes = userProjects.reduce((sum, p) => sum + (p.likes || 0), 0)
   const totalBookmarks = bookmarks.length
 
   const handleConfirmDelete = async () => {
-    if (!deleteTarget) return
-    const result = await dispatch(deleteProject(deleteTarget.id))
+    if (!deleteTarget || !currentUser?.id) return
+    const result = await dispatch(
+      deleteProject({ id: deleteTarget.id, userId: String(currentUser.id) }),
+    )
     if (deleteProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project deleted successfully.', type: 'success' }))
       setDeleteTarget(null)
     } else {
       setDeleteError(result.payload || 'Failed to delete project. Please try again.')
+    }
+  }
+
+  const handleConfirmPublish = async () => {
+    if (!publishTarget || !currentUser?.id) return
+    const result = await dispatch(
+      publishProject({ id: publishTarget.id, userId: String(currentUser.id) }),
+    )
+    if (publishProject.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Project published successfully.', type: 'success' }))
+      setPublishTarget(null)
+      setPublishError('')
+    } else {
+      setPublishError(result.payload || 'Failed to publish project.')
     }
   }
 
@@ -75,13 +92,21 @@ const DashboardClient = () => {
               <LightBulbIcon className='h-5 w-5' aria-hidden />
               Project Ideas
             </Link>
-            <Link
-              href='/dashboard/new'
-              className='btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal flex items-center justify-center gap-2 min-h-11'
-            >
-              <PlusIcon className='w-5 h-5' aria-hidden />
-              New Project
-            </Link>
+            <div className='flex flex-col gap-3 sm:flex-row'>
+              <Link
+                href='/dashboard/drafts'
+                className='btn-brutal flex min-h-11 items-center justify-center rounded-xl border-2 border-dark bg-white px-5 py-3 font-bold shadow-brutal-sm'
+              >
+                Drafts ({userProjects.filter((project) => project.status === 'DRAFT').length})
+              </Link>
+              <Link
+                href='/dashboard/new'
+                className='btn-brutal bg-accent text-white border-2 border-dark px-6 py-3 rounded-xl font-bold shadow-brutal flex items-center justify-center gap-2 min-h-11'
+              >
+                <PlusIcon className='w-5 h-5' aria-hidden />
+                New Project
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -116,6 +141,9 @@ const DashboardClient = () => {
         {deleteError && (
           <p className='text-sm font-bold text-red-600 mb-4'>{deleteError}</p>
         )}
+        {publishError && (
+          <p className='text-sm font-bold text-red-600 mb-4'>{publishError}</p>
+        )}
 
         {!loading && !error && (
           <div className='bg-white border-4 border-dark rounded-2xl shadow-brutal overflow-hidden mb-8'>
@@ -125,6 +153,7 @@ const DashboardClient = () => {
                   <tr>
                     <th className='p-4 font-black'>Title</th>
                     <th className='p-4 font-black'>Category</th>
+                    <th className='p-4 font-black'>Status</th>
                     <th className='p-4 font-black text-center'>Likes</th>
                     <th className='p-4 font-black text-right'>Actions</th>
                   </tr>
@@ -158,17 +187,34 @@ const DashboardClient = () => {
                           {project.category || 'None'}
                         </span>
                       </td>
+                      <td className='p-4'>
+                        <span
+                          className={`rounded-md border-2 border-dark px-2 py-1 text-xs font-black shadow-brutal-sm ${
+                            project.status === 'DRAFT' ? 'bg-secondary' : 'bg-successSoft'
+                          }`}
+                        >
+                          {project.status === 'DRAFT' ? 'Draft' : 'Published'}
+                        </span>
+                      </td>
                       <td className='p-4 font-bold text-center'>{project.likes}</td>
                       <td className='p-4 text-right space-x-2'>
                         <Link
                           href={`/dashboard/edit/${project.id}`}
-                          className='btn-brutal inline-block bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm hover:bg-gray-50'
+                          className='btn-brutal inline-flex min-h-11 items-center bg-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm hover:bg-gray-50'
                         >
                           Edit
                         </Link>
+                        {project.status === 'DRAFT' && (
+                          <button
+                            onClick={() => setPublishTarget(project)}
+                            className='btn-brutal inline-flex min-h-11 items-center bg-primary border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm hover:bg-primaryDark hover:text-white'
+                          >
+                            Publish
+                          </button>
+                        )}
                         <button
                           onClick={() => setDeleteTarget(project)}
-                          className='btn-brutal bg-red-400 text-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm hover:bg-red-500'
+                            className='btn-brutal inline-flex min-h-11 items-center bg-red-400 text-white border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm hover:bg-red-500'
                         >
                           Delete
                         </button>
@@ -200,6 +246,18 @@ const DashboardClient = () => {
         message={`This will permanently remove "${deleteTarget?.title}". This action cannot be undone.`}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!publishTarget}
+        title='Publish project?'
+        message={`Publish "${publishTarget?.title}" to the public catalog?`}
+        confirmLabel='Publish'
+        onConfirm={handleConfirmPublish}
+        onCancel={() => {
+          setPublishTarget(null)
+          setPublishError('')
+        }}
       />
 
       <Footer />

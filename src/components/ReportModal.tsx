@@ -30,7 +30,7 @@ const ReportModal = ({ target, onClose, onReported }: ReportModalProps) => {
     e.preventDefault()
     setSubmitting(true)
     try {
-      await realApiClient.post('/api/flags', {
+      await realApiClient.post('/flags', {
         targetType: target.type,
         targetId: target.id,
         reason,
