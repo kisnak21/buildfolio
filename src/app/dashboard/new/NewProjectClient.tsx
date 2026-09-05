@@ -37,15 +37,14 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
         .replace(/[^a-z0-9-]/g, '') +
       '-' +
       Date.now()
-    const result = await dispatch(
-      addProject({
-        ...projectData,
-        slug,
-        github: projectData.github,
-        live: projectData.live,
-        user_id: currentUser.id,
-      }),
-    )
+    const payload = {
+      ...projectData,
+      slug,
+      github: projectData.github,
+      live: projectData.live,
+      user_id: currentUser.id,
+    }
+    const result = await dispatch(addProject(payload))
     if (addProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Project created successfully!', type: 'success' }))
       router.push('/dashboard')
@@ -56,7 +55,13 @@ const NewProjectClient = ({ initialIdea }: NewProjectClientProps) => {
 
   const handleSaveDraft = async (projectData: ProjectFormData) => {
     setSubmitError('')
-    const result = await dispatch(addDraftProject(projectData))
+    if (!currentUser?.id) {
+      setSubmitError('You must be logged in to save a draft.')
+      return
+    }
+    const result = await dispatch(
+      addDraftProject({ ...projectData, userId: String(currentUser.id) }),
+    )
     if (addDraftProject.fulfilled.match(result)) {
       dispatch(showToast({ message: 'Draft saved.', type: 'success' }))
       router.push('/dashboard')

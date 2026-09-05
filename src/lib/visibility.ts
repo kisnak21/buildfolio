@@ -8,8 +8,8 @@ export const activeUserWhere = (now = new Date()): Prisma.UserWhereInput => ({
 export const publicProjectWhere = (
   now = new Date(),
 ): Prisma.ProjectWhereInput => ({
-  hiddenAt: null,
   status: 'PUBLISHED',
+  hiddenAt: null,
   user: { is: activeUserWhere(now) },
 })
 

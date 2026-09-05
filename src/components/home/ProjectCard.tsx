@@ -163,7 +163,7 @@ const ProjectCard = ({
           ) : (
             <HeartOutline className='w-5 h-5 text-dark' />
           )}
-        </button>
+          </button>
       </div>
 
       <div className='p-5 flex flex-col flex-1'>

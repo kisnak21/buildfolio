@@ -28,6 +28,8 @@ Buildfolio lets developers:
 - Showcase their own projects with tech stack, links, and descriptions
 - Browse by category and trending technology
 - Like and bookmark projects from the community
+- Save projects privately as drafts before publishing
+- Share public projects with native share or a copied link
 - Leave comments on projects
 - Manage projects via a personal dashboard (Create, Read, Update, Delete)
 - Register and log in with real authentication and email verification
@@ -61,7 +63,7 @@ Buildfolio lets developers:
 ### Public
 
 - Homepage with admin-pinned Featured Projects, Browse by Category, Trending Technologies, Community Favorites
-- Search projects by title or description
+- Search projects by title, description, or author
 - Filter by category and technology
 - Sort by newest, most liked, oldest, or title (alphabetical)
 - View all projects on a dedicated page with pagination (6 projects per page)
@@ -86,7 +88,8 @@ Buildfolio lets developers:
 ### Protected (requires login)
 
 - **Dashboard** — stats (total projects, likes received, bookmarks), project table with Edit/Delete
-- **Create Project** — add a new project with title, description, category, technologies, author, GitHub, live URL, and thumbnail upload via Uploadthing
+- **Create Project** — add a new project with title, description, category, technologies, GitHub, live URL, and thumbnail upload via Uploadthing
+- **Draft Projects** — save a private project, edit it later, and publish it after validation
 - **Edit Project** — update any project you own (ownership enforced)
 - **Delete Project** — with confirmation dialog
 - **Bookmarks** — save and view bookmarked projects (persisted to database)
@@ -295,6 +298,7 @@ The integration test consumes one request from each provider and remains skipped
 - Configure GitHub Actions secrets `BACKUP_DATABASE_URL`, `BACKUP_ENCRYPTION_PASSPHRASE`, and `BACKUP_HEARTBEAT_URL`. The database URL must use a dedicated direct, read-only PostgreSQL role. Use a long, unique passphrase and store a recovery copy outside GitHub; a lost passphrase makes every artifact unusable.
 - `BACKUP_HEARTBEAT_URL` must point to a dead-man monitor configured to alert when a daily ping is missed. This detects GitHub disabling schedules after repository inactivity.
 - Backup artifacts contain only `.dump.gpg` and its SHA-256 checksum. Every dump is restored into a disposable PostgreSQL 18 database before encryption, removed before upload, and artifacts expire after 14 days.
+- Verification on 2026-08-28: workflow run `33186633551` completed successfully, including disposable restore, artifact upload, and heartbeat reporting. A separate manual decrypt-and-restore drill still requires the operator-held passphrase.
 
 Restore a downloaded artifact after verifying its checksum:
 
@@ -332,15 +336,17 @@ Open `http://localhost:3000` in your browser.
 | PATCH  | `/api/users/:id`                 | Yes | Update user                           |
 | DELETE | `/api/users/:id`                 | Yes | Delete user                           |
 | PATCH  | `/api/users/:id/password`        | Yes | Change password                       |
-| GET    | `/api/projects`                  | —    | Get all projects (filter/sort/search) |
-| POST   | `/api/projects`                  | Yes | Create project                        |
-| GET    | `/api/projects/mine`             | Yes | Get owned projects, including hidden  |
-| GET    | `/api/projects/:id`              | —    | Get project by ID                     |
-| PATCH  | `/api/projects/:id`              | Yes | Update project                        |
-| DELETE | `/api/projects/:id`              | Yes | Delete project                        |
+| GET    | `/api/projects`                  | —    | Get published projects (filter/sort/search/pagination) |
+| POST   | `/api/projects`                  | Yes | Create published project              |
+| POST   | `/api/projects/drafts`           | Yes | Create private draft project          |
+| GET    | `/api/projects/mine`             | Yes | Get owned projects, including drafts  |
+| GET    | `/api/projects/:id`              | —    | Get published project by ID           |
+| PATCH  | `/api/projects/:id`              | Yes | Update an owned project               |
+| POST   | `/api/projects/:id/publish`      | Yes | Publish an owned draft                |
+| DELETE | `/api/projects/:id`              | Yes | Delete an owned project               |
 | POST   | `/api/projects/:id/like`         | Yes | Toggle like on a project              |
 | GET    | `/api/projects/liked`            | Yes | Get liked projects for user           |
-| GET    | `/api/bookmarks?userId=`         | —    | Get bookmarks by user                 |
+| GET    | `/api/bookmarks`                 | Yes  | Get bookmarks for the current user    |
 | POST   | `/api/bookmarks`                 | Yes | Add bookmark                          |
 | DELETE | `/api/bookmarks/:id`             | Yes | Remove bookmark                       |
 | GET    | `/api/comments?projectId=`       | —    | Get comments by project               |
@@ -372,7 +378,7 @@ Open `http://localhost:3000` in your browser.
 ## Known Limitations
 
 - **Rate limiting falls back to in-memory without Upstash** — resets on server restart; fine for local development, but configure `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` for a single shared store in production.
-- **Free OpenRouter models can be busy, replaced, or temporarily unavailable** — each request uses one server-selected model at a time, with Ox Alpha as the default. Writing tasks use up to two fallbacks; Ideas uses one fast fallback so the stream finishes before the platform limit. Ideas validate the final JSON before counting a successful generation.
+- **AI generation is paused** while alternative providers are evaluated. The existing AI routes remain available as Coming Soon and do not consume quota.
 - **Scheduled workflows are not real-time schedulers** — Vercel and GitHub may start daily jobs later than the exact cron minute.
 - **GitHub disables schedules in inactive public repositories after 60 days** — monitor backup freshness and re-enable the workflow after long periods without repository activity.
 
@@ -388,9 +394,9 @@ Open `http://localhost:3000` in your browser.
 - [x] Admin dashboard (users/projects/comments/categories moderation, audit logs, content flags, growth charts)
 - [x] CI/CD quality gate, observability (pino + client error ingestion), and uptime monitoring
 - [x] Reversible moderation, featured ordering, pagination, and public visibility enforcement
-- [x] OpenRouter AI description, README, and idea generators with free-model fallback
-- [x] Audit retention cron and encrypted nightly database backups
-- [ ] Public API documentation page
+- [ ] AI description, README, and idea generators are paused pending alternative-model evaluation
+- [x] Encrypted nightly database backup workflow and restore runbook
+- [ ] Operational backup verification and public API documentation page
 
 ---
 

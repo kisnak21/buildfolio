@@ -25,11 +25,15 @@ export const addBookmark = async ({
   project_id,
 }: {
   project_id: string
-}) => {
-  const response = await realApiClient.post('/bookmarks', {
+}): Promise<BookmarkRecord> => {
+  const response = await realApiClient.post<{ data: RawBookmarkRecord }>('/bookmarks', {
     project_id,
   })
-  return response.data.data
+  const bookmark = response.data.data
+  return {
+    ...bookmark,
+    project: normalizeProject(bookmark.project),
+  }
 }
 
 export const removeBookmark = async (id: string) => {

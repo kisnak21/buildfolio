@@ -25,6 +25,7 @@ export interface AdminProject {
   hiddenAt: string | null
   hiddenReason: string | null
   featuredAt: string | null
+  status: 'DRAFT' | 'PUBLISHED'
   createdAt: string
 }
 

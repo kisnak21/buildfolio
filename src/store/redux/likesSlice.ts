@@ -1,18 +1,27 @@
 import { createAsyncThunk, createSlice, createSelector } from '@reduxjs/toolkit'
 import { getUserLikedProjects } from '@/lib/api/likesApi'
 import type { NormalizedProject } from '@/lib/api/projectsApi'
+import { loginUser, logoutUser } from './authSlice'
 
 interface LikesState {
   items: NormalizedProject[]
   loading: boolean
   error: string | null
+  activeUserId: string | null
+  requestId: string | null
 }
 
-const initialState: LikesState = { items: [], loading: false, error: null }
+const initialState: LikesState = {
+  items: [],
+  loading: false,
+  error: null,
+  activeUserId: null,
+  requestId: null,
+}
 
-export const fetchLikedProjects = createAsyncThunk<NormalizedProject[], void, { rejectValue: string }>(
+export const fetchLikedProjects = createAsyncThunk<NormalizedProject[], string, { rejectValue: string }>(
   'likes/fetchAll',
-  async (_, { rejectWithValue }) => {
+  async (_userId, { rejectWithValue }) => {
     try {
       return await getUserLikedProjects()
     } catch {
@@ -25,17 +34,58 @@ const likesSlice = createSlice({
   name: 'likes',
   initialState,
   reducers: {
-    syncLike: (state, action: { payload: { project: NormalizedProject; liked: boolean } }) => {
-      const { project, liked } = action.payload
-      if (liked && !state.items.some((item) => item.id === project.id)) state.items.unshift(project)
+    syncLike: (state, action: { payload: { project: NormalizedProject; liked: boolean; likes?: number; userId: string } }) => {
+      const { project, liked, likes, userId } = action.payload
+      if (state.activeUserId !== userId) return
+      const nextProject = likes === undefined ? project : { ...project, likes }
+      const existingIndex = state.items.findIndex((item) => item.id === project.id)
+      if (liked && existingIndex === -1) state.items.unshift(nextProject)
+      if (liked && existingIndex !== -1) state.items[existingIndex] = nextProject
       if (!liked) state.items = state.items.filter((item) => item.id !== project.id)
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchLikedProjects.pending, (state) => { state.loading = true; state.error = null })
-      .addCase(fetchLikedProjects.fulfilled, (state, action) => { state.loading = false; state.items = action.payload })
-      .addCase(fetchLikedProjects.rejected, (state, action) => { state.loading = false; state.error = action.payload ?? null })
+      .addCase(loginUser, (state, action) => {
+        state.items = []
+        state.error = null
+        state.loading = false
+        state.activeUserId = String(action.payload.id)
+        state.requestId = null
+      })
+      .addCase(logoutUser, (state) => {
+        state.items = []
+        state.error = null
+        state.loading = false
+        state.activeUserId = null
+        state.requestId = null
+      })
+      .addCase(fetchLikedProjects.pending, (state, action) => {
+        const userId = action.meta.arg
+        if (state.activeUserId && state.activeUserId !== userId) return
+        state.activeUserId = userId
+        state.loading = true
+        state.error = null
+        state.requestId = action.meta.requestId
+      })
+      .addCase(fetchLikedProjects.fulfilled, (state, action) => {
+        if (
+          state.activeUserId !== action.meta.arg ||
+          state.requestId !== action.meta.requestId
+        ) return
+        state.loading = false
+        state.items = action.payload
+        state.requestId = null
+      })
+      .addCase(fetchLikedProjects.rejected, (state, action) => {
+        if (
+          state.activeUserId !== action.meta.arg ||
+          state.requestId !== action.meta.requestId
+        ) return
+        state.loading = false
+        state.error = action.payload ?? null
+        state.requestId = null
+      })
   },
 })
 

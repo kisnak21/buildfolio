@@ -14,7 +14,6 @@ export interface ProjectFormData {
   description: string
   category: string
   technologies: string[]
-  author?: string
   github?: string
   live?: string
   thumbnail?: string | null
@@ -26,7 +25,6 @@ interface ProjectFormProps {
     description?: string
     category?: string
     technologies?: string[]
-    author?: string
     github?: string
     live?: string
     thumbnail?: string | null
@@ -180,63 +178,59 @@ const ProjectForm = ({
         onChange={(e) => setGithub(e.target.value)}
       />
 
-      <Input
-        label='Live URL'
-        id='live'
-        placeholder='https://...'
-        value={live}
-        onChange={(e) => setLive(e.target.value)}
-      />
-
-      <div className='mb-5'>
-        <label className='block font-bold text-dark mb-2'>
-          Thumbnail
-        </label>
-        {thumbnail && (
-          <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-3 shadow-brutal-sm'>
-            <Image
-              src={thumbnail}
-              alt='Project thumbnail'
-              fill
-              sizes='(max-width: 672px) 100vw, 672px'
-              className='object-cover'
-            />
-          </div>
-        )}
-        <UploadButton
-          endpoint='imageUploader'
-          onClientUploadComplete={(res) => {
-            if (res?.[0]?.url) {
-              setThumbnail(res[0].url)
-              setUploadError('')
-            }
-          }}
-          onUploadError={(error: Error) => {
-            setUploadError(error.message)
-          }}
-          appearance={{
-            container: 'w-full',
-            button:
-              'w-full bg-white border-2 border-dark rounded-xl font-bold shadow-brutal-sm hover:bg-yellow-100 transition-colors',
-            allowedContent: 'text-xs text-gray-600 font-bold',
-          }}
-          content={{
-            button: thumbnail ? 'Replace thumbnail' : 'Upload thumbnail',
-          }}
+        <Input
+          label='Live URL'
+          id='live'
+          placeholder='https://...'
+          value={live}
+          onChange={(e) => setLive(e.target.value)}
         />
-        {thumbnail && (
-          <button
-            type='button'
-            onClick={() => setThumbnail('')}
-            className='text-sm font-bold text-red-600 hover:underline mt-2'
-          >
-            Remove thumbnail
-          </button>
-        )}
-        {uploadError && (
-          <p className='text-sm font-bold text-red-600 mt-2'>{uploadError}</p>
-        )}
-      </div>
+
+        <div className='mb-5'>
+          <label className='block font-bold text-dark mb-2'>Thumbnail</label>
+          {thumbnail && (
+            <div className='relative w-full aspect-video border-2 border-dark rounded-xl overflow-hidden mb-3 shadow-brutal-sm'>
+              <Image
+                src={thumbnail}
+                alt='Project thumbnail'
+                fill
+                sizes='(max-width: 672px) 100vw, 672px'
+                className='object-cover'
+              />
+            </div>
+          )}
+          <UploadButton
+            endpoint='imageUploader'
+            onClientUploadComplete={(res) => {
+              if (res?.[0]?.url) {
+                setThumbnail(res[0].url)
+                setUploadError('')
+              }
+            }}
+            onUploadError={(error: Error) => setUploadError(error.message)}
+            appearance={{
+              container: 'w-full',
+              button:
+                'w-full bg-white border-2 border-dark rounded-xl font-bold shadow-brutal-sm hover:bg-yellow-100 transition-colors',
+              allowedContent: 'text-xs text-gray-600 font-bold',
+            }}
+            content={{
+              button: thumbnail ? 'Replace thumbnail' : 'Upload thumbnail',
+            }}
+          />
+          {thumbnail && (
+            <button
+              type='button'
+              onClick={() => setThumbnail('')}
+              className='text-sm font-bold text-red-600 hover:underline mt-2'
+            >
+              Remove thumbnail
+            </button>
+          )}
+          {uploadError && (
+            <p className='text-sm font-bold text-red-600 mt-2'>{uploadError}</p>
+          )}
+        </div>
 
       <div className='flex flex-col gap-3 pt-6 sm:flex-row'>
         {onSaveDraft && (

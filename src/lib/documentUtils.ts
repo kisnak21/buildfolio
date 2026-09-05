@@ -1,11 +1,5 @@
 import type { AiDocumentTask } from '@/lib/aiModels'
-
-export const copyText = async (text: string) => {
-  if (!navigator.clipboard?.writeText) {
-    throw new Error('Clipboard access is unavailable')
-  }
-  await navigator.clipboard.writeText(text)
-}
+export { copyText } from '@/lib/utils'
 
 export const documentFilename = (title: string, task: AiDocumentTask) => {
   if (task === 'readme') return 'README.md'

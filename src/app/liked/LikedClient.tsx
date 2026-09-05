@@ -3,7 +3,8 @@
 import { useEffect } from 'react'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { useRouter } from 'next/navigation'
-import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
+import { likeProject } from '@/store/redux/projectsSlice'
+import { addBookmark, fetchBookmarks, removeBookmark } from '@/store/redux/bookmarksSlice'
 import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
@@ -12,6 +13,7 @@ import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
 import EmptyState from '@/components/ui/EmptyState'
 import { buttonClass } from '@/components/ui/buttonClass'
 import { HeartIcon } from '@heroicons/react/24/solid'
+import { showToast } from '@/store/redux/toastSlice'
 
 const LikedClient = () => {
   const dispatch = useAppDispatch()
@@ -20,27 +22,52 @@ const LikedClient = () => {
   const { items: likedProjects, loading } = useAppSelector(
     (state) => state.likes,
   )
-  const allProjects = useAppSelector((state) => state.projects.items)
   const likedProjectIds = useAppSelector(selectLikedProjectIds)
   const { currentUser } = useAppSelector((state) => state.auth)
+  const bookmarks = useAppSelector((state) => state.bookmarks.items)
 
   useEffect(() => {
-    if (allProjects.length === 0) {
-      dispatch(fetchProjects())
+    if (currentUser?.id) {
+      dispatch(fetchLikedProjects(String(currentUser.id)))
+      dispatch(fetchBookmarks(String(currentUser.id)))
     }
-    if (currentUser?.id) dispatch(fetchLikedProjects())
-  }, [dispatch, allProjects.length, currentUser?.id])
+  }, [dispatch, currentUser?.id])
 
   const handleLike = async (id: string) => {
-    const result = await dispatch(likeProject(id))
-    const likedProject = allProjects.find((p) => p.id === id)
+    const userId = currentUser?.id
+    if (!userId) {
+      router.push('/login')
+      return
+    }
+    const result = await dispatch(likeProject({ id, userId: String(userId) }))
+    const likedProject = likedProjects.find((p) => p.id === id)
     if (likeProject.fulfilled.match(result) && likedProject) {
       dispatch(
         syncLike({
           project: likedProject,
           liked: result.payload.liked,
+          likes: result.payload.likes,
+          userId: String(userId),
         }),
       )
+    }
+  }
+
+  const handleBookmark = async (id: string) => {
+    if (!currentUser) {
+      router.push('/login')
+      return
+    }
+    const existing = bookmarks.find((bookmark) => String(bookmark.project_id) === id)
+    const result = existing
+      ? await dispatch(
+          removeBookmark({ bookmarkId: existing.id, userId: String(currentUser.id) }),
+        )
+      : await dispatch(addBookmark({ project_id: id, userId: String(currentUser.id) }))
+    if (existing && removeBookmark.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
+    } else if (!existing && addBookmark.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
     }
   }
 
@@ -91,6 +118,8 @@ const LikedClient = () => {
                   key={project.id}
                   project={project}
                   onLike={handleLike}
+                  onBookmark={currentUser ? handleBookmark : undefined}
+                  isBookmarked={bookmarks.some((bookmark) => String(bookmark.project_id) === String(project.id))}
                   isLiked={likedProjectIds.includes(String(project.id))}
                 />
               ))}

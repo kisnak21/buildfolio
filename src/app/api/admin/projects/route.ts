@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (
       page === null ||
       limit === null ||
-      !isAllowedParam(status, ['visible', 'hidden', 'featured'] as const)
+      !isAllowedParam(status, ['visible', 'hidden', 'featured', 'draft'] as const)
     ) {
       return NextResponse.json(
         { success: false, message: 'Invalid pagination or status filter' },

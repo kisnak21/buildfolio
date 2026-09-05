@@ -15,15 +15,17 @@ export interface RawProject {
   author_username?: string
   author?: string
   likes?: number
-  status?: 'DRAFT' | 'PUBLISHED'
   user_id?: string | number | null
   category_id?: string | number | null
   featured_at?: string | null
   hidden_at?: string | null
   hidden_reason?: string | null
+  status?: ProjectStatus
   created_at?: string | null
   createdAt?: string | null
 }
+
+export type ProjectStatus = 'DRAFT' | 'PUBLISHED'
 
 export interface ClientProject {
   id: string | number
@@ -38,12 +40,12 @@ export interface ClientProject {
   author: string
   authorUsername?: string
   likes: number
-  status: 'DRAFT' | 'PUBLISHED'
   user_id: string | number | null
   category_id: string | number | null
   featuredAt: string | null
   hiddenAt: string | null
   hiddenReason: string | null
+  status: ProjectStatus
   createdAt: string | null
 }
 
@@ -60,11 +62,11 @@ export const toClientProject = (p: RawProject): ClientProject => ({
   author: p.author_name || p.author || '',
   authorUsername: p.author_username,
   likes: p.likes || 0,
-  status: p.status || 'PUBLISHED',
   user_id: p.user_id || null,
   category_id: p.category_id || null,
   featuredAt: p.featured_at || null,
   hiddenAt: p.hidden_at || null,
   hiddenReason: p.hidden_reason || null,
+  status: p.status === 'DRAFT' ? 'DRAFT' : 'PUBLISHED',
   createdAt: p.created_at || p.createdAt || null,
 })

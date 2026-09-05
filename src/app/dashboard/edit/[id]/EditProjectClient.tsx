@@ -21,22 +21,23 @@ const EditProjectClient = () => {
 
   const { currentUser } = useAppSelector((state) => state.auth)
   const project = useAppSelector((state) =>
-    state.projects.items.find((p) => String(p.id) === id),
+    state.projects.ownedItems.find((p) => String(p.id) === id),
   )
 
   useEffect(() => {
     if (project) return
-    dispatch(fetchMyProjects())
-  }, [dispatch, project])
+    if (currentUser?.id) dispatch(fetchMyProjects(String(currentUser.id)))
+  }, [currentUser?.id, dispatch, project])
 
   const isOwner = String(project?.user_id) === String(currentUser?.id)
 
   const handleSubmit = async (projectData: ProjectFormData) => {
     setSubmitError('')
-    if (!project) return
+    if (!project || !currentUser?.id) return
     const result = await dispatch(
       updateProject({
         id: project.id,
+        userId: String(currentUser.id),
         updatedFields: {
           title: projectData.title,
           description: projectData.description,
@@ -50,7 +51,9 @@ const EditProjectClient = () => {
     )
     if (updateProject.fulfilled.match(result)) {
       if (project.status === 'DRAFT') {
-        const published = await dispatch(publishDraft(project.id))
+        const published = await dispatch(
+          publishDraft({ id: project.id, userId: String(currentUser.id) }),
+        )
         if (!publishDraft.fulfilled.match(published)) {
           setSubmitError(published.payload || 'Failed to publish project.')
           return
@@ -65,10 +68,11 @@ const EditProjectClient = () => {
 
   const handleSaveDraft = async (projectData: ProjectFormData) => {
     setSubmitError('')
-    if (!project) return
+    if (!project || !currentUser?.id) return
     const result = await dispatch(
       updateProject({
         id: project.id,
+        userId: String(currentUser.id),
         updatedFields: {
           title: projectData.title,
           description: projectData.description,

@@ -22,6 +22,7 @@ import {
 } from '@/store/redux/bookmarksSlice'
 
 const PAGE_SIZE = 6
+const SORT_OPTIONS = ['newest', 'likes', 'oldest', 'title'] as const
 
 interface ProjectsClientProps {
   techCounts: { name: string; count: number }[]
@@ -52,7 +53,8 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   const serverSearch = searchParams.get('search') || ''
   const selectedCategory = searchParams.get('category') || ''
   const selectedTech = searchParams.get('technology') || ''
-  const sortBy = searchParams.get('sort') || 'newest'
+  const requestedSort = searchParams.get('sort')
+  const sortBy = SORT_OPTIONS.find((option) => option === requestedSort) || 'newest'
   const page = positivePage(searchParams.get('page'))
 
   const updateQuery = useCallback(
@@ -89,30 +91,38 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
 
   useEffect(() => {
     if (!currentUser?.id) return
-    dispatch(fetchLikedProjects())
-    dispatch(fetchBookmarks())
+    dispatch(fetchLikedProjects(String(currentUser.id)))
+    dispatch(fetchBookmarks(String(currentUser.id)))
   }, [dispatch, currentUser?.id])
 
   const handleLike = async (id: string) => {
     if (!currentUser) return router.push('/login')
-    const result = await dispatch(likeProject(id))
+    const userId = String(currentUser.id)
+    const result = await dispatch(likeProject({ id, userId }))
     const likedProject = projects.find((project) => String(project.id) === id)
     if (likeProject.fulfilled.match(result) && likedProject) {
-      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
+      dispatch(
+        syncLike({
+          project: likedProject,
+          liked: result.payload.liked,
+          likes: result.payload.likes,
+          userId,
+        }),
+      )
     }
   }
 
   const handleBookmark = async (id: string) => {
     if (!currentUser) return router.push('/login')
+    const userId = String(currentUser.id)
     setBookmarkPendingId(id)
     const existing = bookmarks.find(
       (bookmark) => bookmark.project_id === id,
     )
     if (existing) {
-      await dispatch(removeBookmark({ bookmarkId: existing.id }))
+      await dispatch(removeBookmark({ bookmarkId: existing.id, userId }))
     } else {
-      const result = await dispatch(addBookmark({ project_id: id }))
-      if (addBookmark.fulfilled.match(result)) await dispatch(fetchBookmarks())
+      await dispatch(addBookmark({ project_id: id, userId }))
     }
     setBookmarkPendingId(null)
   }

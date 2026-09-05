@@ -148,10 +148,14 @@ Update `src/lib/rateLimit.ts`, `src/app/api/ai/generate/route.ts`, `src/lib/api/
 - Display current remaining hourly and daily quota in both AI surfaces.
 - Keep quota consumption success-only and document the existing concurrency limitation for later atomic-counter work.
 
-## Milestone 3: Backup Verification
+## Milestone 3: Backup Verification: Operational verification pending
 
 Workflow: `.github/workflows/backup.yml`.
 Runbook: `README.md` backup section.
+
+- [x] Nightly encrypted backup workflow and restore runbook exist.
+- [x] Verify GitHub secret names and dispatch the workflow. Run `33186633551` completed the artifact, disposable restore, and heartbeat checks successfully.
+- [ ] Download and decrypt an artifact for the separate manual restore drill.
 
 ### Secret Verification
 
@@ -175,7 +179,7 @@ Runbook: `README.md` backup section.
 - Record restore duration, result, and recovery steps in the README.
 - After the first successful drill, consider adding a manually triggered `restore-drill.yml` workflow.
 
-## Milestone 4: Save Ideas as Draft Projects
+## Milestone 4: Save Ideas as Draft Projects: Manual project flow implemented
 
 Recommended design: add a `status` field to `Project` rather than creating a duplicate idea table. This reuses the existing edit form and makes publishing a state transition.
 
@@ -203,11 +207,13 @@ Update `src/lib/visibility.ts`, `src/lib/services/projectService.ts`, and projec
 
 Update `IdeasClient.tsx`, dashboard components, and edit-project surfaces.
 
-- Add `Save as draft` to each generated idea.
-- Show confirmation and link to edit the draft.
-- Add a dashboard Drafts view.
-- Allow incomplete draft fields where appropriate.
-- Add a clear `Publish` action with full validation.
+- [ ] Add `Save as draft` to each generated idea when the Ideas workspace returns.
+- [x] Add `Save as draft` to the manual New Project flow.
+- [x] Show success feedback and a link to edit drafts from the dashboard Drafts view.
+- [x] Allow optional category, technologies, links, and thumbnail fields to remain empty.
+- [x] Add a clear `Publish` action with full validation.
+
+Project title, slug, and description remain required because the current database columns are non-null and publishing requires those fields.
 
 ## Milestone 5: Search, Filter, Bookmark, and Share
 
@@ -215,36 +221,36 @@ Update `IdeasClient.tsx`, dashboard components, and edit-project surfaces.
 
 Update `src/lib/services/projectService.ts`, `src/app/api/projects/route.ts`, `src/lib/api/projectsApi.ts`, `src/store/redux/projectsSlice.ts`, and `src/app/projects/ProjectsClient.tsx`.
 
-- Move search, category, technology, and sorting to the server.
-- Send filters as URL query parameters.
-- Reset pagination when a filter changes.
-- Keep search and filters in the browser URL so filtered views can be shared.
-- Return pagination totals based on the filtered query.
-- Add author filtering if it is useful for the public catalog.
+- [x] Move search, category, technology, and sorting to the server.
+- [x] Send filters as URL query parameters.
+- [x] Reset pagination when a filter changes.
+- [x] Keep search and filters in the browser URL so filtered views can be shared.
+- [x] Return pagination totals based on the filtered query.
+- [x] Add author filtering for the public catalog.
 - Evaluate PostgreSQL indexes or full-text/trigram search as the catalog grows.
-- Remove local filtering that only searches the currently loaded page.
+- [x] Remove local filtering that only searches the currently loaded page.
 
 ### Bookmarks
 
 Update `src/lib/services/bookmarkService.ts`, bookmark routes, `BookmarksClient.tsx`, and `ProjectCard.tsx`.
 
-- Return full project data from the bookmark query instead of joining against the default 20-project list.
-- Add direct remove-bookmark behavior on the bookmarks page.
-- Add bookmark toggles to project cards and search results.
-- Add bookmark state to server responses or hydrate it consistently from the current user.
-- Keep draft projects out of public bookmarks.
+- [x] Return full project data from the bookmark query instead of joining against the default 20-project list.
+- [x] Add direct remove-bookmark behavior on the bookmarks page.
+- [x] Add bookmark toggles to project cards and search results.
+- [x] Add bookmark state to server responses or hydrate it consistently from the current user.
+- [x] Keep draft projects out of public bookmarks.
 - Consider folders, tags, and notes only after the basic projection is corrected.
 
 ### Sharing
 
 Update `ProjectCard.tsx` and `ProjectDetailClient.tsx`.
 
-- Add a share button using `navigator.share()` where supported.
-- Fall back to copying the public project URL to the clipboard.
-- Show a clear success or failure state.
-- Share only published, publicly visible projects.
-- Reuse existing Open Graph metadata.
-- Keep the current ID route initially; move to slug routes separately if canonical URLs are desired.
+- [x] Add a share button using `navigator.share()` where supported.
+- [x] Fall back to copying the public project URL to the clipboard.
+- [x] Show a clear success or failure state.
+- [x] Share only published, publicly visible projects.
+- [x] Reuse existing Open Graph metadata.
+- [x] Keep the current ID route initially; move to slug routes separately if canonical URLs are desired.
 
 ## Milestone 6: Ideas Workspace Documents — Paused (Coming Soon)
 
@@ -318,15 +324,15 @@ Update `README.md` and `src/app/privacy/page.tsx` to describe document generatio
 
 ## Testing and CI
 
-There are currently no test files or test script. Add a test runner and include it in `.github/workflows/ci.yml`.
+Vitest and the CI test script already exist. The current non-AI regression suite covers visibility, project filters, draft/publish routes, bookmark projection, utilities, and the paused AI behavior.
 
 - Unit-test Ideas schema and parser behavior.
 - Mock OpenAI SDK async iterators for normal stream, provider error, fallback, empty stream, malformed output, and abort.
 - Test request ID and log redaction behavior.
 - Test quota headers, SSE quota events, and Retry-After parsing.
-- Test draft ownership, publish transition, and public visibility exclusion.
-- Test server-side filters and correct pagination totals.
-- Test bookmark retrieval independently of project page size.
+- [x] Test draft route ownership input, publish transition routing, and public visibility exclusion.
+- [x] Test server-side filters and correct pagination totals.
+- [x] Test bookmark retrieval independently of project page size.
 - Test task-specific prompts and document result parsing for PRD, Design Spec, Style Guide, and README.
 - Test copy/download helpers and Ideas Workspace document state.
 - Test that ProjectForm exposes description generation but not README generation.

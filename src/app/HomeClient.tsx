@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useDeferredValue } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/redux/likesSlice'
+import { addBookmark, fetchBookmarks, removeBookmark } from '@/store/redux/bookmarksSlice'
+import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Hero from '@/components/home/Hero'
@@ -26,9 +29,12 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
     items: projects,
     loading,
     error,
+    pagination,
   } = useAppSelector((state) => state.projects)
   const { currentUser } = useAppSelector((state) => state.auth)
   const likedProjectIds = useAppSelector(selectLikedProjectIds)
+  const bookmarks = useAppSelector((state) => state.bookmarks.items)
+  const router = useRouter()
 
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -44,19 +50,18 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
         technology: selectedTech || undefined,
       }),
     )
-    if (currentUser?.id) dispatch(fetchLikedProjects())
-  }, [
-    deferredSearch,
-    dispatch,
-    currentUser?.id,
-    selectedCategory,
-    selectedTech,
-  ])
+  }, [deferredSearch, dispatch, selectedCategory, selectedTech])
 
-  const filtered = projects
+  useEffect(() => {
+    if (!currentUser?.id) return
+    dispatch(fetchLikedProjects(String(currentUser.id)))
+    dispatch(fetchBookmarks(String(currentUser.id)))
+  }, [currentUser?.id, dispatch])
 
-  const sortedByLikes = [...filtered].sort((a, b) => b.likes - a.likes)
-  const featuredProjects = [...filtered]
+  const visibleProjects = projects
+
+  const sortedByLikes = [...visibleProjects].sort((a, b) => b.likes - a.likes)
+  const featuredProjects = [...visibleProjects]
     .sort((a, b) => {
       if (a.featuredAt && b.featuredAt) {
         return Date.parse(b.featuredAt) - Date.parse(a.featuredAt)
@@ -83,14 +88,40 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   })
 
   const handleLike = async (id: string) => {
-    if (!currentUser) {
+    const userId = currentUser?.id
+    if (!userId) {
       window.location.href = '/login'
       return
     }
-    const result = await dispatch(likeProject(id))
+    const result = await dispatch(likeProject({ id, userId: String(userId) }))
     const likedProject = projects.find((p) => p.id === id)
     if (likeProject.fulfilled.match(result) && likedProject) {
-      dispatch(syncLike({ project: likedProject, liked: result.payload.liked }))
+      dispatch(syncLike({ project: likedProject, liked: result.payload.liked, likes: result.payload.likes, userId: String(userId) }))
+    }
+  }
+
+  const handleBookmark = async (id: string) => {
+    if (!currentUser) {
+      router.push('/login')
+      return
+    }
+
+    const existing = bookmarks.find((bookmark) => String(bookmark.project_id) === id)
+    if (existing) {
+      const result = await dispatch(
+        removeBookmark({ bookmarkId: existing.id, userId: String(currentUser.id) }),
+      )
+      if (removeBookmark.fulfilled.match(result)) {
+        dispatch(showToast({ message: 'Bookmark removed.', type: 'info' }))
+      }
+      return
+    }
+
+    const result = await dispatch(
+      addBookmark({ project_id: id, userId: String(currentUser.id) }),
+    )
+    if (addBookmark.fulfilled.match(result)) {
+      dispatch(showToast({ message: 'Project bookmarked!', type: 'success' }))
     }
   }
 
@@ -162,10 +193,10 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
               </button>
             )}
           </div>
-           {(search || selectedCategory || selectedTech) && (
+          {(search || selectedCategory || selectedTech) && (
             <div className='max-w-6xl mx-auto px-4 mt-3'>
               <p className='text-xs font-bold text-gray-600'>
-                {filtered.length} project{filtered.length !== 1 ? 's' : ''} shown
+                {pagination?.total ?? visibleProjects.length} project{(pagination?.total ?? visibleProjects.length) !== 1 ? 's' : ''} found
               </p>
             </div>
           )}
@@ -195,6 +226,8 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                       key={project.id}
                       project={project}
                       onLike={handleLike}
+                      onBookmark={currentUser ? handleBookmark : undefined}
+                      isBookmarked={bookmarks.some((bookmark) => String(bookmark.project_id) === String(project.id))}
                       isLiked={likedProjectIds.includes(String(project.id))}
                     />
                   ))}
@@ -273,6 +306,8 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                       key={project.id}
                       project={project}
                       onLike={handleLike}
+                      onBookmark={currentUser ? handleBookmark : undefined}
+                      isBookmarked={bookmarks.some((bookmark) => String(bookmark.project_id) === String(project.id))}
                       isLiked={likedProjectIds.includes(String(project.id))}
                     />
                   ))}

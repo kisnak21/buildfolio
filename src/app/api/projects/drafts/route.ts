@@ -7,12 +7,30 @@ import {
 } from '@/lib/middleware/authMiddleware'
 import { createDraftProject } from '@/lib/services/projectService'
 import { dbErrorMessage, errorStatus } from '@/lib/apiErrors'
+import { rateLimit } from '@/lib/rateLimit'
 
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
   if (csrfError) return csrfError
   const { user, error } = await requireActiveUser(req)
   if (error || !user) return error
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  const { success, resetInMs } = await rateLimit(`create-draft:${user.id}:${ip}`, {
+    max: 20,
+    windowMs: 60 * 60 * 1000,
+  })
+  if (!success) {
+    return NextResponse.json(
+      { success: false, message: 'Too many draft creations. Try again later.' },
+      {
+        status: 429,
+        headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) },
+      },
+    )
+  }
 
   try {
     const body = await req.json()

@@ -58,6 +58,7 @@ export const getProjects = async (
     search?: string
     category?: string
     technology?: string
+    author?: string
     sort?: string
   } = {},
 ): Promise<{ items: NormalizedProject[]; pagination: Pagination }> => {
@@ -67,6 +68,7 @@ export const getProjects = async (
   if (params.search) queryParams.set('search', params.search)
   if (params.category) queryParams.set('category', params.category)
   if (params.technology) queryParams.set('technology', params.technology)
+  if (params.author) queryParams.set('author', params.author)
   if (params.sort) queryParams.set('sort', params.sort)
 
   const response = await realApiClient.get(`/projects?${queryParams.toString()}`)
@@ -111,7 +113,6 @@ export const createProject = async (project: CreateProjectInput): Promise<Normal
     thumbnail: project.thumbnail || null,
     github_url: project.github || project.github_url || null,
     live_url: project.live || project.live_url || null,
-    user_id: project.user_id,
     category_id: project.category_id || null,
     category: project.category,
     technologies: project.technologies || [],
@@ -125,8 +126,8 @@ export const updateProject = async (id: string | number, updatedFields: UpdatePr
     slug: updatedFields.slug,
     description: updatedFields.description,
     thumbnail: updatedFields.thumbnail,
-    github_url: updatedFields.github || updatedFields.github_url,
-    live_url: updatedFields.live || updatedFields.live_url,
+    github_url: updatedFields.github ?? updatedFields.github_url,
+    live_url: updatedFields.live ?? updatedFields.live_url,
     category_id: updatedFields.category_id,
     category: updatedFields.category,
     technologies: updatedFields.technologies,

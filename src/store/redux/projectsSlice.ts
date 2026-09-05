@@ -4,14 +4,16 @@ import {
   getMyProjects,
   createProject,
   createDraftProject,
-  publishProject,
+  publishProject as publishProjectApi,
   updateProject as updateProjectApi,
   deleteProject as deleteProjectApi,
   likeProject as likeProjectApi,
   type LikeResult,
 } from '../../lib/api/projectsApi'
+import type { ProjectStatus } from '@/lib/shapes'
+import { loginUser, logoutUser } from './authSlice'
 
-interface Project {
+export interface Project {
   id: string | number
   title: string
   slug: string
@@ -22,13 +24,14 @@ interface Project {
   category: string
   technologies: string[]
   author: string
+  authorUsername?: string
   likes: number
-  status: 'DRAFT' | 'PUBLISHED'
   user_id: string | number | null
   category_id: string | number | null
   featuredAt: string | null
   hiddenAt: string | null
   hiddenReason: string | null
+  status: ProjectStatus
   createdAt: string | null
 }
 
@@ -44,10 +47,16 @@ interface NewProjectInput {
   technologies?: string[]
 }
 
-interface ProjectsState {
+export interface ProjectsState {
   items: Project[]
+  ownedItems: Project[]
   loading: boolean
   error: string | null
+  catalogRequestId: string | null
+  ownedLoading: boolean
+  ownedError: string | null
+  ownedRequestId: string | null
+  ownedUserId: string | null
   pagination: {
     page: number
     limit: number
@@ -77,11 +86,9 @@ export const fetchProjects = createAsyncThunk<
   }
 })
 
-export const fetchMyProjects = createAsyncThunk<
-  Project[],
-  void,
-  { rejectValue: string }
->('projects/fetchMine', async (_, { rejectWithValue }) => {
+export const fetchMyProjects = createAsyncThunk<Project[], string, { rejectValue: string }>(
+  'projects/fetchMine',
+  async (_userId, { rejectWithValue }) => {
   try {
     return await getMyProjects()
   } catch {
@@ -102,7 +109,7 @@ export const addProject = createAsyncThunk<Project, NewProjectInput, { rejectVal
 
 export const addDraftProject = createAsyncThunk<
   Project,
-  Omit<NewProjectInput, 'slug' | 'user_id'>,
+  Omit<NewProjectInput, 'slug' | 'user_id'> & { userId: string },
   { rejectValue: string }
 >('projects/addDraft', async (project, { rejectWithValue }) => {
   try {
@@ -114,17 +121,21 @@ export const addDraftProject = createAsyncThunk<
 
 export const publishDraft = createAsyncThunk<
   Project,
-  string | number,
+  { id: string | number; userId: string },
   { rejectValue: string }
->('projects/publishDraft', async (id, { rejectWithValue }) => {
+>('projects/publishDraft', async ({ id }, { rejectWithValue }) => {
   try {
-    return await publishProject(id)
+    return await publishProjectApi(id)
   } catch {
     return rejectWithValue('Failed to publish project. Please try again.')
   }
 })
 
-export const updateProject = createAsyncThunk<Project, { id: string | number; updatedFields: Partial<Project> }, { rejectValue: string }>(
+export const updateProject = createAsyncThunk<
+  Project,
+  { id: string | number; updatedFields: Partial<Project>; userId: string },
+  { rejectValue: string }
+>(
   'projects/update',
   async ({ id, updatedFields }, { rejectWithValue }) => {
     try {
@@ -135,9 +146,13 @@ export const updateProject = createAsyncThunk<Project, { id: string | number; up
   },
 )
 
-export const deleteProject = createAsyncThunk<string | number, string | number, { rejectValue: string }>(
+export const deleteProject = createAsyncThunk<
+  string | number,
+  { id: string | number; userId: string },
+  { rejectValue: string }
+>(
   'projects/delete',
-  async (id, { rejectWithValue }) => {
+  async ({ id }, { rejectWithValue }) => {
     try {
       await deleteProjectApi(id)
       return id
@@ -149,9 +164,9 @@ export const deleteProject = createAsyncThunk<string | number, string | number, 
 
 export const likeProject = createAsyncThunk<
   { id: string | number; liked: boolean; likes: number },
-  string | number,
+  { id: string | number; userId: string },
   { rejectValue: string }
->('projects/like', async (id, { rejectWithValue }) => {
+>('projects/like', async ({ id }, { rejectWithValue }) => {
   try {
     const result: LikeResult = await likeProjectApi(id)
     return { id, liked: result.liked, likes: result.likes }
@@ -162,8 +177,14 @@ export const likeProject = createAsyncThunk<
 
 const initialState: ProjectsState = {
   items: [],
+  ownedItems: [],
   loading: false,
   error: null,
+  catalogRequestId: null,
+  ownedLoading: false,
+  ownedError: null,
+  ownedRequestId: null,
+  ownedUserId: null,
   pagination: { page: 1, limit: 20, total: 0, totalPages: 0 },
 }
 
@@ -175,83 +196,154 @@ const projectsSlice = createSlice({
   extraReducers: (builder) => {
     // fetchProjects
     builder
-      .addCase(fetchProjects.pending, (state) => {
+      .addCase(loginUser, (state, action) => {
+        state.ownedItems = []
+        state.ownedError = null
+        state.ownedLoading = false
+        state.ownedRequestId = null
+        state.ownedUserId = String(action.payload.id)
+      })
+      .addCase(logoutUser, (state) => {
+        state.ownedItems = []
+        state.ownedError = null
+        state.ownedLoading = false
+        state.ownedRequestId = null
+        state.ownedUserId = null
+      })
+      .addCase(fetchProjects.pending, (state, action) => {
         state.loading = true
         state.error = null
+        state.catalogRequestId = action.meta.requestId
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
+        if (state.catalogRequestId !== action.meta.requestId) return
         state.loading = false
         state.items = action.payload.items
         state.pagination = action.payload.pagination
+        state.catalogRequestId = null
       })
       .addCase(fetchProjects.rejected, (state, action) => {
+        if (state.catalogRequestId !== action.meta.requestId) return
         state.loading = false
         state.error = action.payload ?? null
+        state.catalogRequestId = null
       })
 
     builder
-      .addCase(fetchMyProjects.pending, (state) => {
-        state.loading = true
-        state.error = null
+      .addCase(fetchMyProjects.pending, (state, action) => {
+        const userId = action.meta.arg
+        if (state.ownedUserId && state.ownedUserId !== userId) return
+        state.ownedUserId = userId
+        state.ownedLoading = true
+        state.ownedError = null
+        state.ownedRequestId = action.meta.requestId
       })
       .addCase(fetchMyProjects.fulfilled, (state, action) => {
-        state.loading = false
-        state.items = action.payload
+        if (
+          state.ownedUserId !== action.meta.arg ||
+          state.ownedRequestId !== action.meta.requestId
+        ) return
+        state.ownedLoading = false
+        state.ownedItems = action.payload
+        state.ownedRequestId = null
       })
       .addCase(fetchMyProjects.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.payload ?? null
+        if (
+          state.ownedUserId !== action.meta.arg ||
+          state.ownedRequestId !== action.meta.requestId
+        ) return
+        state.ownedLoading = false
+        state.ownedError = action.payload ?? null
+        state.ownedRequestId = null
       })
 
     // addProject
     builder
+      .addCase(addProject.pending, (state, action) => {
+        const userId = String(action.meta.arg.user_id)
+        if (!state.ownedUserId) state.ownedUserId = userId
+      })
       .addCase(addProject.fulfilled, (state, action) => {
-        state.items.push(action.payload)
+        if (state.ownedUserId !== String(action.meta.arg.user_id)) return
+        state.ownedItems.push(action.payload)
       })
       .addCase(addProject.rejected, (state, action) => {
-        state.error = action.payload ?? null
+        if (state.ownedUserId !== String(action.meta.arg.user_id)) return
+        state.ownedError = action.payload ?? null
       })
 
     builder
+      .addCase(addDraftProject.pending, (state, action) => {
+        const userId = action.meta.arg.userId
+        if (!state.ownedUserId) state.ownedUserId = userId
+      })
       .addCase(addDraftProject.fulfilled, (state, action) => {
-        state.items.unshift(action.payload)
+        if (state.ownedUserId !== action.meta.arg.userId) return
+        state.ownedItems.push(action.payload)
       })
       .addCase(addDraftProject.rejected, (state, action) => {
-        state.error = action.payload ?? null
+        if (state.ownedUserId !== action.meta.arg.userId) return
+        state.ownedError = action.payload ?? null
       })
+
+    builder
       .addCase(publishDraft.fulfilled, (state, action) => {
-        const index = state.items.findIndex((project) =>
+        if (state.ownedUserId === action.meta.arg.userId) {
+          const ownedIndex = state.ownedItems.findIndex((project) =>
+            String(project.id) === String(action.payload.id),
+          )
+          if (ownedIndex !== -1) state.ownedItems[ownedIndex] = action.payload
+        }
+        const catalogIndex = state.items.findIndex((project) =>
           String(project.id) === String(action.payload.id),
         )
-        if (index !== -1) state.items[index] = action.payload
+        if (catalogIndex !== -1) state.items[catalogIndex] = action.payload
       })
       .addCase(publishDraft.rejected, (state, action) => {
-        state.error = action.payload ?? null
+        if (state.ownedUserId === action.meta.arg.userId) {
+          state.ownedError = action.payload ?? null
+        }
       })
 
     builder
       .addCase(updateProject.fulfilled, (state, action) => {
-        const index = state.items.findIndex((p) => p.id === action.payload.id)
-        if (index !== -1) state.items[index] = action.payload
+        if (state.ownedUserId === action.meta.arg.userId) {
+          const ownedIndex = state.ownedItems.findIndex((p) => p.id === action.payload.id)
+          if (ownedIndex !== -1) state.ownedItems[ownedIndex] = action.payload
+        }
+        const catalogIndex = state.items.findIndex((p) => p.id === action.payload.id)
+        if (catalogIndex !== -1) state.items[catalogIndex] = action.payload
       })
       .addCase(updateProject.rejected, (state, action) => {
-        state.error = action.payload ?? null
+        if (state.ownedUserId === action.meta.arg.userId) {
+          state.ownedError = action.payload ?? null
+        }
       })
 
     // deleteProject
     builder
       .addCase(deleteProject.fulfilled, (state, action) => {
         state.items = state.items.filter((p) => p.id !== action.payload)
+        if (state.ownedUserId === action.meta.arg.userId) {
+          state.ownedItems = state.ownedItems.filter((p) => p.id !== action.payload)
+        }
       })
       .addCase(deleteProject.rejected, (state, action) => {
-        state.error = action.payload ?? null
+        if (state.ownedUserId === action.meta.arg.userId) {
+          state.ownedError = action.payload ?? null
+        }
       })
 
     // likeProject
     builder.addCase(likeProject.fulfilled, (state, action) => {
       const index = state.items.findIndex((p) => p.id === action.payload.id)
       if (index !== -1) state.items[index].likes = action.payload.likes
+      if (state.ownedUserId === action.meta.arg.userId) {
+        const ownedIndex = state.ownedItems.findIndex((p) => p.id === action.payload.id)
+        if (ownedIndex !== -1) state.ownedItems[ownedIndex].likes = action.payload.likes
+      }
     })
+
   },
 })
 

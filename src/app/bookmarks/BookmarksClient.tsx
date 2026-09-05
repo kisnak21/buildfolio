@@ -31,30 +31,43 @@ const BookmarksClient = () => {
 
   useEffect(() => {
     if (!currentUser?.id) return
-    dispatch(fetchBookmarks())
-    dispatch(fetchLikedProjects())
+    dispatch(fetchBookmarks(String(currentUser.id)))
+    dispatch(fetchLikedProjects(String(currentUser.id)))
   }, [dispatch, currentUser?.id])
 
   const handleLike = async (id: string) => {
+    if (!currentUser?.id) return router.push('/login')
+    const userId = String(currentUser.id)
     const bookmark = bookmarks.find(
       (entry) => entry.project_id === String(id),
     )
     if (!bookmark) return
-    const result = await dispatch(likeProject(id))
+    const result = await dispatch(likeProject({ id, userId }))
     if (likeProject.fulfilled.match(result)) {
       dispatch(
-        syncLike({ project: bookmark.project, liked: result.payload.liked }),
+        syncLike({
+          project: bookmark.project,
+          liked: result.payload.liked,
+          likes: result.payload.likes,
+          userId,
+        }),
       )
     }
   }
 
   const handleRemove = async (projectId: string) => {
+    if (!currentUser?.id) return router.push('/login')
     const bookmark = bookmarks.find(
       (entry) => entry.project_id === projectId,
     )
     if (!bookmark) return
     setRemovingId(bookmark.id)
-    await dispatch(removeBookmark({ bookmarkId: bookmark.id }))
+    await dispatch(
+      removeBookmark({
+        bookmarkId: bookmark.id,
+        userId: String(currentUser.id),
+      }),
+    )
     setRemovingId(null)
   }
 
@@ -80,7 +93,10 @@ const BookmarksClient = () => {
             <p className='font-bold text-red-700'>{error}</p>
             <button
               type='button'
-              onClick={() => dispatch(fetchBookmarks())}
+              onClick={() =>
+                currentUser?.id &&
+                dispatch(fetchBookmarks(String(currentUser.id)))
+              }
               className={buttonClass('secondary', 'md', 'mt-4')}
             >
               Retry bookmarks

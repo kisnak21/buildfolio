@@ -248,6 +248,7 @@ const ProjectsClient = () => {
             <option value='visible'>Visible</option>
             <option value='featured'>Featured</option>
             <option value='hidden'>Hidden</option>
+            <option value='draft'>Drafts</option>
           </select>
         </div>
       </div>
@@ -303,12 +304,16 @@ const ProjectsClient = () => {
                     </td>
                     <td className='p-4'>
                       <div className='flex flex-wrap gap-2'>
-                        <span
-                          className={`border-2 border-dark px-2 py-0.5 rounded-md text-xs font-black ${
-                            project.hiddenAt ? 'bg-dangerSoft' : 'bg-successSoft'
-                          }`}
-                        >
-                          {project.hiddenAt ? 'hidden' : 'visible'}
+                         <span
+                           className={`border-2 border-dark px-2 py-0.5 rounded-md text-xs font-black ${
+                             project.status === 'DRAFT'
+                               ? 'bg-secondary'
+                               : project.hiddenAt
+                                 ? 'bg-dangerSoft'
+                                 : 'bg-successSoft'
+                           }`}
+                         >
+                           {project.status === 'DRAFT' ? 'draft' : project.hiddenAt ? 'hidden' : 'visible'}
                         </span>
                         {project.featuredAt && (
                           <span className='border-2 border-dark px-2 py-0.5 rounded-md text-xs font-black bg-primary'>
@@ -318,24 +323,28 @@ const ProjectsClient = () => {
                       </div>
                     </td>
                     <td className='p-4 font-bold text-center'>{project.likes}</td>
-                    <td className='p-4'>
-                      <div className='flex flex-wrap justify-end gap-2'>
-                        <button
-                          disabled={busyId === project.id}
-                          onClick={() => toggleVisibility(project)}
-                          className={actionBtn(project.hiddenAt ? 'primary' : 'warning')}
-                        >
-                          {project.hiddenAt ? 'Unhide' : 'Hide'}
-                        </button>
-                        {!project.hiddenAt && (
-                          <button
-                            disabled={busyId === project.id}
-                            onClick={() => toggleFeatured(project)}
-                            className={actionBtn(project.featuredAt ? 'white' : 'primary')}
-                          >
-                            {project.featuredAt ? 'Unfeature' : 'Feature'}
-                          </button>
-                        )}
+                      <td className='p-4'>
+                        <div className='flex flex-wrap justify-end gap-2'>
+                          {project.status === 'PUBLISHED' && (
+                            <>
+                              <button
+                                disabled={busyId === project.id}
+                                onClick={() => toggleVisibility(project)}
+                                className={actionBtn(project.hiddenAt ? 'primary' : 'warning')}
+                              >
+                                {project.hiddenAt ? 'Unhide' : 'Hide'}
+                              </button>
+                              {!project.hiddenAt && (
+                                <button
+                                  disabled={busyId === project.id}
+                                  onClick={() => toggleFeatured(project)}
+                                  className={actionBtn(project.featuredAt ? 'white' : 'primary')}
+                                >
+                                  {project.featuredAt ? 'Unfeature' : 'Feature'}
+                                </button>
+                              )}
+                            </>
+                          )}
                         <button
                           disabled={busyId === project.id}
                           onClick={() => setConfirmProject(project)}

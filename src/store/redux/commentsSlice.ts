@@ -27,9 +27,12 @@ export const addComment = createAsyncThunk<
   }
 })
 
-export const deleteComment = createAsyncThunk<string, string>(
+export const deleteComment = createAsyncThunk<
+  string,
+  { id: string; projectId: string }
+>(
   'comments/delete',
-  async (id: string, { rejectWithValue }) => {
+  async ({ id }, { rejectWithValue }) => {
     try {
       await deleteCommentApi(id.toString())
       return id
@@ -52,6 +55,8 @@ interface CommentsState {
   items: Comment[]
   loading: boolean
   error: string | null
+  activeProjectId: string | null
+  requestId: string | null
 }
 
 const commentsSlice = createSlice({
@@ -60,31 +65,53 @@ const commentsSlice = createSlice({
     items: [],
     loading: false,
     error: null,
+    activeProjectId: null,
+    requestId: null,
   } as CommentsState,
   reducers: {
     clearComments: (state) => {
       state.items = []
+      state.loading = false
+      state.error = null
+      state.activeProjectId = null
+      state.requestId = null
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchComments.pending, (state) => {
+      .addCase(fetchComments.pending, (state, action) => {
+        state.activeProjectId = action.meta.arg
+        state.requestId = action.meta.requestId
         state.loading = true
         state.error = null
       })
       .addCase(fetchComments.fulfilled, (state, action) => {
+        if (
+          state.activeProjectId !== action.meta.arg ||
+          state.requestId !== action.meta.requestId
+        ) return
         state.loading = false
         state.items = action.payload
+        state.requestId = null
       })
       .addCase(fetchComments.rejected, (state, action) => {
+        if (
+          state.activeProjectId !== action.meta.arg ||
+          state.requestId !== action.meta.requestId
+        ) return
         state.loading = false
         state.error = action.payload ?? null
+        state.requestId = null
       })
       .addCase(addComment.fulfilled, (state, action) => {
-        state.items.unshift(action.payload)
+        if (state.activeProjectId === action.meta.arg.project_id) {
+          state.items.unshift(action.payload)
+        }
       })
       .addCase(deleteComment.fulfilled, (state, action) => {
-        state.items = state.items.filter((c) => String(c.id) !== action.payload)
+        if (state.activeProjectId === action.meta.arg.projectId) {
+          state.items = state.items.filter((c) => String(c.id) !== action.payload)
+        }
       })
   },
 })
