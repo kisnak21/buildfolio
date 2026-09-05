@@ -1,12 +1,17 @@
 import type { Metadata } from 'next'
 import { cache } from 'react'
+import { notFound } from 'next/navigation'
 import { getProjectsByAuthor } from '@/lib/services/projectService'
+import { getUserByUsername } from '@/lib/services/userService'
 import { toClientProject } from '@/lib/shapes'
 import UserProfileClient from './UserProfileClient'
 
-const getProfileData = cache(async (author: string) => {
-  const projects = await getProjectsByAuthor(author)
-  return projects.map(toClientProject)
+const getProfileData = cache(async (username: string) => {
+  const [profile, projects] = await Promise.all([
+    getUserByUsername(username),
+    getProjectsByAuthor(username),
+  ])
+  return { profile, projects: projects.map(toClientProject) }
 })
 
 export async function generateMetadata({
@@ -15,16 +20,16 @@ export async function generateMetadata({
   params: Promise<{ author: string }>
 }): Promise<Metadata> {
   const { author } = await params
-  const decoded = decodeURIComponent(author)
-  const projects = await getProfileData(decoded)
+  const username = decodeURIComponent(author)
+  const { profile, projects } = await getProfileData(username)
 
-  if (projects.length === 0) {
-    return { title: `Projects by ${decoded}` }
+  if (!profile) {
+    return { title: `Profile @${username}` }
   }
 
   return {
-    title: `${decoded}'s projects — Buildfolio`,
-    description: `Browse ${projects.length} projects by ${decoded} on Buildfolio.`,
+    title: `${profile.name}'s projects — Buildfolio`,
+    description: `Browse ${projects.length} projects by ${profile.name} on Buildfolio.`,
   }
 }
 
@@ -34,8 +39,21 @@ export default async function UserProfilePage({
   params: Promise<{ author: string }>
 }) {
   const { author } = await params
-  const decoded = decodeURIComponent(author)
-  const projects = await getProfileData(decoded)
+  const username = decodeURIComponent(author)
+  const { profile, projects } = await getProfileData(username)
 
-  return <UserProfileClient author={decoded} initialProjects={projects} />
+  if (!profile) {
+    notFound()
+  }
+
+  return (
+    <UserProfileClient
+      author={profile.name}
+      username={profile.username}
+      profileId={profile.id}
+      profileImage={profile.image}
+      profileBio={profile.bio}
+      initialProjects={projects}
+    />
+  )
 }

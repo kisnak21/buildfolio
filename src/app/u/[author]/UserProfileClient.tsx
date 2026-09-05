@@ -15,17 +15,26 @@ import type { ClientProject } from '@/lib/shapes'
 
 interface UserProfileClientProps {
   author: string
+  username: string
+  profileId: string
+  profileImage: string | null
+  profileBio: string | null
   initialProjects: ClientProject[]
 }
 
-const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) => {
+const UserProfileClient = ({
+  author,
+  username,
+  profileId,
+  profileImage,
+  profileBio,
+  initialProjects,
+}: UserProfileClientProps) => {
   const dispatch = useAppDispatch()
   const [userProjects, setUserProjects] = useState<ClientProject[]>(initialProjects)
 
   const { currentUser } = useAppSelector((state) => state.auth)
   const likedProjectIds = useAppSelector(selectLikedProjectIds)
-
-  const decodedAuthor = decodeURIComponent(author)
 
   useEffect(() => {
     if (currentUser?.id) dispatch(fetchLikedProjects())
@@ -35,7 +44,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
     (sum, p) => sum + (p.likes || 0),
     0,
   )
-  const isOwnProfile = currentUser?.name === decodedAuthor
+  const isOwnProfile = currentUser?.id === profileId
 
   const handleLike = async (id: string, currentLikes: number) => {
     const result = await dispatch(likeProject(id))
@@ -58,8 +67,11 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
         <div className='bg-white border-4 border-dark rounded-2xl p-8 mb-12 shadow-brutal'>
           <div className='flex items-start gap-6 flex-col md:flex-row'>
             <Image
-              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${decodedAuthor}`}
-              alt={decodedAuthor}
+              src={
+                profileImage ||
+                `https://api.dicebear.com/9.x/pixel-art/svg?seed=${username}`
+              }
+              alt={author}
               width={96}
               height={96}
               unoptimized
@@ -68,7 +80,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
             <div className='flex-1'>
               <div className='flex items-center gap-3 mb-2'>
                 <h1 className='text-3xl font-black text-dark'>
-                  {decodedAuthor}
+                  {author}
                 </h1>
                 {isOwnProfile && (
                   <span className='text-sm bg-primary border-2 border-dark px-3 py-1 rounded-md font-bold shadow-brutal-sm text-dark'>
@@ -77,9 +89,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
                 )}
               </div>
               <p className='text-lg font-medium text-gray-700 mb-6'>
-                {isOwnProfile && currentUser?.bio
-                  ? currentUser.bio
-                  : 'Developer on Buildfolio'}
+                {profileBio || 'Developer on Buildfolio'}
               </p>
               <div className='flex items-center gap-8'>
                 <div className='text-center bg-gray-50 border-2 border-dark px-6 py-3 rounded-xl shadow-brutal-sm'>
@@ -101,7 +111,7 @@ const UserProfileClient = ({ author, initialProjects }: UserProfileClientProps) 
 
         <div className='mb-6 flex items-center justify-between border-b-4 border-dark pb-4'>
           <h2 className='text-2xl font-black text-dark'>
-            Projects by {decodedAuthor}
+            Projects by {author}
           </h2>
           <span className='font-bold text-gray-600 text-lg'>
             {userProjects.length} total

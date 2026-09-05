@@ -20,7 +20,7 @@ export const projectSelect = {
   hiddenAt: true,
   hiddenReason: true,
   createdAt: true,
-  user: { select: { name: true } },
+  user: { select: { name: true, username: true } },
   category: { select: { name: true } },
   technologies: {
     select: { technology: { select: { name: true } } },
@@ -41,6 +41,7 @@ export const normalizeProject = (p: ProjectRow): RawProject => ({
   category: p.category?.name ?? undefined,
   technologies: p.technologies?.map((pt) => pt.technology.name) ?? [],
   author_name: p.user?.name ?? undefined,
+  author_username: p.user?.username ?? undefined,
   likes: p.likes,
   status: p.status,
   user_id: p.userId,
@@ -72,6 +73,30 @@ export const getTechnologyStats = async (): Promise<{ name: string; count: numbe
     }))
     .filter((technology) => technology.count > 0)
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+}
+
+export const getCategoryStats = async (): Promise<
+  { id: string; name: string; icon: string | null; count: number }[]
+> => {
+  const visible = publicProjectWhere()
+  const categories = await prisma.category.findMany({
+    select: {
+      id: true,
+      name: true,
+      icon: true,
+      _count: {
+        select: { projects: { where: visible } },
+      },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  return categories.map((category) => ({
+    id: category.id,
+    name: category.name,
+    icon: category.icon,
+    count: category._count.projects,
+  }))
 }
 
 export const getAllProjects = async ({
@@ -199,14 +224,14 @@ export const getProjectsByOwner = async (userId: string) => {
   return rows.map(normalizeProject)
 }
 
-export const getProjectsByAuthor = async (author: string) => {
+export const getProjectsByAuthor = async (username: string) => {
   const rows = await prisma.project.findMany({
     where: {
       ...publicProjectWhere(),
       user: {
         is: {
           ...activeUserWhere(),
-          name: { equals: author, mode: 'insensitive' },
+          username: { equals: username, mode: 'insensitive' },
         },
       },
     },
@@ -487,6 +512,10 @@ export const toggleLikeProject = async (projectId: string, userId: string) => {
     throw Object.assign(new Error('Project not found'), { statusCode: 404 })
   }
   return prisma.$transaction(async (tx) => {
+    // Serialize toggles for this project before reading the relation. This
+    // keeps the denormalized counter in sync when two requests arrive together.
+    await tx.$queryRaw`SELECT "id" FROM "projects" WHERE "id" = CAST(${projectId} AS uuid) FOR UPDATE`
+
     const existing = await tx.projectLike.findUnique({
       where: { userId_projectId: { userId, projectId } },
     })
@@ -501,11 +530,7 @@ export const toggleLikeProject = async (projectId: string, userId: string) => {
       return { liked: false, likes: project.likes }
     }
 
-    try {
-      await tx.projectLike.create({ data: { userId, projectId } })
-    } catch (err) {
-      if ((err as { code?: string }).code !== 'P2002') throw err
-    }
+    await tx.projectLike.create({ data: { userId, projectId } })
     const project = await tx.project.update({
       where: { id: projectId },
       data: { likes: { increment: 1 } },

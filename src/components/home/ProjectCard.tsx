@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import { getCategoryColor, isCategoryLightText } from '@/lib/categoryColors'
 import { shareProject } from '@/lib/shareProject'
 import {
@@ -30,6 +29,7 @@ interface Project {
   category: string
   technologies: string[]
   author: string
+  authorUsername?: string
   likes: number
   github: string
   live: string
@@ -74,13 +74,14 @@ const ProjectCard = ({
     category,
     technologies,
     author,
+    authorUsername,
     likes,
     thumbnail,
   } = project
 
-  const router = useRouter()
   const [shareStatus, setShareStatus] = useState('')
   const catColor = getCategoryColor(category)
+  const projectHref = `/projects/${id}`
   const handleShare = async () => {
     try {
       const result = await shareProject({
@@ -98,10 +99,7 @@ const ProjectCard = ({
   const isLightText = isCategoryLightText(category) ? 'text-white' : 'text-dark'
 
   return (
-    <article
-      onClick={() => router.push(`/projects/${id}`)}
-      className='card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal cursor-pointer'
-    >
+    <article className='card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal'>
       <div className='aspect-video bg-gray-100 border-b-4 border-dark relative overflow-hidden group flex items-center justify-center'>
         {/* Thumbnail fallback to icon */}
         {thumbnail ? (
@@ -117,9 +115,15 @@ const ProjectCard = ({
             <span className='text-dark w-16 h-16'>{getCategoryIcon(category)}</span>
           </div>
         )}
+
+        <Link
+          href={projectHref}
+          aria-label={`View project ${title}`}
+          className='absolute inset-0 z-0'
+        />
         
         {/* Category Tag */}
-        <div className={`absolute top-3 left-3 border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm ${catColor} ${isLightText}`}>
+        <div className={`absolute top-3 left-3 z-10 border-2 border-dark px-2 py-1 rounded-md text-xs font-bold shadow-brutal-sm ${catColor} ${isLightText}`}>
           {category || 'Uncategorized'}
         </div>
         
@@ -135,7 +139,7 @@ const ProjectCard = ({
               isBookmarked ? `Remove ${title} from bookmarks` : `Bookmark ${title}`
             }
             aria-pressed={isBookmarked}
-            className='absolute right-14 top-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-yellow-100 disabled:cursor-wait disabled:opacity-60'
+            className='absolute right-14 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 border-dark bg-white shadow-brutal-sm transition-colors hover:bg-yellow-100 disabled:cursor-wait disabled:opacity-60'
           >
             {isBookmarked ? (
               <BookmarkSolid className='h-5 w-5 text-dark' />
@@ -152,7 +156,7 @@ const ProjectCard = ({
           }}
           aria-label={isLiked ? `Unlike ${title}` : `Like ${title}`}
           aria-pressed={isLiked}
-          className='absolute top-3 right-3 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
+          className='absolute top-3 right-3 z-10 w-10 h-10 bg-white border-2 border-dark rounded-full flex items-center justify-center shadow-brutal-sm hover:bg-pink-100 transition-colors'
         >
           {isLiked ? (
             <HeartSolid className='w-5 h-5 text-primary' />
@@ -163,7 +167,11 @@ const ProjectCard = ({
       </div>
 
       <div className='p-5 flex flex-col flex-1'>
-        <h3 className='text-xl font-black mb-2 line-clamp-1'>{title}</h3>
+        <h3 className='text-xl font-black mb-2 line-clamp-1'>
+          <Link href={projectHref} className='hover:underline'>
+            {title}
+          </Link>
+        </h3>
         <p className='text-sm font-medium mb-4 line-clamp-2 text-gray-700'>
           {description}
         </p>
@@ -188,12 +196,12 @@ const ProjectCard = ({
         {/* Footer Card */}
         <div className='mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed'>
           <Link
-            href={`/u/${author}`}
+            href={`/u/${encodeURIComponent(authorUsername || author)}`}
             onClick={(e) => e.stopPropagation()}
             className='flex items-center gap-2 hover:opacity-80 transition-opacity'
           >
             <Image
-              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${author}`}
+              src={`https://api.dicebear.com/9.x/pixel-art/svg?seed=${encodeURIComponent(authorUsername || author)}`}
               className='w-8 h-8 rounded-full border-2 border-dark bg-yellow-100'
               alt={author}
               width={32}

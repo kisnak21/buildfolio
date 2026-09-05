@@ -40,7 +40,10 @@ export const getPublicUserById = async (id: string) => {
 
 export const getUserByUsername = async (username: string) => {
   return prisma.user.findFirst({
-    where: { username, ...activeUserWhere() },
+    where: {
+      username: { equals: username, mode: 'insensitive' },
+      ...activeUserWhere(),
+    },
     select: {
       id: true,
       name: true,

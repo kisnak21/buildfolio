@@ -17,7 +17,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons'
 
 interface HomeClientProps {
   techCounts: { name: string; count: number }[]
-  categories: { id: string; name: string; icon: string | null }[]
+  categories: { id: string; name: string; icon: string | null; count: number }[]
 }
 
 const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
@@ -33,28 +33,27 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedTech, setSelectedTech] = useState('')
-  const deferredSearch = useDeferredValue(search)
+  const deferredSearch = useDeferredValue(search.trim())
 
   useEffect(() => {
-    dispatch(fetchProjects({ sort: 'home' }))
+    dispatch(
+      fetchProjects({
+        sort: 'home',
+        search: deferredSearch || undefined,
+        category: selectedCategory || undefined,
+        technology: selectedTech || undefined,
+      }),
+    )
     if (currentUser?.id) dispatch(fetchLikedProjects())
-  }, [dispatch, currentUser?.id])
+  }, [
+    deferredSearch,
+    dispatch,
+    currentUser?.id,
+    selectedCategory,
+    selectedTech,
+  ])
 
-  const filtered = projects.filter((p) => {
-    const matchesSearch =
-      deferredSearch === '' ||
-      p.title.toLowerCase().includes(deferredSearch.toLowerCase()) ||
-      p.description.toLowerCase().includes(deferredSearch.toLowerCase())
-    const matchesCategory =
-      selectedCategory === '' || p.category === selectedCategory
-    const matchesTech =
-      selectedTech === '' ||
-      (Array.isArray(p.technologies) &&
-        p.technologies.some((t: string) =>
-          t.toLowerCase().includes(selectedTech.toLowerCase()),
-        ))
-    return matchesSearch && matchesCategory && matchesTech
-  })
+  const filtered = projects
 
   const sortedByLikes = [...filtered].sort((a, b) => b.likes - a.likes)
   const featuredProjects = [...filtered]
@@ -79,7 +78,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
     return {
       icon: <Icon />,
       name: cat.name,
-      count: projects.filter((p) => p.category === cat.name).length,
+      count: cat.count,
     }
   })
 
@@ -109,7 +108,11 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
               <div className='absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none'>
                 <MagnifyingGlassIcon className='w-6 h-6 text-dark' />
               </div>
+              <label htmlFor='home-project-search' className='sr-only'>
+                Search projects
+              </label>
               <input
+                id='home-project-search'
                 type='text'
                 placeholder='Search projects...'
                 value={search}
@@ -159,10 +162,10 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
               </button>
             )}
           </div>
-          {(search || selectedCategory || selectedTech) && (
+           {(search || selectedCategory || selectedTech) && (
             <div className='max-w-6xl mx-auto px-4 mt-3'>
               <p className='text-xs font-bold text-gray-600'>
-                {filtered.length} project{filtered.length !== 1 ? 's' : ''} found
+                {filtered.length} project{filtered.length !== 1 ? 's' : ''} shown
               </p>
             </div>
           )}
@@ -182,6 +185,11 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />
                   ))
+                : featuredProjects.length === 0 ? (
+                    <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
+                      No projects match these filters.
+                    </p>
+                  )
                 : featuredProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
@@ -246,7 +254,7 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
         <Section
           id='favorites'
           title='Community Favorites'
-          subtitle='Most liked projects this month'
+          subtitle='Projects the community has liked most'
         >
           {error && <p className='text-sm font-bold text-red-600'>{error}</p>}
           {!error && (
@@ -255,6 +263,11 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
                 ? Array.from({ length: 3 }).map((_, i) => (
                     <ProjectCardSkeleton key={i} />
                   ))
+                : favoriteProjects.length === 0 ? (
+                    <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
+                      No community favorites match these filters.
+                    </p>
+                  )
                 : favoriteProjects.map((project) => (
                     <ProjectCard
                       key={project.id}
