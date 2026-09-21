@@ -167,6 +167,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   }
 
   const totalPages = Math.max(pagination.totalPages, 1)
+  const activeSelection = selectedCategory || selectedTech
   const clearFilters = () => {
     setSearch('')
     updateQuery({
@@ -313,7 +314,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
           </div>
 
           <div className='flex flex-wrap gap-4'>
-            {browseMode !== 'categories' && (
+            {!browseMode && (
               <select
                 aria-label='Filter by category'
                 value={selectedCategory}
@@ -330,7 +331,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
                 ))}
               </select>
             )}
-            {browseMode !== 'technologies' && (
+            {!browseMode && (
               <select
                 aria-label='Filter by technology'
                 value={selectedTech}
@@ -410,8 +411,11 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
               {projects.length === 0 ? (
                 <div className='col-span-1 rounded-2xl border-4 border-dark bg-white p-12 text-center shadow-brutal md:col-span-2 lg:col-span-3'>
                   <p className='text-lg font-bold text-gray-600'>
-                    No projects match these filters. Clear a filter to broaden the
-                    results.
+                    {activeSelection
+                      ? `No projects match ${activeSelection}. Try another selection or clear filters.`
+                      : search
+                        ? 'No projects match your search. Try a different term.'
+                        : 'No published projects are available yet.'}
                   </p>
                 </div>
               ) : (
