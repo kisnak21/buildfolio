@@ -8,12 +8,18 @@ import { buttonClass } from '@/components/ui/buttonClass'
 import { Bars3Icon, XMarkIcon, CodeBracketIcon } from '@heroicons/react/24/solid'
 
 const navLinks = [
-  { label: 'Explore', href: '/projects' },
-  { label: 'Categories', href: '/#categories' },
-  { label: 'Trending', href: '/#technologies' },
-]
+  { id: 'explore', label: 'Explore', href: '/projects' },
+  { id: 'categories', label: 'Categories', href: '/projects?browse=categories' },
+  { id: 'trending', label: 'Trending', href: '/projects?browse=technologies' },
+] as const
 
-const Header = () => {
+type ActiveNav = (typeof navLinks)[number]['id']
+
+interface HeaderProps {
+  activeSection?: ActiveNav
+}
+
+const Header = ({ activeSection }: HeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const { currentUser } = useAppSelector((state) => state.auth)
@@ -44,13 +50,16 @@ const Header = () => {
         {/* Desktop Nav */}
         <nav className='hidden md:flex items-center gap-8 font-semibold'>
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.label}
               href={link.href}
-              className='text-dark hover:underline decoration-2 underline-offset-4 transition-all'
+              aria-current={activeSection === link.id ? 'page' : undefined}
+              className={`text-dark decoration-2 underline-offset-4 transition-all hover:underline ${
+                activeSection === link.id ? 'underline' : ''
+              }`}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -94,14 +103,17 @@ const Header = () => {
         <div className='md:hidden border-t-4 border-dark bg-white'>
           <nav className='max-w-6xl mx-auto px-4 py-6 flex flex-col gap-5 font-bold'>
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                className='text-dark hover:underline decoration-2 underline-offset-4'
+                aria-current={activeSection === link.id ? 'page' : undefined}
+                className={`min-h-11 py-2 text-dark decoration-2 underline-offset-4 hover:underline ${
+                  activeSection === link.id ? 'underline' : ''
+                }`}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             <div className='flex flex-col gap-3 pt-4 border-t-2 border-dark border-dashed'>
               {currentUser ? (

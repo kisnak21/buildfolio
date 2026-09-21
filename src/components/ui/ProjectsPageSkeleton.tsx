@@ -8,7 +8,7 @@ const ProjectsPageSkeleton = () => (
     <Header />
     <main className='mx-auto w-full max-w-6xl flex-1 px-4 py-12'>
       <div className='mb-8 border-b-4 border-dark pb-6'>
-        <h1 className='mb-2 text-4xl font-black'>All Projects</h1>
+        <h1 className='mb-2 text-4xl font-black'>Explore Projects</h1>
         <p className='text-lg font-bold text-gray-600'>Loading projects…</p>
       </div>
 

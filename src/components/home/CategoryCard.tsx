@@ -1,16 +1,25 @@
+import Link from 'next/link'
+
 interface CategoryCardProps {
   icon: React.ReactNode
   name: string
   count: number
-  onClick: () => void
-  isSelected: boolean
+  href: string
+  isSelected?: boolean
 }
 
-const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardProps) => {
+const CategoryCard = ({
+  icon,
+  name,
+  count,
+  href,
+  isSelected = false,
+}: CategoryCardProps) => {
   return (
-    <button
-      onClick={onClick}
-      className={`card-brutal group w-full border-4 border-dark rounded-2xl p-4 text-center transition-all shadow-brutal-sm ${
+    <Link
+      href={href}
+      aria-current={isSelected ? 'page' : undefined}
+      className={`card-brutal group block min-h-11 w-full rounded-2xl border-4 border-dark p-4 text-center shadow-brutal-sm transition-all ${
         isSelected
           ? 'bg-accentSoft shadow-brutal transform -translate-y-1 -translate-x-1'
           : 'bg-white hover:bg-yellow-50'
@@ -21,7 +30,7 @@ const CategoryCard = ({ icon, name, count, onClick, isSelected }: CategoryCardPr
         {name}
       </p>
       <p className='text-xs font-bold text-gray-600 mt-1'>{count} projects</p>
-    </button>
+    </Link>
   )
 }
 

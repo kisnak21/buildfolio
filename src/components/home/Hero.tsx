@@ -20,13 +20,13 @@ const Hero = ({ currentUser }: HeroProps) => {
               The platform for developers to showcase their work, find inspiration, and connect with other builders.
             </p>
             <div className='flex flex-wrap gap-4 pt-4'>
-              <a
-                href='#projects'
+              <Link
+                href='/projects'
                 className='btn-brutal bg-dark text-white border-2 border-dark px-8 py-4 rounded-xl font-bold text-lg shadow-brutal flex items-center gap-2'
               >
-                Start Exploring
+                Browse projects
                 <ArrowRightIcon className='w-5 h-5' />
-              </a>
+              </Link>
               <Link
                 href={currentUser ? '/dashboard/new' : '/register'}
                 className='btn-brutal bg-white text-dark border-2 border-dark px-8 py-4 rounded-xl font-bold text-lg shadow-brutal'

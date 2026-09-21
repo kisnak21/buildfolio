@@ -10,7 +10,7 @@ import ProjectsPageSkeleton from '@/components/ui/ProjectsPageSkeleton'
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
-  title: 'All Projects',
+  title: 'Explore Projects',
   description:
     'Browse all developer projects on Buildfolio. Filter by category, technology, and more.',
 }
