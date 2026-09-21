@@ -1,8 +1,17 @@
 'use client'
 
-import { useCallback, useDeferredValue, useEffect, useState } from 'react'
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useState,
+  useTransition,
+} from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
+import {
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+} from '@heroicons/react/24/solid'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
@@ -79,6 +88,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const [isPending, startTransition] = useTransition()
   const { items: projects, loading, error, pagination } = useAppSelector(
     (state) => state.projects,
   )
@@ -100,14 +110,17 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
   const requestedSort = searchParams.get('sort')
   const sortBy = SORT_OPTIONS.find((option) => option === requestedSort) || 'newest'
   const page = positivePage(searchParams.get('page'))
+  const isUpdatingResults = isPending || loading
 
   const updateQuery = useCallback(
     (updates: Record<string, string | null>) => {
-      router.replace(buildQueryHref(pathname, queryString, updates), {
-        scroll: false,
+      startTransition(() => {
+        router.replace(buildQueryHref(pathname, queryString, updates), {
+          scroll: false,
+        })
       })
     },
-    [pathname, queryString, router],
+    [pathname, queryString, router, startTransition],
   )
 
   useEffect(() => {
@@ -214,7 +227,14 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
             {directoryCopy.description}
           </p>
           <p aria-live='polite' className='mt-3 text-sm font-bold text-gray-600'>
-            {loading ? 'Loading projects…' : `${pagination.total} projects found`}
+            {isUpdatingResults ? (
+              <span className='inline-flex items-center gap-2 rounded-lg border-2 border-dark bg-secondary px-3 py-1.5 text-dark'>
+                <ArrowPathIcon className='h-4 w-4 animate-spin' aria-hidden='true' />
+                {isPending ? 'Updating project results…' : 'Loading projects…'}
+              </span>
+            ) : (
+              `${pagination.total} projects found`
+            )}
           </p>
         </div>
 
@@ -295,88 +315,102 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
           </section>
         )}
 
-        <div className='mb-8 flex flex-col gap-4 rounded-2xl border-4 border-dark bg-accentSoft p-4 shadow-brutal-sm md:flex-row'>
-          <div className='relative flex-1'>
-            <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4'>
-              <MagnifyingGlassIcon className='h-6 w-6 text-dark' aria-hidden />
+        <div
+          aria-busy={isUpdatingResults}
+          className='mb-8 rounded-2xl border-4 border-dark bg-accentSoft p-4 shadow-brutal-sm'
+        >
+          <div className='flex flex-col gap-4 md:flex-row'>
+            <div className='relative flex-1'>
+              <div className='pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4'>
+                <MagnifyingGlassIcon className='h-6 w-6 text-dark' aria-hidden />
+              </div>
+              <label htmlFor='project-search' className='sr-only'>
+                Search projects
+              </label>
+              <input
+                id='project-search'
+                type='search'
+                placeholder='Search projects'
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className='input-brutal w-full rounded-xl border-2 border-dark bg-white py-3 pl-12 pr-4 font-bold shadow-brutal-sm transition-shadow'
+              />
             </div>
-            <label htmlFor='project-search' className='sr-only'>
-              Search projects
-            </label>
-            <input
-              id='project-search'
-              type='search'
-              placeholder='Search projects'
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className='input-brutal w-full rounded-xl border-2 border-dark bg-white py-3 pl-12 pr-4 font-bold shadow-brutal-sm transition-shadow'
-            />
-          </div>
 
-          <div className='flex flex-wrap gap-4'>
-            {!browseMode && (
+            <div className='flex flex-wrap gap-4'>
+              {!browseMode && (
+                <select
+                  aria-label='Filter by category'
+                  value={selectedCategory}
+                  onChange={(event) =>
+                    updateQuery({ category: event.target.value || null, page: null })
+                  }
+                  className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-white px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
+                >
+                  <option value=''>All categories</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {!browseMode && (
+                <select
+                  aria-label='Filter by technology'
+                  value={selectedTech}
+                  onChange={(event) =>
+                    updateQuery({
+                      technology: event.target.value || null,
+                      page: null,
+                    })
+                  }
+                  className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-white px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
+                >
+                  <option value=''>All technologies</option>
+                  {techCounts.map((technology) => (
+                    <option key={technology.name} value={technology.name}>
+                      {technology.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <select
-                aria-label='Filter by category'
-                value={selectedCategory}
-                onChange={(event) =>
-                  updateQuery({ category: event.target.value || null, page: null })
-                }
-                className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-white px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
-              >
-                <option value=''>All categories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            )}
-            {!browseMode && (
-              <select
-                aria-label='Filter by technology'
-                value={selectedTech}
+                aria-label='Sort projects'
+                value={sortBy}
                 onChange={(event) =>
                   updateQuery({
-                    technology: event.target.value || null,
+                    sort: event.target.value === 'newest' ? null : event.target.value,
                     page: null,
                   })
                 }
-                className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-white px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
+                className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-secondary px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
               >
-                <option value=''>All technologies</option>
-                {techCounts.map((technology) => (
-                  <option key={technology.name} value={technology.name}>
-                    {technology.name}
-                  </option>
-                ))}
+                <option value='newest'>Newest</option>
+                <option value='likes'>Most liked</option>
+                <option value='oldest'>Oldest</option>
+                <option value='title'>Title A-Z</option>
               </select>
-            )}
-            <select
-              aria-label='Sort projects'
-              value={sortBy}
-              onChange={(event) =>
-                updateQuery({
-                  sort: event.target.value === 'newest' ? null : event.target.value,
-                  page: null,
-                })
-              }
-              className='input-brutal min-h-11 flex-1 cursor-pointer appearance-none rounded-xl border-2 border-dark bg-secondary px-4 py-3 font-bold shadow-brutal-sm md:flex-none'
-            >
-              <option value='newest'>Newest</option>
-              <option value='likes'>Most liked</option>
-              <option value='oldest'>Oldest</option>
-              <option value='title'>Title A-Z</option>
-            </select>
-            {(search || selectedCategory || selectedTech || sortBy !== 'newest') && (
-              <button
-                type='button'
-                onClick={clearFilters}
-                className='btn-brutal min-h-11 rounded-xl border-2 border-dark bg-white px-5 py-3 font-bold shadow-brutal-sm'
-              >
-                Clear filters
-              </button>
-            )}
+              {(search || selectedCategory || selectedTech || sortBy !== 'newest') && (
+                <button
+                  type='button'
+                  onClick={clearFilters}
+                  className='btn-brutal min-h-11 rounded-xl border-2 border-dark bg-white px-5 py-3 font-bold shadow-brutal-sm'
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
           </div>
+          {isUpdatingResults && (
+            <div
+              aria-hidden='true'
+              className='mt-3 flex items-center gap-2 text-sm font-black text-dark'
+            >
+              <ArrowPathIcon className='h-4 w-4 animate-spin' />
+              {isPending ? 'Updating projects…' : 'Loading projects…'}
+            </div>
+          )}
         </div>
 
         {error && (
