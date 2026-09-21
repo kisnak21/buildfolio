@@ -226,15 +226,8 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
           <p className='max-w-2xl text-lg font-bold text-gray-700'>
             {directoryCopy.description}
           </p>
-          <p aria-live='polite' className='mt-3 text-sm font-bold text-gray-600'>
-            {isUpdatingResults ? (
-              <span className='inline-flex items-center gap-2 rounded-lg border-2 border-dark bg-secondary px-3 py-1.5 text-dark'>
-                <ArrowPathIcon className='h-4 w-4 animate-spin' aria-hidden='true' />
-                {isPending ? 'Updating project results…' : 'Loading projects…'}
-              </span>
-            ) : (
-              `${pagination.total} projects found`
-            )}
+          <p aria-live='polite' className='mt-3 min-h-6 text-sm font-bold text-gray-600'>
+            {!isUpdatingResults && `${pagination.total} projects found`}
           </p>
         </div>
 
@@ -404,7 +397,8 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
           </div>
           {isUpdatingResults && (
             <div
-              aria-hidden='true'
+              role='status'
+              aria-live='polite'
               className='mt-3 flex items-center gap-2 text-sm font-black text-dark'
             >
               <ArrowPathIcon className='h-4 w-4 animate-spin' />
