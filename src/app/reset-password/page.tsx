@@ -5,6 +5,7 @@ const noIndex: Metadata = {
 }
 import { Suspense } from 'react'
 import ResetPasswordClient from './ResetPasswordClient'
+import AuthPageSkeleton from '@/components/ui/AuthPageSkeleton'
 
 export const metadata: Metadata = {
   ...noIndex,
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div className='min-h-screen bg-bgMain' />}>
+    <Suspense fallback={<AuthPageSkeleton fieldCount={2} />}>
       <ResetPasswordClient />
     </Suspense>
   )

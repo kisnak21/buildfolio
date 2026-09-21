@@ -14,7 +14,7 @@ import Section from '@/components/home/Section'
 import ProjectCard from '@/components/home/ProjectCard'
 import CategoryCard from '@/components/home/CategoryCard'
 import TechPill from '@/components/home/TechPill'
-import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import ProjectGridSkeleton from '@/components/ui/ProjectGridSkeleton'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
 import { getCategoryIcon } from '@/lib/categoryIcons'
 
@@ -210,27 +210,33 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
           viewAllHref='/projects'
         >
           {error && <p className='text-sm font-bold text-red-600'>{error}</p>}
-          {!error && (
+          {!error && loading && (
+            <ProjectGridSkeleton
+              showBookmark={Boolean(currentUser)}
+              label='Loading featured projects'
+            />
+          )}
+          {!error && !loading && (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-              {loading
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <ProjectCardSkeleton key={i} />
-                  ))
-                : featuredProjects.length === 0 ? (
-                    <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
-                      No projects match these filters.
-                    </p>
-                  )
-                : featuredProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onLike={handleLike}
-                      onBookmark={currentUser ? handleBookmark : undefined}
-                      isBookmarked={bookmarks.some((bookmark) => String(bookmark.project_id) === String(project.id))}
-                      isLiked={likedProjectIds.includes(String(project.id))}
-                    />
-                  ))}
+              {featuredProjects.length === 0 ? (
+                <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
+                  No projects match these filters.
+                </p>
+              ) : (
+                featuredProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onLike={handleLike}
+                    onBookmark={currentUser ? handleBookmark : undefined}
+                    isBookmarked={bookmarks.some(
+                      (bookmark) =>
+                        String(bookmark.project_id) === String(project.id),
+                    )}
+                    isLiked={likedProjectIds.includes(String(project.id))}
+                  />
+                ))
+              )}
             </div>
           )}
         </Section>
@@ -290,27 +296,33 @@ const HomeClient = ({ techCounts, categories }: HomeClientProps) => {
           subtitle='Projects the community has liked most'
         >
           {error && <p className='text-sm font-bold text-red-600'>{error}</p>}
-          {!error && (
+          {!error && loading && (
+            <ProjectGridSkeleton
+              showBookmark={Boolean(currentUser)}
+              label='Loading community favorites'
+            />
+          )}
+          {!error && !loading && (
             <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-              {loading
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <ProjectCardSkeleton key={i} />
-                  ))
-                : favoriteProjects.length === 0 ? (
-                    <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
-                      No community favorites match these filters.
-                    </p>
-                  )
-                : favoriteProjects.map((project) => (
-                    <ProjectCard
-                      key={project.id}
-                      project={project}
-                      onLike={handleLike}
-                      onBookmark={currentUser ? handleBookmark : undefined}
-                      isBookmarked={bookmarks.some((bookmark) => String(bookmark.project_id) === String(project.id))}
-                      isLiked={likedProjectIds.includes(String(project.id))}
-                    />
-                  ))}
+              {favoriteProjects.length === 0 ? (
+                <p className='col-span-full rounded-xl border-2 border-dark bg-white p-8 text-center font-bold'>
+                  No community favorites match these filters.
+                </p>
+              ) : (
+                favoriteProjects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onLike={handleLike}
+                    onBookmark={currentUser ? handleBookmark : undefined}
+                    isBookmarked={bookmarks.some(
+                      (bookmark) =>
+                        String(bookmark.project_id) === String(project.id),
+                    )}
+                    isLiked={likedProjectIds.includes(String(project.id))}
+                  />
+                ))
+              )}
             </div>
           )}
         </Section>

@@ -6,6 +6,8 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
 import EmptyState from '@/components/ui/EmptyState'
+import ProjectGridSkeleton from '@/components/ui/ProjectGridSkeleton'
+import SkeletonBlock from '@/components/ui/SkeletonBlock'
 import { buttonClass } from '@/components/ui/buttonClass'
 import { useAppDispatch, useAppSelector } from '@/store/redux/hooks'
 import {
@@ -83,9 +85,10 @@ const BookmarksClient = () => {
         </div>
 
         {loading && (
-          <p className='text-sm font-bold text-gray-600'>
-            Loading saved projects...
-          </p>
+          <>
+            <SkeletonBlock className='skeleton-loading mb-6 h-4 w-20 border-0' />
+            <ProjectGridSkeleton label='Loading saved projects' />
+          </>
         )}
 
         {!loading && error && (

@@ -98,3 +98,17 @@ body {
     transform: translateY(16px);
   }
 }
+
+@keyframes skeletonBreathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.68;
+  }
+}
+
+.skeleton-loading {
+  animation: skeletonBreathe 1.4s ease-in-out 2;
+}

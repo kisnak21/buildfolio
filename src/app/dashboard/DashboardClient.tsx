@@ -9,7 +9,8 @@ import { showToast } from '@/store/redux/toastSlice'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
-import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import DataTableSkeleton from '@/components/ui/DataTableSkeleton'
+import SkeletonBlock from '@/components/ui/SkeletonBlock'
 import { LightBulbIcon, PlusIcon } from '@heroicons/react/24/solid'
 
 const DashboardClient = () => {
@@ -106,7 +107,7 @@ const DashboardClient = () => {
                 href='/dashboard/drafts'
                 className='btn-brutal flex min-h-11 items-center justify-center rounded-xl border-2 border-dark bg-white px-5 py-3 font-bold shadow-brutal-sm'
               >
-                Drafts ({userProjects.filter((project) => project.status === 'DRAFT').length})
+                {loading ? 'Drafts' : `Drafts (${draftProjects.length})`}
               </Link>
               <Link
                 href='/dashboard/new'
@@ -120,35 +121,55 @@ const DashboardClient = () => {
         </div>
 
         {/* Stats */}
-        <div className='grid grid-cols-1 gap-6 mb-12 sm:grid-cols-2 lg:grid-cols-4'>
-          <div className='bg-primary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-dark mb-1'>Published</p>
-            <p className='text-5xl font-black'>{publishedProjects.length}</p>
+        {loading ? (
+          <div
+            role='status'
+            aria-label='Loading dashboard statistics'
+            className='mb-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4'
+          >
+            {['bg-primary', 'bg-secondary', 'bg-purpleSoft', 'bg-white'].map(
+              (color) => (
+                <div
+                  key={color}
+                  aria-hidden='true'
+                  className={`skeleton-loading rounded-2xl border-4 border-dark p-6 shadow-brutal ${color}`}
+                >
+                  <SkeletonBlock className='mb-3 h-4 w-28 border-0' />
+                  <SkeletonBlock className='h-12 w-16 bg-white' />
+                </div>
+              ),
+            )}
           </div>
-          <div className='bg-secondary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-dark mb-1'>Drafts</p>
-            <p className='text-5xl font-black'>{draftProjects.length}</p>
+        ) : (
+          <div className='grid grid-cols-1 gap-6 mb-12 sm:grid-cols-2 lg:grid-cols-4'>
+            <div className='bg-primary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <p className='font-bold text-dark mb-1'>Published</p>
+              <p className='text-5xl font-black'>{publishedProjects.length}</p>
+            </div>
+            <div className='bg-secondary border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <p className='font-bold text-dark mb-1'>Drafts</p>
+              <p className='text-5xl font-black'>{draftProjects.length}</p>
+            </div>
+            <div className='bg-purpleSoft text-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <p className='font-bold text-white mb-1'>Likes Received</p>
+              <p className='text-5xl font-black'>{totalLikes}</p>
+            </div>
+            <div className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
+              <p className='font-bold text-gray-600 mb-1'>Bookmarks</p>
+              <p className='text-5xl font-black'>{totalBookmarks}</p>
+            </div>
           </div>
-          <div className='bg-purpleSoft text-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-white mb-1'>Likes Received</p>
-            <p className='text-5xl font-black'>{totalLikes}</p>
-          </div>
-          <div className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal'>
-            <p className='font-bold text-gray-600 mb-1'>Bookmarks</p>
-            <p className='text-5xl font-black'>
-              {totalBookmarks}
-            </p>
-          </div>
-        </div>
+        )}
 
         <h2 className='text-2xl font-black mb-6'>Your Projects</h2>
 
         {loading && (
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <ProjectCardSkeleton key={i} />
-            ))}
-          </div>
+          <DataTableSkeleton
+            headers={['Title', 'Category', 'Status', 'Likes', 'Actions']}
+            label='Loading your projects'
+            columnWidths={['w-40', 'w-20', 'w-20', 'w-10', 'w-36']}
+            className='mb-8'
+          />
         )}
         {error && <p className='text-sm font-bold text-red-600 mb-4'>{error}</p>}
         {deleteError && (

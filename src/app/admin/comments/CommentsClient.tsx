@@ -8,6 +8,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ModerationDialog from '@/components/admin/ModerationDialog'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { buttonClass } from '@/components/ui/buttonClass'
+import { ModerationListSkeleton } from '@/components/ui/CommentSkeletons'
 import {
   deleteAdminComment,
   getAdminComments,
@@ -236,9 +237,7 @@ const CommentsClient = () => {
 
       <div className='space-y-4'>
         {loading && (
-          <div className='bg-white border-4 border-dark rounded-2xl p-6 shadow-brutal font-bold text-gray-600'>
-            Loading comment moderation queue…
-          </div>
+          <ModerationListSkeleton />
         )}
         {!loading && comments.length === 0 && (
           <div className='bg-white border-4 border-dark rounded-2xl p-8 shadow-brutal text-center font-bold text-gray-600'>

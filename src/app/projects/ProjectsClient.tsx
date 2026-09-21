@@ -6,7 +6,7 @@ import { MagnifyingGlassIcon } from '@heroicons/react/24/solid'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
-import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import ProjectGridSkeleton from '@/components/ui/ProjectGridSkeleton'
 import { useAppDispatch, useAppSelector } from '@/store/redux/hooks'
 import { fetchProjects, likeProject } from '@/store/redux/projectsSlice'
 import {
@@ -146,7 +146,7 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
         <div className='mb-8 border-b-4 border-dark pb-6'>
           <h1 className='mb-2 text-4xl font-black'>All Projects</h1>
           <p className='text-lg font-bold text-gray-600'>
-            {pagination.total} projects found
+            {loading ? 'Loading projects…' : `${pagination.total} projects found`}
           </p>
         </div>
 
@@ -248,34 +248,35 @@ const ProjectsClient = ({ techCounts, categories }: ProjectsClientProps) => {
           </div>
         )}
 
-        {!error && (
-          <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
-            {loading ? (
-              Array.from({ length: PAGE_SIZE }).map((_, index) => (
-                <ProjectCardSkeleton key={index} />
-              ))
-            ) : projects.length === 0 ? (
-              <div className='col-span-1 rounded-2xl border-4 border-dark bg-white p-12 text-center shadow-brutal md:col-span-2 lg:col-span-3'>
-                <p className='text-lg font-bold text-gray-600'>
-                  No projects match these filters. Clear a filter to broaden the
-                  results.
-                </p>
-              </div>
-            ) : (
-              projects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onLike={handleLike}
-                  isLiked={likedProjectIds.includes(String(project.id))}
-                  isBookmarked={bookmarkedProjectIds.includes(String(project.id))}
-                  bookmarkPending={bookmarkPendingId === String(project.id)}
-                  onBookmark={handleBookmark}
-                />
-              ))
-            )}
-          </div>
-        )}
+        {!error &&
+          (loading ? (
+            <ProjectGridSkeleton count={PAGE_SIZE} />
+          ) : (
+            <div className='grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3'>
+              {projects.length === 0 ? (
+                <div className='col-span-1 rounded-2xl border-4 border-dark bg-white p-12 text-center shadow-brutal md:col-span-2 lg:col-span-3'>
+                  <p className='text-lg font-bold text-gray-600'>
+                    No projects match these filters. Clear a filter to broaden the
+                    results.
+                  </p>
+                </div>
+              ) : (
+                projects.map((project) => (
+                  <ProjectCard
+                    key={project.id}
+                    project={project}
+                    onLike={handleLike}
+                    isLiked={likedProjectIds.includes(String(project.id))}
+                    isBookmarked={bookmarkedProjectIds.includes(
+                      String(project.id),
+                    )}
+                    bookmarkPending={bookmarkPendingId === String(project.id)}
+                    onBookmark={handleBookmark}
+                  />
+                ))
+              )}
+            </div>
+          ))}
 
         {!error && !loading && totalPages > 1 && (
           <nav

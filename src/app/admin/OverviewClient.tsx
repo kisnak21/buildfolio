@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import AdminStatCard from '@/components/admin/AdminStatCard'
 import GrowthChart from '@/components/admin/GrowthChart'
+import AdminOverviewSkeleton from '@/components/admin/AdminOverviewSkeleton'
 import { buttonClass } from '@/components/ui/buttonClass'
 import {
   getAdminStats,
@@ -174,7 +175,7 @@ const OverviewClient = () => {
               health === 'ok'
                 ? 'bg-greenMid'
                 : health === 'down'
-                  ? 'bg-red-600 animate-pulse'
+                  ? 'bg-red-600'
                   : 'bg-gray-400'
             }`}
           />
@@ -187,17 +188,7 @@ const OverviewClient = () => {
       </div>
 
       {loading && (
-        <div className='grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-10'>
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div
-              key={i}
-              className='bg-white border-4 border-dark rounded-2xl p-5 shadow-brutal animate-pulse'
-            >
-              <div className='h-4 w-16 bg-gray-200 rounded mb-3' />
-              <div className='h-8 w-20 bg-gray-200 rounded' />
-            </div>
-          ))}
-        </div>
+        <AdminOverviewSkeleton />
       )}
 
       {error && !loading && (

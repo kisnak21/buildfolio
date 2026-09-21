@@ -9,7 +9,8 @@ import { fetchLikedProjects, syncLike, selectLikedProjectIds } from '@/store/red
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ProjectCard from '@/components/home/ProjectCard'
-import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import ProjectGridSkeleton from '@/components/ui/ProjectGridSkeleton'
+import SkeletonBlock from '@/components/ui/SkeletonBlock'
 import EmptyState from '@/components/ui/EmptyState'
 import { buttonClass } from '@/components/ui/buttonClass'
 import { HeartIcon } from '@heroicons/react/24/solid'
@@ -90,11 +91,10 @@ const LikedClient = () => {
         </div>
 
         {loading ? (
-          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'>
-            {Array.from({ length: 3 }).map((_, i) => (
-              <ProjectCardSkeleton key={i} />
-            ))}
-          </div>
+          <>
+            <SkeletonBlock className='skeleton-loading mb-6 h-4 w-20 border-0' />
+            <ProjectGridSkeleton label='Loading liked projects' />
+          </>
         ) : likedProjects.length === 0 ? (
           <EmptyState
             title='No liked projects yet.'

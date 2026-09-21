@@ -9,7 +9,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import EmptyState from '@/components/ui/EmptyState'
-import ProjectCardSkeleton from '@/components/ui/ProjectCardSkeleton'
+import DataTableSkeleton from '@/components/ui/DataTableSkeleton'
 import { buttonClass } from '@/components/ui/buttonClass'
 
 const DraftsClient = () => {
@@ -56,11 +56,12 @@ const DraftsClient = () => {
         </div>
 
         {loading && (
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-8'>
-            {Array.from({ length: 3 }).map((_, index) => (
-              <ProjectCardSkeleton key={index} />
-            ))}
-          </div>
+          <DataTableSkeleton
+            headers={['Project', 'Category', 'Status', 'Actions']}
+            label='Loading draft projects'
+            headerClassName='bg-secondary'
+            columnWidths={['w-40', 'w-24', 'w-16', 'w-32']}
+          />
         )}
 
         {error && !loading && (

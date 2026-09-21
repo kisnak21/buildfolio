@@ -7,6 +7,7 @@ import {
   type AdminAuditLog,
 } from '@/lib/api/adminApi'
 import { buttonClass } from '@/components/ui/buttonClass'
+import DataTableSkeleton from '@/components/ui/DataTableSkeleton'
 
 const EXPORT_LIMIT = 5000
 
@@ -352,20 +353,14 @@ const AuditLogsClient = () => {
       )}
 
       {loading ? (
-        <div className='bg-white border-4 border-dark rounded-2xl shadow-brutal overflow-hidden'>
-          <div className='bg-dark text-white px-4 py-3 font-black'>Loading…</div>
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className='flex items-center gap-4 px-4 py-4 border-t-2 border-dark animate-pulse'
-            >
-              <div className='h-4 w-32 bg-gray-200 rounded' />
-              <div className='h-4 w-24 bg-gray-200 rounded' />
-              <div className='h-4 w-28 bg-gray-200 rounded' />
-              <div className='h-4 w-40 bg-gray-200 rounded' />
-            </div>
-          ))}
-        </div>
+        <DataTableSkeleton
+          headers={['Timestamp', 'Actor', 'Action', 'Target', 'IP', 'Details']}
+          label='Loading audit events'
+          rowCount={8}
+          headerClassName='bg-dark text-white'
+          minWidthClassName='min-w-[900px]'
+          columnWidths={['w-32', 'w-28', 'w-24', 'w-36', 'w-24', 'w-48']}
+        />
       ) : rows.length === 0 ? (
         <div className='bg-white border-4 border-dark rounded-2xl p-10 shadow-brutal text-center'>
           <p className='text-xl font-black mb-1'>No audit events found</p>

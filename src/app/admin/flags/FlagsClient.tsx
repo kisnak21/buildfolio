@@ -8,6 +8,7 @@ import {
   type AdminFlag,
 } from '@/lib/api/adminApi'
 import { buttonClass } from '@/components/ui/buttonClass'
+import DataTableSkeleton from '@/components/ui/DataTableSkeleton'
 import { useAppDispatch } from '@/store/redux/hooks'
 import { showToast } from '@/store/redux/toastSlice'
 
@@ -150,7 +151,28 @@ const FlagsClient = () => {
       )}
 
       {loading ? (
-        <p className='text-sm font-bold text-gray-500'>Loading…</p>
+        <DataTableSkeleton
+          headers={[
+            'Target',
+            'Reason',
+            'Details',
+            'Reporter',
+            'Reported',
+            'Status',
+            'Actions',
+          ]}
+          label='Loading reported content'
+          minWidthClassName='min-w-[980px]'
+          columnWidths={[
+            'w-32',
+            'w-24',
+            'w-40',
+            'w-24',
+            'w-28',
+            'w-20',
+            'w-36',
+          ]}
+        />
       ) : rows.length === 0 ? (
         <p className='text-sm font-bold text-gray-500'>No flags found</p>
       ) : (

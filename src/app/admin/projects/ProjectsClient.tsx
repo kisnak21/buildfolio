@@ -7,6 +7,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ModerationDialog from '@/components/admin/ModerationDialog'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { buttonClass } from '@/components/ui/buttonClass'
+import { DataTableSkeletonRows } from '@/components/ui/DataTableSkeleton'
 import {
   deleteAdminProject,
   getAdminCategories,
@@ -277,11 +278,11 @@ const ProjectsClient = () => {
             </thead>
             <tbody className='text-sm'>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className='p-8 text-center font-bold text-gray-600'>
-                    Loading project moderation queue…
-                  </td>
-                </tr>
+                <DataTableSkeletonRows
+                  columns={6}
+                  label='Loading project moderation queue'
+                  columnWidths={['w-40', 'w-28', 'w-24', 'w-24', 'w-10', 'w-44']}
+                />
               ) : projects.length === 0 ? (
                 <tr>
                   <td colSpan={6} className='p-8 text-center font-bold text-gray-600'>

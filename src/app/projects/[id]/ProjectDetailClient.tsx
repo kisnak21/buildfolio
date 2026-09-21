@@ -27,6 +27,7 @@ import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Button from '@/components/ui/Button'
 import ProjectDetailSkeleton from '@/components/ui/ProjectDetailSkeleton'
+import { CommentThreadSkeleton } from '@/components/ui/CommentSkeletons'
 import EmptyState from '@/components/ui/EmptyState'
 import ReportModal, {
   type ReportTarget,
@@ -389,9 +390,7 @@ const ProjectDetailClient = ({ initialProject }: ProjectDetailClientProps) => {
               )}
 
               {commentsLoading && (
-                <p className='text-sm font-bold text-gray-600'>
-                  Loading comments...
-                </p>
+                <CommentThreadSkeleton />
               )}
 
               {!commentsLoading && comments.length === 0 && (

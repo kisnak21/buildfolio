@@ -1,28 +1,50 @@
-const ProjectCardSkeleton = () => {
+import SkeletonBlock from './SkeletonBlock'
+
+interface ProjectCardSkeletonProps {
+  showBookmark?: boolean
+}
+
+const ProjectCardSkeleton = ({
+  showBookmark = true,
+}: ProjectCardSkeletonProps) => {
   return (
-    <div className='card-brutal bg-white border-4 border-dark rounded-2xl overflow-hidden flex flex-col shadow-brutal animate-pulse'>
-      <div className='aspect-video bg-gray-200 border-b-4 border-dark flex items-center justify-center'>
-        <div className='w-12 h-12 rounded-full border-2 border-dark bg-gray-300'></div>
+    <article
+      aria-hidden='true'
+      className='skeleton-loading flex flex-col overflow-hidden rounded-2xl border-4 border-dark bg-white shadow-brutal'
+    >
+      <div className='relative flex aspect-video items-center justify-center border-b-4 border-dark bg-gray-100'>
+        <SkeletonBlock className='h-16 w-16 rounded-xl bg-gray-300' />
+        <SkeletonBlock className='absolute left-3 top-3 h-7 w-24' />
+        <div className='absolute right-3 top-3 flex gap-1'>
+          {showBookmark && (
+            <SkeletonBlock className='h-10 w-10 rounded-full bg-white' />
+          )}
+          <SkeletonBlock className='h-10 w-10 rounded-full bg-white' />
+        </div>
       </div>
-      <div className='p-5 flex flex-col flex-1 gap-4'>
-        <div className='h-6 bg-gray-300 rounded w-3/4 border-2 border-dark'></div>
-        <div className='space-y-2'>
-          <div className='h-4 bg-gray-200 rounded w-full border-2 border-dark'></div>
-          <div className='h-4 bg-gray-200 rounded w-5/6 border-2 border-dark'></div>
+      <div className='flex flex-1 flex-col p-5'>
+        <SkeletonBlock className='mb-2 h-7 w-3/4 bg-gray-300' />
+        <div className='mb-4 space-y-2'>
+          <SkeletonBlock className='h-4 w-full' />
+          <SkeletonBlock className='h-4 w-5/6' />
         </div>
-        <div className='flex gap-2 mb-4'>
-          <div className='h-6 w-16 bg-gray-200 rounded border-2 border-dark'></div>
-          <div className='h-6 w-20 bg-gray-200 rounded border-2 border-dark'></div>
+        <div className='mb-6 flex flex-wrap gap-2'>
+          <SkeletonBlock className='h-7 w-16' />
+          <SkeletonBlock className='h-7 w-20' />
+          <SkeletonBlock className='h-7 w-14' />
         </div>
-        <div className='mt-auto flex items-center justify-between pt-4 border-t-2 border-dark border-dashed'>
+        <div className='mt-auto flex min-h-14 items-center justify-between border-t-2 border-dashed border-dark pt-4'>
           <div className='flex items-center gap-2'>
-            <div className='w-8 h-8 rounded-full bg-gray-300 border-2 border-dark'></div>
-            <div className='h-4 w-20 bg-gray-200 rounded border-2 border-dark'></div>
+            <SkeletonBlock className='h-8 w-8 rounded-full bg-gray-300' />
+            <SkeletonBlock className='h-4 w-20' />
           </div>
-          <div className='h-5 w-8 bg-gray-200 rounded border-2 border-dark'></div>
+          <div className='flex items-center gap-3'>
+            <SkeletonBlock className='h-10 w-20 rounded-lg bg-white' />
+            <SkeletonBlock className='h-5 w-10 border-0' />
+          </div>
         </div>
       </div>
-    </div>
+    </article>
   )
 }
 

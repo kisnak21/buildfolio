@@ -7,6 +7,7 @@ import { showToast } from '@/store/redux/toastSlice'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import Button from '@/components/ui/Button'
 import { buttonClass } from '@/components/ui/buttonClass'
+import SkeletonBlock from '@/components/ui/SkeletonBlock'
 import {
   getAdminCategories,
   getAdminTechs,
@@ -267,14 +268,26 @@ const CategoriesClient = () => {
       )}
 
       {loading ? (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10'>
+        <div
+          role='status'
+          aria-busy='true'
+          aria-label='Loading categories'
+          className='mb-10 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'
+        >
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className='bg-white border-4 border-dark rounded-2xl p-5 shadow-brutal animate-pulse'
+              aria-hidden='true'
+              className='skeleton-loading rounded-2xl border-4 border-dark bg-white p-5 shadow-brutal'
             >
-              <div className='h-6 w-24 bg-gray-200 rounded mb-4' />
-              <div className='h-4 w-16 bg-gray-200 rounded' />
+              <div className='mb-4 flex items-center justify-between gap-3'>
+                <SkeletonBlock className='h-6 w-28 bg-gray-300' />
+                <div className='flex gap-2'>
+                  <SkeletonBlock className='h-9 w-14 rounded-lg bg-white' />
+                  <SkeletonBlock className='h-9 w-16 rounded-lg bg-dangerSoft' />
+                </div>
+              </div>
+              <SkeletonBlock className='h-4 w-20 border-0' />
             </div>
           ))}
         </div>
@@ -332,23 +345,30 @@ const CategoriesClient = () => {
           </button>
         </div>
         <div className='flex flex-wrap gap-3'>
-          {techs.map((tech) => (
-            <span
-              key={tech.id}
-              className={`border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm flex items-center gap-2 ${
-                tech.used ? 'bg-white' : 'bg-warningSoft'
-              }`}
-            >
-              {tech.name}
-              <button
-                onClick={() => removeTech(tech)}
-                className='w-4 h-4 bg-dangerSoft border border-dark rounded-full text-[10px] font-black leading-none hover:bg-danger hover:text-white transition-colors'
-                aria-label={`Remove ${tech.name}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
+          {loading
+            ? Array.from({ length: 6 }, (_, index) => (
+                <SkeletonBlock
+                  key={index}
+                  className='skeleton-loading h-9 w-24 rounded-lg bg-white'
+                />
+              ))
+            : techs.map((tech) => (
+                <span
+                  key={tech.id}
+                  className={`border-2 border-dark px-3 py-1.5 rounded-lg text-sm font-bold shadow-brutal-sm flex items-center gap-2 ${
+                    tech.used ? 'bg-white' : 'bg-warningSoft'
+                  }`}
+                >
+                  {tech.name}
+                  <button
+                    onClick={() => removeTech(tech)}
+                    className='w-4 h-4 bg-dangerSoft border border-dark rounded-full text-[10px] font-black leading-none hover:bg-danger hover:text-white transition-colors'
+                    aria-label={`Remove ${tech.name}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
           {techs.length === 0 && !loading && (
             <p className='text-sm font-bold text-gray-500'>No technologies yet</p>
           )}

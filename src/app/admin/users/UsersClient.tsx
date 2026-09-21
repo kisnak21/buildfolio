@@ -8,6 +8,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import ModerationDialog from '@/components/admin/ModerationDialog'
 import AdminPagination from '@/components/admin/AdminPagination'
 import { buttonClass } from '@/components/ui/buttonClass'
+import { DataTableSkeletonRows } from '@/components/ui/DataTableSkeleton'
 import {
   deleteAdminUser,
   getAdminUsers,
@@ -290,11 +291,11 @@ const UsersClient = () => {
             </thead>
             <tbody className='text-sm'>
               {loading ? (
-                <tr>
-                  <td colSpan={6} className='p-8 text-center font-bold text-gray-600'>
-                    Loading user accounts…
-                  </td>
-                </tr>
+                <DataTableSkeletonRows
+                  columns={6}
+                  label='Loading user accounts'
+                  columnWidths={['w-36', 'w-48', 'w-20', 'w-20', 'w-12', 'w-44']}
+                />
               ) : users.length === 0 ? (
                 <tr>
                   <td colSpan={6} className='p-8 text-center font-bold text-gray-600'>
