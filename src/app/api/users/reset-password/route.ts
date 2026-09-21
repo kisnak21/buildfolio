@@ -2,6 +2,7 @@ export const runtime = 'nodejs'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { resetPassword } from '@/lib/services/userService'
+import { getPasswordValidationError } from '@/lib/password'
 import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
@@ -30,11 +31,12 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       )
     }
-    if (newPassword.length < 8 || !/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+    const passwordError = getPasswordValidationError(newPassword)
+    if (passwordError) {
       return NextResponse.json(
         {
           success: false,
-          message: 'Password must be at least 8 characters with uppercase, lowercase, and a number',
+          message: passwordError,
         },
         { status: 400 },
       )

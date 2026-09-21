@@ -1,6 +1,7 @@
 export const runtime = 'nodejs'
 
 import prisma from '@/lib/db'
+import { getPasswordValidationError } from '@/lib/password'
 import bcrypt from 'bcrypt'
 import { signToken } from '@/lib/auth'
 import { sendEmail } from '@/lib/email'
@@ -68,8 +69,9 @@ export const createUser = async ({
   image?: string
   bio?: string
 }) => {
-  if (password.length < 8) {
-    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
+  const passwordError = getPasswordValidationError(password)
+  if (passwordError) {
+    throw Object.assign(new Error(passwordError), { statusCode: 400 })
   }
   if (name.length > 100) {
     throw Object.assign(new Error('Name must be at most 100 characters'), { statusCode: 400 })
@@ -80,16 +82,6 @@ export const createUser = async ({
   if (bio && bio.length > 500) {
     throw Object.assign(new Error('Bio must be at most 500 characters'), { statusCode: 400 })
   }
-  if (!/[A-Z]/.test(password)) {
-    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
-  }
-  if (!/[a-z]/.test(password)) {
-    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
-  }
-  if (!/[0-9]/.test(password)) {
-    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
-  }
-
   const username = name.toLowerCase().replace(/\s+/g, '')
   const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS)
   const verificationToken = crypto.randomUUID()
@@ -236,17 +228,9 @@ export const requestPasswordReset = async (email: string) => {
 }
 
 export const resetPassword = async (token: string, newPassword: string) => {
-  if (newPassword.length < 8) {
-    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
-  }
-  if (!/[A-Z]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
-  }
-  if (!/[a-z]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
-  }
-  if (!/[0-9]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
+  const passwordError = getPasswordValidationError(newPassword)
+  if (passwordError) {
+    throw Object.assign(new Error(passwordError), { statusCode: 400 })
   }
 
   const user = await prisma.user.findFirst({
@@ -311,17 +295,9 @@ export const changePassword = async (
   currentPassword: string,
   newPassword: string,
 ) => {
-  if (newPassword.length < 8) {
-    throw Object.assign(new Error('Password must be at least 8 characters'), { statusCode: 400 })
-  }
-  if (!/[A-Z]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one uppercase letter'), { statusCode: 400 })
-  }
-  if (!/[a-z]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one lowercase letter'), { statusCode: 400 })
-  }
-  if (!/[0-9]/.test(newPassword)) {
-    throw Object.assign(new Error('Password must contain at least one number'), { statusCode: 400 })
+  const passwordError = getPasswordValidationError(newPassword)
+  if (passwordError) {
+    throw Object.assign(new Error(passwordError), { statusCode: 400 })
   }
 
   const user = await prisma.user.findUnique({ where: { id } })

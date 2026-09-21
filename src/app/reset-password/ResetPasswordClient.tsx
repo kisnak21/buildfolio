@@ -7,15 +7,7 @@ import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
-
-const isPasswordStrong = (pw: string): boolean => {
-  return (
-    pw.length >= 8 &&
-    /[A-Z]/.test(pw) &&
-    /[a-z]/.test(pw) &&
-    /[0-9]/.test(pw)
-  )
-}
+import { getPasswordValidationError } from '@/lib/password'
 
 const ResetPasswordClient = () => {
   const router = useRouter()
@@ -29,9 +21,10 @@ const ResetPasswordClient = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isPasswordStrong(newPassword)) {
+    const passwordError = getPasswordValidationError(newPassword)
+    if (passwordError) {
       setStatus('error')
-      setMessage('Password must be at least 8 characters with uppercase, lowercase, and a number.')
+      setMessage(passwordError)
       return
     }
     if (confirmPassword !== newPassword) {

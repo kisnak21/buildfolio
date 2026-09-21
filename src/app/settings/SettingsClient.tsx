@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { useAppSelector, useAppDispatch } from '@/store/redux/hooks'
 import { updateProfile } from '@/store/redux/authSlice'
 import { updateUserApi, changePasswordApi } from '@/lib/api/authApi'
+import { getPasswordValidationError } from '@/lib/password'
 import Header from '@/components/layout/Header'
 import Footer from '@/components/layout/Footer'
 import Input from '@/components/ui/Input'
@@ -65,12 +66,9 @@ const SettingsClient = () => {
       setPwError('All password fields are required.')
       return
     }
-    if (newPassword.length < 8) {
-      setPwError('New password must be at least 8 characters.')
-      return
-    }
-    if (!/[A-Z]/.test(newPassword) || !/[a-z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
-      setPwError('New password must contain uppercase, lowercase, and a number.')
+    const passwordError = getPasswordValidationError(newPassword)
+    if (passwordError) {
+      setPwError(passwordError.replace(/^Password/, 'New password'))
       return
     }
     if (newPassword !== confirmPassword) {

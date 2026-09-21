@@ -3,7 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/20/solid'
 import { registerUser } from '@/lib/api/authApi'
+import {
+  getPasswordRequirementStatus,
+  getPasswordValidationError,
+} from '@/lib/password'
 import AuthCard from '@/components/layout/AuthCard'
 import Input from '@/components/ui/Input'
 import Checkbox from '@/components/ui/Checkbox'
@@ -13,15 +18,6 @@ import { signIn } from 'next-auth/react'
 import Divider from '@/components/ui/Divider'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const isPasswordStrong = (pw: string): boolean => {
-  return (
-    pw.length >= 8 &&
-    /[A-Z]/.test(pw) &&
-    /[a-z]/.test(pw) &&
-    /[0-9]/.test(pw)
-  )
-}
 
 const RegisterClient = () => {
   const router = useRouter()
@@ -34,6 +30,7 @@ const RegisterClient = () => {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [googleSubmitting, setGoogleSubmitting] = useState(false)
+  const passwordRequirements = getPasswordRequirementStatus(password)
 
   const handleGoogle = async () => {
     setGoogleSubmitting(true)
@@ -47,14 +44,8 @@ const RegisterClient = () => {
     if (!name.trim()) newErrors.name = 'Name is required.'
     if (!emailRegex.test(email.trim()))
       newErrors.email = 'Enter a valid email address.'
-    if (!isPasswordStrong(password)) {
-      const pwErrors: string[] = []
-      if (password.length < 8) pwErrors.push('at least 8 characters')
-      if (!/[A-Z]/.test(password)) pwErrors.push('one uppercase letter')
-      if (!/[a-z]/.test(password)) pwErrors.push('one lowercase letter')
-      if (!/[0-9]/.test(password)) pwErrors.push('one number')
-      newErrors.password = `Password requires: ${pwErrors.join(', ')}.`
-    }
+    const passwordError = getPasswordValidationError(password)
+    if (passwordError) newErrors.password = passwordError
     if (confirmPassword !== password)
       newErrors.confirmPassword = 'Passwords do not match.'
     if (!agreed) newErrors.agreed = 'You must agree to the privacy policy.'
@@ -112,7 +103,36 @@ const RegisterClient = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             error={errors.password}
+            describedBy='password-requirements'
           />
+          <div
+            id='password-requirements'
+            className='-mt-2 mb-5 rounded-xl border-2 border-dark bg-bgMain p-4'
+          >
+            <p className='mb-3 text-sm font-black text-dark'>
+              Password requirements
+            </p>
+            <ul className='grid gap-2 text-sm font-bold sm:grid-cols-2'>
+              {passwordRequirements.map((requirement) => (
+                <li
+                  key={requirement.key}
+                  className={`flex items-center gap-2 ${
+                    requirement.met ? 'text-green-800' : 'text-gray-700'
+                  }`}
+                >
+                  {requirement.met ? (
+                    <CheckCircleIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
+                  ) : (
+                    <XCircleIcon className='h-5 w-5 shrink-0' aria-hidden='true' />
+                  )}
+                  <span>{requirement.label}</span>
+                  <span className='sr-only'>
+                    {requirement.met ? 'met' : 'not met'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
           <Input
             label='Confirm password'
             type='password'

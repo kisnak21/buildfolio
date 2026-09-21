@@ -10,6 +10,7 @@ interface InputProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   error?: string
   rightElement?: React.ReactNode
+  describedBy?: string
 }
 
 const Input = ({
@@ -22,7 +23,13 @@ const Input = ({
   onChange,
   error,
   rightElement,
+  describedBy,
 }: InputProps) => {
+  const errorId = `${id}-error`
+  const inputDescribedBy = [describedBy, error ? errorId : null]
+    .filter(Boolean)
+    .join(' ') || undefined
+
   return (
     <div className='mb-5'>
       <div className='flex items-center justify-between mb-2'>
@@ -38,11 +45,17 @@ const Input = ({
         placeholder={placeholder}
         value={value}
         onChange={onChange}
+        aria-describedby={inputDescribedBy}
+        aria-invalid={error ? true : undefined}
         className={`input-brutal w-full px-4 py-3 bg-inputBg border-2 border-dark rounded-xl font-medium transition-shadow ${
           error ? 'border-red-500 shadow-brutal-danger' : ''
         }`}
       />
-      {error && <p className='text-sm font-bold text-red-600 mt-2'>{error}</p>}
+      {error && (
+        <p id={errorId} className='text-sm font-bold text-red-600 mt-2' role='alert'>
+          {error}
+        </p>
+      )}
     </div>
   )
 }
