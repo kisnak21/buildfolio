@@ -3,15 +3,33 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { useAppDispatch } from '@/store/redux/hooks'
+import { loginUser } from '@/store/redux/authSlice'
 import AuthCard from '@/components/layout/AuthCard'
 import Button from '@/components/ui/Button'
 import Alert from '@/components/ui/Alert'
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+type VerifiedUser = {
+  id: string
+  name: string
+  username?: string | null
+  email: string
+  image?: string | null
+  bio?: string | null
+  is_verified: boolean
+}
+
+type VerifyEmailResponse = {
+  message?: string
+  data?: { user?: VerifiedUser }
+}
+
 const VerifyEmailClient = () => {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const dispatch = useAppDispatch()
   const initialEmail = searchParams.get('email') || ''
   const token = searchParams.get('token')
 
@@ -23,16 +41,34 @@ const VerifyEmailClient = () => {
     if (!token) return
 
     let cancelled = false
+    let redirectTimeout: ReturnType<typeof setTimeout> | undefined
     ;(async () => {
       setStatus('verifying')
       try {
         const response = await fetch(`/api/users/verify-email?token=${encodeURIComponent(token)}`)
-        const data = await response.json()
+        const data: VerifyEmailResponse = await response.json()
         if (cancelled) return
         if (response.ok) {
+          const user = data.data?.user
+          if (!user) {
+            setStatus('error')
+            setMessage('Your email was verified, but we could not start your session. Please log in.')
+            return
+          }
+
+          dispatch(
+            loginUser({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              username: user.username,
+              image: user.image,
+              bio: user.bio ?? undefined,
+            }),
+          )
           setStatus('verified')
-          setMessage('Your email has been verified successfully!')
-          setTimeout(() => router.push('/login'), 2500)
+          setMessage('Your email has been verified successfully! Taking you to your dashboard…')
+          redirectTimeout = setTimeout(() => router.replace('/dashboard'), 1200)
         } else {
           setStatus('error')
           setMessage(data.message || 'Invalid or expired verification link.')
@@ -47,8 +83,9 @@ const VerifyEmailClient = () => {
 
     return () => {
       cancelled = true
+      if (redirectTimeout) clearTimeout(redirectTimeout)
     }
-  }, [token, router])
+  }, [token, router, dispatch])
 
   const handleResend = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -91,7 +128,7 @@ const VerifyEmailClient = () => {
 
         {status === 'verified' && (
           <Alert variant='success' className='mb-6'>
-            {message} Redirecting to login...
+            {message}
           </Alert>
         )}
 

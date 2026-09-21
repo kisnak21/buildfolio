@@ -6,6 +6,7 @@ import { dbErrorMessage } from '@/lib/apiErrors'
 import { rateLimit } from '@/lib/rateLimit'
 import { assertSameOrigin } from '@/lib/middleware/authMiddleware'
 import { logAudit, requestContext } from '@/lib/audit'
+import { setAuthCookies } from '@/lib/authCookies'
 
 export async function POST(req: NextRequest) {
   const csrfError = assertSameOrigin(req)
@@ -107,23 +108,7 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({ success: true, data: result })
 
-    // Set httpOnly cookie with JWT token
-    response.cookies.set('buildfolio_token', result.token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    })
-
-    // Set session flag cookie (non-sensitive, readable by middleware)
-    response.cookies.set('buildfolio_session', '1', {
-      httpOnly: false, // middleware needs to read this for redirect logic
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
-      path: '/',
-    })
+    setAuthCookies(response, result.token)
 
     return response
   } catch (err) {
